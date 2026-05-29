@@ -1,2 +1,5 @@
 venv/
+backend/venv/
 frontend/.next/
+__pycache__/
+*.pyc
