@@ -65,7 +65,7 @@ export default function CampaignTable({ campaigns }: Props) {
               <Th col="purchases"        label="Purchases" />
               <Th col="conversion_value" label="Revenue" />
               <Th col="roas"             label="ROAS" />
-              <Th col="cpa"              label="CPA" />  {/* removed — not on CampaignRow but on aggregate */}
+              <th>CPA</th>  {/* removed — not on CampaignRow but on aggregate */}
               <Th col="wasted_spend"     label="Wasted" />
               <Th col="risky_terms_count" label="Risky Terms" />
             </tr>
