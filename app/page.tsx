@@ -1,240 +1,142 @@
-"use client";
+'use client';
 
-import { useState, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { analyzeFile } from "@/lib/api";
-import { AnalysisResult, Thresholds } from "@/types/analysis";
-import { Upload, FileText, AlertCircle, Settings, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useCallback } from 'react';
+import type { AnalyzeResponse } from '@/types/api';
+import { exportCsvUrl, exportXlsxUrl } from '@/lib/apiClient';
+import FileUpload from '@/components/FileUpload';
+import SummaryCards from '@/components/SummaryCards';
+import TermsTable from '@/components/TermsTable';
+import NgramsTable from '@/components/NgramsTable';
+import RecommendationsPanel from '@/components/RecommendationsPanel';
+import CategoryChart from '@/components/CategoryChart';
 
-const DEFAULT_THRESHOLDS: Thresholds = {
-  spend_threshold:        1000,
-  clicks_threshold:       20,
-  target_roas:            2.0,
-  ngram_spend_threshold:  1000,
-  ngram_clicks_threshold: 20,
-  campaign_filter:        "All",
-};
+export default function Page() {
+  const [data, setData] = useState<AnalyzeResponse | null>(null);
+  const [fileName, setFileName] = useState<string>('');
 
-// Store result globally so dashboard page can access it
-// (Simple approach for MVP — no context/zustand needed)
-declare global {
-  interface Window {
-    __analysisResult?: AnalysisResult;
-    __uploadedFile?: File;
-    __thresholds?: Thresholds;
-  }
-}
-
-export default function HomePage() {
-  const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [file, setFile]             = useState<File | null>(null);
-  const [dragging, setDragging]     = useState(false);
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState<string>("");
-  const [showSettings, setShowSettings] = useState(false);
-  const [thresholds, setThresholds] = useState<Thresholds>(DEFAULT_THRESHOLDS);
-
-  const handleFile = (f: File) => {
-    const ok = f.name.endsWith(".csv") || f.name.endsWith(".xlsx") || f.name.endsWith(".xls");
-    if (!ok) {
-      setError("Please upload a CSV or Excel (.xlsx) file.");
-      return;
+  const handleResult = useCallback((res: AnalyzeResponse, name: string) => {
+    setData(res);
+    setFileName(name);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    setFile(f);
-    setError("");
-  };
-
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    const f = e.dataTransfer.files[0];
-    if (f) handleFile(f);
   }, []);
 
-  const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) handleFile(f);
-  };
-
-  const handleAnalyze = async () => {
-    if (!file) return;
-    setLoading(true);
-    setError("");
-    try {
-      const result = await analyzeFile({ file, thresholds });
-      // Store in window for dashboard to read
-      window.__analysisResult = result;
-      window.__uploadedFile   = file;
-      window.__thresholds     = thresholds;
-      router.push("/dashboard");
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Analysis failed. Please try again.");
-      setLoading(false);
-    }
-  };
-
-  const updateThreshold = (key: keyof Thresholds, value: string) => {
-    setThresholds(prev => ({
-      ...prev,
-      [key]: key === "campaign_filter" ? value : Number(value),
-    }));
-  };
+  const reset = useCallback(() => {
+    setData(null);
+    setFileName('');
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-100 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <div className="bg-blue-600 rounded-lg p-2">
-            <FileText className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Google Shopping Search Term Analyzer</h1>
-            <p className="text-xs text-gray-500">Upload your Google Ads export → get instant insights</p>
-          </div>
+    <main className="mx-auto min-h-screen w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+            Shopping Search Term Analyzer
+          </h1>
+          <p className="mt-1 text-sm text-[#8b95a8]">
+            Upload a Google Shopping search-terms report to get tiering,
+            n-grams, and recommendations.
+          </p>
         </div>
-      </header>
 
-      <main className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-2xl space-y-6">
-
-          {/* Hero */}
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Analyze Your Search Terms</h2>
-            <p className="text-gray-500 max-w-lg mx-auto">
-              Upload your Google Ads Search Terms CSV or Excel export and instantly identify
-              wasted spend, poor performers, and get ready-to-upload negative keyword recommendations.
-            </p>
-          </div>
-
-          {/* Upload Card */}
-          <div className="card">
-            <div
-              className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors ${
-                dragging
-                  ? "border-blue-500 bg-blue-50"
-                  : file
-                  ? "border-green-400 bg-green-50"
-                  : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"
-              }`}
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={onDrop}
+        {data && (
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              className="btn-ghost"
+              href={exportCsvUrl(data.session_id)}
+              download
             >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                className="hidden"
-                onChange={onFileInput}
-              />
-              <Upload className={`w-10 h-10 mx-auto mb-3 ${file ? "text-green-500" : "text-gray-400"}`} />
-              {file ? (
-                <div>
-                  <p className="font-semibold text-green-700">{file.name}</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {(file.size / 1024).toFixed(1)} KB — Click to change
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <p className="font-medium text-gray-700">Drop your Google Ads export here</p>
-                  <p className="text-sm text-gray-400 mt-1">or click to browse — CSV or Excel (.xlsx)</p>
-                </div>
-              )}
-            </div>
-
-            {/* Error */}
-            {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
-
-            {/* Threshold Settings */}
-            <div className="mt-4">
-              <button
-                className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
-                onClick={() => setShowSettings(!showSettings)}
-              >
-                <Settings className="w-4 h-4" />
-                Analysis Thresholds
-                {showSettings ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </button>
-
-              {showSettings && (
-                <div className="mt-3 grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-lg">
-                  {[
-                    { key: "spend_threshold",        label: "High Spend (no purchase)",    unit: "cost" },
-                    { key: "clicks_threshold",        label: "High Clicks (no purchase)",   unit: "clicks" },
-                    { key: "target_roas",             label: "Target ROAS",                 unit: "x" },
-                    { key: "ngram_spend_threshold",   label: "N-gram Spend Threshold",      unit: "cost" },
-                    { key: "ngram_clicks_threshold",  label: "N-gram Clicks Threshold",     unit: "clicks" },
-                  ].map(({ key, label, unit }) => (
-                    <div key={key}>
-                      <label className="block text-xs text-gray-500 mb-1">{label}</label>
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          className="w-full border border-gray-200 rounded-md px-2 py-1.5 text-sm"
-                          value={thresholds[key as keyof Thresholds] as number}
-                          min={0}
-                          step={key === "target_roas" ? 0.1 : 1}
-                          onChange={e => updateThreshold(key as keyof Thresholds, e.target.value)}
-                        />
-                        <span className="text-xs text-gray-400">{unit}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Analyze Button */}
-            <button
-              className="btn-primary w-full mt-4 py-3 text-base justify-center"
-              disabled={!file || loading}
-              onClick={handleAnalyze}
+              <DownloadIcon /> CSV
+            </a>
+            <a
+              className="btn-ghost"
+              href={exportXlsxUrl(data.session_id)}
+              download
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/>
-                    <path fill="currentColor" d="M4 12a8 8 0 018-8v8z" className="opacity-75"/>
-                  </svg>
-                  Analyzing your data…
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4" />
-                  Analyze Search Terms
-                </>
-              )}
+              <DownloadIcon /> XLSX
+            </a>
+            <button className="btn-primary" onClick={reset}>
+              New Upload
             </button>
           </div>
+        )}
+      </header>
 
-          {/* Feature list */}
-          <div className="grid grid-cols-3 gap-3 text-center">
-            {[
-              { icon: "📊", text: "Campaign & Ad Group Dashboard" },
-              { icon: "🎯", text: "Negative Keyword Recommendations" },
-              { icon: "🔍", text: "N-gram Analysis" },
-              { icon: "💸", text: "Wasted Spend Detection" },
-              { icon: "🏷️", text: "Search Term Categorization" },
-              { icon: "📥", text: "Export-ready CSV Files" },
-            ].map(({ icon, text }) => (
-              <div key={text} className="card py-3 px-2 text-sm text-gray-600">
-                <div className="text-2xl mb-1">{icon}</div>
-                {text}
-              </div>
-            ))}
-          </div>
+      {!data ? (
+        <FileUpload onResult={handleResult} />
+      ) : (
+        <div className="fade-in space-y-6">
+          {fileName && (
+            <div className="flex items-center gap-2 text-sm text-[#8b95a8]">
+              <FileIcon />
+              <span className="font-medium text-[#e5e9f0]">{fileName}</span>
+              <span>·</span>
+              <span>
+                {data.summary.unique_terms.toLocaleString()} unique terms
+              </span>
+            </div>
+          )}
+
+          <SummaryCards summary={data.summary} />
+
+          <CategoryChart
+            categories={data.category_summary}
+            intents={data.intent_summary}
+          />
+
+          <RecommendationsPanel recommendations={data.recommendations} />
+
+          <NgramsTable sessionId={data.session_id} initial={data.ngrams} />
+
+          <TermsTable
+            sessionId={data.session_id}
+            initialTerms={data.terms}
+            initialPagination={data.pagination}
+          />
         </div>
-      </main>
-    </div>
+      )}
+
+      <footer className="mt-10 border-t border-[#232d42] pt-6 text-center text-xs text-[#5c6677]">
+        Google Shopping Search Term Analyzer
+      </footer>
+    </main>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+function FileIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+    </svg>
   );
 }

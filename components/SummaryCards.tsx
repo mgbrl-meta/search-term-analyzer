@@ -1,100 +1,88 @@
-"use client";
+'use client';
 
-import { Summary } from "@/types/analysis";
-import { TrendingUp, TrendingDown, ShoppingCart, MousePointer, DollarSign, Target, AlertTriangle, ThumbsDown } from "lucide-react";
+import type { Summary } from '@/types/api';
 
 interface Props {
   summary: Summary;
 }
 
-function fmt(n: number, prefix = "", suffix = "", decimals = 0): string {
-  if (n === undefined || n === null) return "—";
-  return prefix + n.toLocaleString("en-IN", { maximumFractionDigits: decimals }) + suffix;
+function fmtNum(n: number): string {
+  return Math.round(n).toLocaleString();
+}
+function fmtCurrency(n: number): string {
+  return '₹' + Math.round(n).toLocaleString('en-IN');
+}
+function fmtX(n: number): string {
+  return n.toFixed(2) + 'x';
+}
+function fmtPct(n: number): string {
+  // Backend may send fractions (0.05) or whole percents (5). Heuristic: <=1 => fraction.
+  const val = n <= 1 ? n * 100 : n;
+  return val.toFixed(2) + '%';
 }
 
-export default function SummaryCards({ summary: s }: Props) {
-  const cards = [
+interface Card {
+  label: string;
+  value: string;
+  accent: string;
+}
+
+export default function SummaryCards({ summary }: Props) {
+  const cards: Card[] = [
     {
-      label:   "Total Spend",
-      value:   fmt(s.total_spend, "₹", "", 0),
-      sub:     `${s.total_clicks.toLocaleString()} clicks`,
-      icon:    <DollarSign className="w-5 h-5" />,
-      color:   "blue",
+      label: 'Total Spend',
+      value: fmtCurrency(summary.total_cost),
+      accent: 'text-rose-400',
     },
     {
-      label:   "Purchases",
-      value:   fmt(s.total_purchases, "", "", 0),
-      sub:     `${fmt(s.total_conversions, "", "", 0)} total conversions`,
-      icon:    <ShoppingCart className="w-5 h-5" />,
-      color:   s.total_purchases > 0 ? "green" : "red",
+      label: 'Clicks',
+      value: fmtNum(summary.total_clicks),
+      accent: 'text-sky-400',
     },
     {
-      label:   "Revenue",
-      value:   fmt(s.total_conv_value, "₹", "", 0),
-      sub:     `ROAS: ${s.overall_roas.toFixed(2)}x`,
-      icon:    <TrendingUp className="w-5 h-5" />,
-      color:   s.overall_roas >= 2 ? "green" : s.overall_roas > 0 ? "yellow" : "red",
+      label: 'Blended ROAS',
+      value: fmtX(summary.blended_roas),
+      accent: 'text-emerald-400',
     },
     {
-      label:   "Overall ROAS",
-      value:   `${s.overall_roas.toFixed(2)}x`,
-      sub:     `Target: 2.0x`,
-      icon:    <Target className="w-5 h-5" />,
-      color:   s.overall_roas >= 2 ? "green" : s.overall_roas >= 1 ? "yellow" : "red",
+      label: 'CPA',
+      value: fmtCurrency(summary.blended_cpa),
+      accent: 'text-amber-400',
     },
     {
-      label:   "Avg CPC",
-      value:   fmt(s.avg_cpc, "₹", "", 2),
-      sub:     `${s.total_impressions.toLocaleString()} impressions`,
-      icon:    <MousePointer className="w-5 h-5" />,
-      color:   "blue",
+      label: 'Revenue',
+      value: fmtCurrency(summary.total_revenue),
+      accent: 'text-emerald-400',
     },
     {
-      label:   "CPA",
-      value:   s.total_purchases > 0 ? fmt(s.cpa, "₹", "", 0) : "—",
-      sub:     "Cost per purchase",
-      icon:    <Target className="w-5 h-5" />,
-      color:   "blue",
+      label: 'Conversions',
+      value: fmtNum(summary.total_conversions),
+      accent: 'text-violet-400',
     },
     {
-      label:   "Wasted Spend",
-      value:   fmt(s.wasted_spend, "₹", "", 0),
-      sub:     `${s.wasted_spend_pct.toFixed(1)}% of total spend`,
-      icon:    <AlertTriangle className="w-5 h-5" />,
-      color:   s.wasted_spend_pct > 40 ? "red" : s.wasted_spend_pct > 20 ? "yellow" : "green",
+      label: 'CTR',
+      value: fmtPct(summary.blended_ctr),
+      accent: 'text-sky-400',
     },
     {
-      label:   "Negatives Found",
-      value:   s.recommendation_count.toString(),
-      sub:     "Recommended negatives",
-      icon:    <ThumbsDown className="w-5 h-5" />,
-      color:   s.recommendation_count > 0 ? "red" : "green",
+      label: 'CVR',
+      value: fmtPct(summary.blended_cvr),
+      accent: 'text-teal-400',
     },
   ];
 
-  const colorMap: Record<string, string> = {
-    blue:   "bg-blue-50 text-blue-600",
-    green:  "bg-green-50 text-green-600",
-    yellow: "bg-yellow-50 text-yellow-600",
-    red:    "bg-red-50 text-red-600",
-  };
-
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {cards.map(card => (
-        <div key={card.label} className="card">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-xs text-gray-500 font-medium">{card.label}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{card.sub}</p>
-            </div>
-            <div className={`rounded-lg p-2 ${colorMap[card.color]}`}>
-              {card.icon}
-            </div>
-          </div>
+    <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {cards.map((c) => (
+        <div key={c.label} className="panel p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-[#8b95a8]">
+            {c.label}
+          </p>
+          <p className={`mt-2 text-xl font-bold sm:text-2xl ${c.accent}`}>
+            {c.value}
+          </p>
         </div>
       ))}
-    </div>
+    </section>
   );
 }
