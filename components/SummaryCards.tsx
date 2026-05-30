@@ -1,84 +1,60 @@
 'use client';
 
 import type { Summary } from '@/types/api';
+import { obj, fmtInt, fmtCurrency, fmtX, fmtPct } from '@/lib/format';
 
 interface Props {
-  summary: Summary;
+  // Live data may not match the declared shape — accept anything and guard.
+  summary: Partial<Summary> | null | undefined;
 }
 
-function fmtNum(n: number): string {
-  return Math.round(n).toLocaleString();
-}
-function fmtCurrency(n: number): string {
-  return '₹' + Math.round(n).toLocaleString('en-IN');
-}
-function fmtX(n: number): string {
-  return n.toFixed(2) + 'x';
-}
-function fmtPct(n: number): string {
-  // Backend may send fractions (0.05) or whole percents (5). Heuristic: <=1 => fraction.
-  const val = n <= 1 ? n * 100 : n;
-  return val.toFixed(2) + '%';
-}
+type Tone = 'pos' | 'neg' | 'info' | 'warn' | 'accent' | 'plain';
 
-interface Card {
-  label: string;
-  value: string;
-  accent: string;
-}
+const TONE_VAR: Record<Tone, string> = {
+  pos: 'var(--pos)',
+  neg: 'var(--neg)',
+  info: 'var(--info)',
+  warn: 'var(--warn)',
+  accent: 'var(--accent)',
+  plain: 'var(--text-primary)',
+};
 
 export default function SummaryCards({ summary }: Props) {
-  const cards: Card[] = [
-    {
-      label: 'Total Spend',
-      value: fmtCurrency(summary.total_cost),
-      accent: 'text-rose-400',
-    },
-    {
-      label: 'Clicks',
-      value: fmtNum(summary.total_clicks),
-      accent: 'text-sky-400',
-    },
-    {
-      label: 'Blended ROAS',
-      value: fmtX(summary.blended_roas),
-      accent: 'text-emerald-400',
-    },
-    {
-      label: 'CPA',
-      value: fmtCurrency(summary.blended_cpa),
-      accent: 'text-amber-400',
-    },
-    {
-      label: 'Revenue',
-      value: fmtCurrency(summary.total_revenue),
-      accent: 'text-emerald-400',
-    },
+  const s = obj<Summary>(summary);
+
+  const cards: { label: string; value: string; tone: Tone }[] = [
+    { label: 'Total Spend', value: fmtCurrency(s.total_cost), tone: 'plain' },
+    { label: 'Revenue', value: fmtCurrency(s.total_revenue), tone: 'pos' },
+    { label: 'Blended ROAS', value: fmtX(s.blended_roas), tone: 'accent' },
+    { label: 'CPA', value: fmtCurrency(s.blended_cpa), tone: 'warn' },
+    { label: 'Clicks', value: fmtInt(s.total_clicks), tone: 'info' },
     {
       label: 'Conversions',
-      value: fmtNum(summary.total_conversions),
-      accent: 'text-violet-400',
+      value: fmtInt(s.total_conversions),
+      tone: 'plain',
     },
-    {
-      label: 'CTR',
-      value: fmtPct(summary.blended_ctr),
-      accent: 'text-sky-400',
-    },
-    {
-      label: 'CVR',
-      value: fmtPct(summary.blended_cvr),
-      accent: 'text-teal-400',
-    },
+    { label: 'CTR', value: fmtPct(s.blended_ctr), tone: 'info' },
+    { label: 'CVR', value: fmtPct(s.blended_cvr), tone: 'pos' },
   ];
 
   return (
-    <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      {cards.map((c) => (
-        <div key={c.label} className="panel p-4">
-          <p className="text-xs font-medium uppercase tracking-wide text-[#8b95a8]">
+    <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      {cards.map((c, i) => (
+        <div
+          key={c.label}
+          className="panel rise px-4 py-3.5"
+          style={{ animationDelay: `${i * 35}ms` }}
+        >
+          <p
+            className="text-[10.5px] font-medium uppercase tracking-[0.08em]"
+            style={{ color: 'var(--text-muted)' }}
+          >
             {c.label}
           </p>
-          <p className={`mt-2 text-xl font-bold sm:text-2xl ${c.accent}`}>
+          <p
+            className="display tnum mt-1.5 text-[1.6rem] leading-none"
+            style={{ color: TONE_VAR[c.tone], fontWeight: 500 }}
+          >
             {c.value}
           </p>
         </div>

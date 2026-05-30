@@ -81,11 +81,15 @@ export default function FileUpload({ onResult }: Props) {
           setDragging(false);
         }}
         onDrop={onDrop}
-        className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-16 text-center transition ${
-          dragging
-            ? 'border-blue-500 bg-blue-500/5'
-            : 'border-[#2c3851] bg-[#111827] hover:border-[#3a4866]'
-        } ${loading ? 'pointer-events-none opacity-70' : ''}`}
+        className="panel flex cursor-pointer flex-col items-center justify-center px-6 py-20 text-center transition"
+        style={{
+          borderStyle: 'dashed',
+          borderWidth: 2,
+          borderColor: dragging ? 'var(--accent)' : 'var(--border-strong)',
+          background: dragging ? 'var(--accent-soft)' : undefined,
+          opacity: loading ? 0.7 : 1,
+          pointerEvents: loading ? 'none' : undefined,
+        }}
       >
         <input
           ref={inputRef}
@@ -99,19 +103,22 @@ export default function FileUpload({ onResult }: Props) {
           <>
             <Spinner />
             <p className="mt-4 text-sm font-medium">Analyzing your report…</p>
-            <p className="mt-1 text-xs text-[#8b95a8]">
+            <p className="mt-1 text-xs" style={{ color: 'var(--text-muted)' }}>
               This can take a moment for large files.
             </p>
           </>
         ) : (
           <>
-            <div className="rounded-full bg-[#1a2234] p-4">
+            <div
+              className="rounded-2xl p-4"
+              style={{ background: 'var(--accent-soft)' }}
+            >
               <UploadIcon />
             </div>
             <p className="mt-4 text-base font-semibold">
               Drag &amp; drop your file here
             </p>
-            <p className="mt-1 text-sm text-[#8b95a8]">
+            <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
               or click to browse — CSV or XLSX
             </p>
           </>
@@ -119,7 +126,14 @@ export default function FileUpload({ onResult }: Props) {
       </div>
 
       {error && (
-        <div className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+        <div
+          className="mt-4 rounded-lg px-4 py-3 text-sm"
+          style={{
+            border: '1px solid var(--neg)',
+            background: 'var(--accent-soft)',
+            color: 'var(--neg)',
+          }}
+        >
           {error}
         </div>
       )}
@@ -135,7 +149,7 @@ function Spinner() {
       height="36"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#3b82f6"
+      stroke="var(--accent)"
       strokeWidth="2.5"
       strokeLinecap="round"
     >
@@ -147,11 +161,11 @@ function Spinner() {
 function UploadIcon() {
   return (
     <svg
-      width="32"
-      height="32"
+      width="30"
+      height="30"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#3b82f6"
+      stroke="var(--accent)"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"

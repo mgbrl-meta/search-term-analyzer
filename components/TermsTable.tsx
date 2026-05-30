@@ -3,15 +3,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Term, Pagination, Tier } from '@/types/api';
 import { getTerms } from '@/lib/apiClient';
+import { num, str, arr, obj, fmtInt, fmtCurrency, fmtPct, fmtX } from '@/lib/format';
 
 interface Props {
   sessionId: string;
-  initialTerms: Term[];
-  initialPagination: Pagination;
+  initialTerms: Term[] | null | undefined;
+  initialPagination: Pagination | null | undefined;
 }
 
-type SortKey = keyof Pick<
-  Term,
+type SortKey =
   | 'search_term'
   | 'impressions'
   | 'clicks'
@@ -23,16 +23,19 @@ type SortKey = keyof Pick<
   | 'conv_value'
   | 'roas'
   | 'cpa'
-  | 'quality_score'
->;
+  | 'quality_score';
 
-const TIER_STYLES: Record<Tier, string> = {
-  Star: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-  Solid: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  Weak: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-  Drain: 'bg-red-500/15 text-red-400 border-red-500/30',
-  Untested: 'bg-gray-500/15 text-gray-400 border-gray-500/30',
+const TIER_COLOR: Record<string, string> = {
+  Star: 'var(--pos)',
+  Solid: 'var(--info)',
+  Weak: 'var(--warn)',
+  Drain: 'var(--neg)',
+  Untested: 'var(--text-muted)',
 };
+
+function tierColor(t: string): string {
+  return TIER_COLOR[t] ?? 'var(--text-muted)';
+}
 
 const TIERS: Tier[] = ['Star', 'Solid', 'Weak', 'Drain', 'Untested'];
 
@@ -51,13 +54,12 @@ const COLUMNS: { key: SortKey; label: string; numeric: boolean }[] = [
   { key: 'quality_score', label: 'QS', numeric: true },
 ];
 
-function fmtCurrency(n: number): string {
-  return '₹' + Math.round(n).toLocaleString('en-IN');
-}
-function fmtPct(n: number): string {
-  const val = n <= 1 ? n * 100 : n;
-  return val.toFixed(1) + '%';
-}
+const DEFAULT_PAGINATION: Pagination = {
+  page: 1,
+  per_page: 50,
+  total: 0,
+  pages: 1,
+};
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -68,13 +70,25 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced;
 }
 
+function safePagination(p: Partial<Pagination> | null | undefined): Pagination {
+  const o = obj<Pagination>(p);
+  return {
+    page: Math.max(1, num(o.page) || 1),
+    per_page: Math.max(1, num(o.per_page) || 50),
+    total: num(o.total),
+    pages: Math.max(1, num(o.pages) || 1),
+  };
+}
+
 export default function TermsTable({
   sessionId,
   initialTerms,
   initialPagination,
 }: Props) {
-  const [terms, setTerms] = useState<Term[]>(initialTerms);
-  const [pagination, setPagination] = useState<Pagination>(initialPagination);
+  const [terms, setTerms] = useState<Term[]>(arr<Term>(initialTerms));
+  const [pagination, setPagination] = useState<Pagination>(
+    safePagination(initialPagination)
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,12 +104,14 @@ export default function TermsTable({
   const debouncedQ = useDebounce(q, 350);
   const firstRender = useRef(true);
 
-  // Derive filter option lists from the initial dataset.
+  // Derive filter option lists defensively from the initial dataset.
   const intents = Array.from(
-    new Set(initialTerms.map((t) => t.intent).filter(Boolean))
+    new Set(arr<Term>(initialTerms).map((t) => str(t?.intent)).filter(Boolean))
   ).sort();
   const categories = Array.from(
-    new Set(initialTerms.map((t) => t.category).filter(Boolean))
+    new Set(
+      arr<Term>(initialTerms).map((t) => str(t?.category)).filter(Boolean)
+    )
   ).sort();
 
   const fetchTerms = useCallback(async () => {
@@ -113,24 +129,15 @@ export default function TermsTable({
         category: category || undefined,
         q: debouncedQ || undefined,
       });
-      setTerms(res.terms);
-      setPagination(res.pagination);
+      setTerms(arr<Term>(res?.terms));
+      setPagination(safePagination(res?.pagination));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load terms.');
     } finally {
       setLoading(false);
     }
-  }, [
-    sessionId,
-    page,
-    perPage,
-    sort,
-    order,
-    tier,
-    intent,
-    category,
-    debouncedQ,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, page, perPage, sort, order, tier, intent, category, debouncedQ]);
 
   useEffect(() => {
     if (firstRender.current) {
@@ -140,7 +147,6 @@ export default function TermsTable({
     fetchTerms();
   }, [fetchTerms]);
 
-  // Reset to first page when filters / sort change.
   useEffect(() => {
     setPage(1);
   }, [sort, order, tier, intent, category, debouncedQ, perPage]);
@@ -170,19 +176,24 @@ export default function TermsTable({
   const to = Math.min(pagination.page * pagination.per_page, pagination.total);
 
   return (
-    <section className="panel p-4 sm:p-5">
-      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <h2 className="text-base font-semibold">Search Terms</h2>
+    <section className="panel flex h-full min-h-0 flex-col p-4 sm:p-5">
+      <div className="mb-3 flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+        <h2 className="text-[0.95rem] font-semibold tracking-tight">
+          Search Terms
+        </h2>
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <input
-              className="input-base w-44 pl-8"
-              placeholder="Search terms…"
+              className="input-base w-40 pl-8"
+              placeholder="Search…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
-            <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[#5c6677]">
+            <span
+              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2"
+              style={{ color: 'var(--text-faint)' }}
+            >
               <SearchIcon />
             </span>
           </div>
@@ -235,27 +246,44 @@ export default function TermsTable({
       </div>
 
       {error && (
-        <div className="mb-3 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+        <div
+          className="mb-3 rounded-lg px-4 py-2.5 text-sm"
+          style={{
+            border: '1px solid var(--neg)',
+            background: 'var(--accent-soft)',
+            color: 'var(--neg)',
+          }}
+        >
           {error}
         </div>
       )}
 
-      <div className="relative overflow-x-auto rounded-lg border border-[#232d42]">
+      <div
+        className="relative min-h-0 flex-1 overflow-auto rounded-xl"
+        style={{ border: '1px solid var(--border)' }}
+      >
         {loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0a0e17]/60 backdrop-blur-sm">
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm"
+            style={{ background: 'var(--bg-panel)' }}
+          >
             <Spinner />
           </div>
         )}
-        <table className="w-full min-w-[1000px] border-collapse text-sm">
-          <thead>
-            <tr className="border-b border-[#232d42] bg-[#1a2234] text-left">
+        <table className="w-full min-w-[1000px] border-collapse text-[0.8125rem]">
+          <thead className="sticky top-0 z-[1]">
+            <tr style={{ background: 'var(--bg-inset)' }}>
               {COLUMNS.map((col) => (
                 <th
                   key={col.key}
                   onClick={() => handleSort(col.key)}
-                  className={`cursor-pointer select-none whitespace-nowrap px-3 py-2.5 font-semibold text-[#c3cad8] transition hover:text-white ${
+                  className={`cursor-pointer select-none whitespace-nowrap px-3 py-2.5 font-semibold ${
                     col.numeric ? 'text-right' : 'text-left'
                   }`}
+                  style={{
+                    color: 'var(--text-secondary)',
+                    borderBottom: '1px solid var(--border)',
+                  }}
                 >
                   <span
                     className={`inline-flex items-center gap-1 ${
@@ -264,22 +292,25 @@ export default function TermsTable({
                   >
                     {col.label}
                     {sort === col.key && (
-                      <span className="text-blue-400">
+                      <span style={{ color: 'var(--accent)' }}>
                         {order === 'asc' ? '▲' : '▼'}
                       </span>
                     )}
                   </span>
                 </th>
               ))}
-              <th className="whitespace-nowrap px-3 py-2.5 text-left font-semibold text-[#c3cad8]">
-                Tier
-              </th>
-              <th className="whitespace-nowrap px-3 py-2.5 text-left font-semibold text-[#c3cad8]">
-                Intent
-              </th>
-              <th className="whitespace-nowrap px-3 py-2.5 text-left font-semibold text-[#c3cad8]">
-                Category
-              </th>
+              {['Tier', 'Intent', 'Category'].map((h) => (
+                <th
+                  key={h}
+                  className="whitespace-nowrap px-3 py-2.5 text-left font-semibold"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    borderBottom: '1px solid var(--border)',
+                  }}
+                >
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -287,88 +318,118 @@ export default function TermsTable({
               <tr>
                 <td
                   colSpan={COLUMNS.length + 3}
-                  className="px-3 py-10 text-center text-[#8b95a8]"
+                  className="px-3 py-12 text-center"
+                  style={{ color: 'var(--text-muted)' }}
                 >
                   No terms match your filters.
                 </td>
               </tr>
             ) : (
-              terms.map((t, idx) => (
-                <tr
-                  key={`${t.search_term}-${t.campaign}-${t.ad_group}-${idx}`}
-                  className="border-b border-[#1c2536] transition hover:bg-[#161f30]"
-                >
-                  <td className="max-w-[260px] px-3 py-2.5 font-medium">
-                    <span className="block truncate" title={t.search_term}>
-                      {t.search_term}
-                    </span>
-                    <span
-                      className="block truncate text-xs text-[#5c6677]"
-                      title={`${t.campaign} › ${t.ad_group} · ${t.match_type}`}
+              terms.map((raw, idx) => {
+                const t = obj<Term>(raw);
+                const tierName = str(t.tier) || 'Untested';
+                return (
+                  <tr
+                    key={`${str(t.search_term)}-${str(t.campaign)}-${idx}`}
+                    className="transition-colors"
+                    style={{ borderBottom: '1px solid var(--border)' }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = 'var(--bg-inset)')
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = 'transparent')
+                    }
+                  >
+                    <td className="max-w-[240px] px-3 py-2.5 font-medium">
+                      <span
+                        className="block truncate"
+                        title={str(t.search_term)}
+                      >
+                        {str(t.search_term) || '—'}
+                      </span>
+                      <span
+                        className="block truncate text-[11px]"
+                        style={{ color: 'var(--text-faint)' }}
+                        title={`${str(t.campaign)} › ${str(t.ad_group)} · ${str(
+                          t.match_type
+                        )}`}
+                      >
+                        {str(t.campaign)} › {str(t.ad_group)}
+                      </span>
+                    </td>
+                    <td className="tnum px-3 py-2.5 text-right">
+                      {fmtInt(t.impressions)}
+                    </td>
+                    <td className="tnum px-3 py-2.5 text-right">
+                      {fmtInt(t.clicks)}
+                    </td>
+                    <td className="tnum px-3 py-2.5 text-right">
+                      {fmtPct(t.ctr, 1)}
+                    </td>
+                    <td className="tnum px-3 py-2.5 text-right">
+                      {fmtCurrency(t.cost)}
+                    </td>
+                    <td className="tnum px-3 py-2.5 text-right">
+                      {fmtCurrency(t.cpc)}
+                    </td>
+                    <td className="tnum px-3 py-2.5 text-right">
+                      {fmtInt(t.conversions)}
+                    </td>
+                    <td className="tnum px-3 py-2.5 text-right">
+                      {fmtPct(t.cvr, 1)}
+                    </td>
+                    <td className="tnum px-3 py-2.5 text-right">
+                      {fmtCurrency(t.conv_value)}
+                    </td>
+                    <td className="tnum px-3 py-2.5 text-right font-semibold">
+                      {fmtX(t.roas)}
+                    </td>
+                    <td className="tnum px-3 py-2.5 text-right">
+                      {fmtCurrency(t.cpa)}
+                    </td>
+                    <td className="tnum px-3 py-2.5 text-right">
+                      {fmtInt(t.quality_score)}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <span
+                        className="inline-block rounded-full px-2 py-0.5 text-[11px] font-medium"
+                        style={{
+                          color: tierColor(tierName),
+                          background: 'var(--bg-inset)',
+                          border: '1px solid var(--border-strong)',
+                        }}
+                      >
+                        {tierName}
+                      </span>
+                    </td>
+                    <td
+                      className="whitespace-nowrap px-3 py-2.5"
+                      style={{ color: 'var(--text-secondary)' }}
                     >
-                      {t.campaign} › {t.ad_group}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {t.impressions.toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {t.clicks.toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {fmtPct(t.ctr)}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {fmtCurrency(t.cost)}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {fmtCurrency(t.cpc)}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {t.conversions.toLocaleString()}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {fmtPct(t.cvr)}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {fmtCurrency(t.conv_value)}
-                  </td>
-                  <td className="px-3 py-2.5 text-right font-semibold tabular-nums">
-                    {t.roas.toFixed(2)}x
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {fmtCurrency(t.cpa)}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">
-                    {t.quality_score}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span
-                      className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${
-                        TIER_STYLES[t.tier] ?? TIER_STYLES.Untested
-                      }`}
+                      {str(t.intent) || '—'}
+                    </td>
+                    <td
+                      className="whitespace-nowrap px-3 py-2.5"
+                      style={{ color: 'var(--text-secondary)' }}
                     >
-                      {t.tier}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-[#c3cad8]">
-                    {t.intent}
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2.5 text-[#c3cad8]">
-                    {t.category}
-                  </td>
-                </tr>
-              ))
+                      {str(t.category) || '—'}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
-      <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
-        <div className="flex items-center gap-3 text-sm text-[#8b95a8]">
-          <span>
-            {from.toLocaleString()}–{to.toLocaleString()} of{' '}
-            {pagination.total.toLocaleString()}
+      <div className="mt-3 flex flex-col items-center justify-between gap-3 sm:flex-row">
+        <div
+          className="flex items-center gap-3 text-[0.8125rem]"
+          style={{ color: 'var(--text-muted)' }}
+        >
+          <span className="tnum">
+            {from.toLocaleString('en-IN')}–{to.toLocaleString('en-IN')} of{' '}
+            {pagination.total.toLocaleString('en-IN')}
           </span>
           <select
             className="input-base py-1"
@@ -383,7 +444,7 @@ export default function TermsTable({
           </select>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <button
             className="btn-ghost px-3 py-1.5"
             disabled={pagination.page <= 1 || loading}
@@ -398,8 +459,11 @@ export default function TermsTable({
           >
             Prev
           </button>
-          <span className="px-2 text-sm text-[#c3cad8]">
-            Page {pagination.page} / {Math.max(1, pagination.pages)}
+          <span
+            className="tnum px-2 text-[0.8125rem]"
+            style={{ color: 'var(--text-secondary)' }}
+          >
+            {pagination.page} / {Math.max(1, pagination.pages)}
           </span>
           <button
             className="btn-ghost px-3 py-1.5"
@@ -425,11 +489,11 @@ function Spinner() {
   return (
     <svg
       className="spin"
-      width="28"
-      height="28"
+      width="26"
+      height="26"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#3b82f6"
+      stroke="var(--accent)"
       strokeWidth="2.5"
       strokeLinecap="round"
     >

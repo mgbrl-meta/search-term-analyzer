@@ -12,36 +12,14 @@ import {
   Cell,
 } from 'recharts';
 import type { CategorySummary, IntentSummary } from '@/types/api';
+import { num, str, arr, fmtCurrencyShort, fmtX } from '@/lib/format';
 
 interface Props {
-  categories: CategorySummary[];
-  intents: IntentSummary[];
+  categories: CategorySummary[] | null | undefined;
+  intents: IntentSummary[] | null | undefined;
 }
 
-const CAT_COLORS = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#8b5cf6',
-  '#ec4899',
-  '#06b6d4',
-  '#ef4444',
-  '#84cc16',
-  '#f97316',
-  '#14b8a6',
-];
-
-function fmtCurrencyShort(n: number): string {
-  if (n >= 1e7) return '₹' + (n / 1e7).toFixed(1) + 'Cr';
-  if (n >= 1e5) return '₹' + (n / 1e5).toFixed(1) + 'L';
-  if (n >= 1e3) return '₹' + (n / 1e3).toFixed(1) + 'K';
-  return '₹' + Math.round(n);
-}
-
-interface TooltipProps {
-  active?: boolean;
-  payload?: Array<{ payload: ChartRow }>;
-}
+const SERIES = ['#5b8cff', '#34d399', '#fbbf24', '#c084fc', '#f472b6', '#22d3ee'];
 
 interface ChartRow {
   name: string;
@@ -50,17 +28,36 @@ interface ChartRow {
   roas: number;
 }
 
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload?: ChartRow }>;
+}
+
 function ChartTooltip({ active, payload }: TooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
-  const row = payload[0].payload;
+  const row = payload[0]?.payload;
+  if (!row) return null;
   return (
-    <div className="rounded-lg border border-[#232d42] bg-[#0a0e17] px-3 py-2 text-xs shadow-lg">
-      <p className="mb-1 font-semibold text-[#e5e9f0]">{row.name}</p>
-      <p className="text-rose-400">Cost: {fmtCurrencyShort(row.cost)}</p>
-      <p className="text-emerald-400">
-        Revenue: {fmtCurrencyShort(row.revenue)}
+    <div
+      className="rounded-xl border px-3 py-2 text-xs"
+      style={{
+        borderColor: 'var(--border-strong)',
+        background: 'var(--bg-solid)',
+        boxShadow: 'var(--shadow-pop)',
+      }}
+    >
+      <p className="mb-1 font-semibold" style={{ color: 'var(--text-primary)' }}>
+        {row.name || '—'}
       </p>
-      <p className="text-sky-400">ROAS: {row.roas.toFixed(2)}x</p>
+      <p style={{ color: 'var(--text-secondary)' }}>
+        Cost <span className="tnum">{fmtCurrencyShort(row.cost)}</span>
+      </p>
+      <p style={{ color: 'var(--pos)' }}>
+        Revenue <span className="tnum">{fmtCurrencyShort(row.revenue)}</span>
+      </p>
+      <p style={{ color: 'var(--accent)' }}>
+        ROAS <span className="tnum">{fmtX(row.roas)}</span>
+      </p>
     </div>
   );
 }
@@ -68,36 +65,36 @@ function ChartTooltip({ active, payload }: TooltipProps) {
 export default function CategoryChart({ categories, intents }: Props) {
   const catData = useMemo<ChartRow[]>(
     () =>
-      [...categories]
-        .sort((a, b) => b.cost - a.cost)
-        .slice(0, 10)
+      arr<CategorySummary>(categories)
         .map((c) => ({
-          name: c.category,
-          cost: c.cost,
-          revenue: c.revenue,
-          roas: c.roas,
-        })),
+          name: str((c as Partial<CategorySummary>)?.category) || '—',
+          cost: num((c as Partial<CategorySummary>)?.cost),
+          revenue: num((c as Partial<CategorySummary>)?.revenue),
+          roas: num((c as Partial<CategorySummary>)?.roas),
+        }))
+        .sort((a, b) => b.cost - a.cost)
+        .slice(0, 10),
     [categories]
   );
 
   const intentData = useMemo<ChartRow[]>(
     () =>
-      [...intents]
-        .sort((a, b) => b.cost - a.cost)
+      arr<IntentSummary>(intents)
         .map((i) => ({
-          name: i.intent,
-          cost: i.cost,
-          revenue: i.revenue,
-          roas: i.roas,
-        })),
+          name: str((i as Partial<IntentSummary>)?.intent) || '—',
+          cost: num((i as Partial<IntentSummary>)?.cost),
+          revenue: num((i as Partial<IntentSummary>)?.revenue),
+          roas: num((i as Partial<IntentSummary>)?.roas),
+        }))
+        .sort((a, b) => b.cost - a.cost),
     [intents]
   );
 
   return (
-    <section className="grid gap-4 lg:grid-cols-2">
+    <div className="grid h-full gap-3 lg:grid-cols-2">
       <ChartCard
         title="Spend & Revenue by Category"
-        subtitle="Top 10 categories by spend"
+        subtitle="Top 10 by spend"
         data={catData}
         empty="No category data."
       />
@@ -107,7 +104,7 @@ export default function CategoryChart({ categories, intents }: Props) {
         data={intentData}
         empty="No intent data."
       />
-    </section>
+    </div>
   );
 }
 
@@ -123,62 +120,67 @@ function ChartCard({
   empty: string;
 }) {
   return (
-    <div className="panel p-4 sm:p-5">
-      <div className="mb-4">
-        <h2 className="text-base font-semibold">{title}</h2>
-        <p className="mt-0.5 text-xs text-[#8b95a8]">{subtitle}</p>
+    <div className="panel flex min-h-0 flex-col p-4 sm:p-5">
+      <div className="mb-3">
+        <h2 className="text-[0.95rem] font-semibold tracking-tight">{title}</h2>
+        <p className="mt-0.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+          {subtitle}
+        </p>
       </div>
 
       {data.length === 0 ? (
-        <div className="flex h-72 items-center justify-center text-sm text-[#8b95a8]">
+        <div
+          className="flex flex-1 items-center justify-center text-sm"
+          style={{ color: 'var(--text-muted)', minHeight: 220 }}
+        >
           {empty}
         </div>
       ) : (
-        <div className="h-72 w-full">
+        <div className="min-h-0 flex-1" style={{ minHeight: 220 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
-              margin={{ top: 8, right: 8, left: 0, bottom: 40 }}
+              margin={{ top: 8, right: 4, left: -8, bottom: 44 }}
+              barGap={2}
             >
               <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#232d42"
+                strokeDasharray="2 4"
+                stroke="var(--border)"
                 vertical={false}
               />
               <XAxis
                 dataKey="name"
-                tick={{ fill: '#8b95a8', fontSize: 11 }}
-                angle={-30}
+                tick={{ fill: 'var(--text-muted)', fontSize: 10.5 }}
+                angle={-28}
                 textAnchor="end"
                 interval={0}
-                height={60}
-                stroke="#232d42"
+                height={56}
+                tickLine={false}
+                axisLine={{ stroke: 'var(--border)' }}
               />
               <YAxis
-                tick={{ fill: '#8b95a8', fontSize: 11 }}
-                tickFormatter={fmtCurrencyShort}
-                stroke="#232d42"
-                width={60}
+                tick={{ fill: 'var(--text-muted)', fontSize: 10.5 }}
+                tickFormatter={(v) => fmtCurrencyShort(v)}
+                tickLine={false}
+                axisLine={false}
+                width={52}
               />
               <Tooltip
                 content={<ChartTooltip />}
-                cursor={{ fill: 'rgba(59,130,246,0.08)' }}
+                cursor={{ fill: 'var(--accent-soft)' }}
               />
-              <Bar dataKey="cost" name="Cost" radius={[3, 3, 0, 0]}>
+              <Bar dataKey="cost" name="Cost" radius={[4, 4, 0, 0]}>
                 {data.map((_, i) => (
                   <Cell
-                    key={`cost-${i}`}
-                    fill={CAT_COLORS[i % CAT_COLORS.length]}
-                    fillOpacity={0.55}
+                    key={`c-${i}`}
+                    fill={SERIES[i % SERIES.length]}
+                    fillOpacity={0.4}
                   />
                 ))}
               </Bar>
-              <Bar dataKey="revenue" name="Revenue" radius={[3, 3, 0, 0]}>
+              <Bar dataKey="revenue" name="Revenue" radius={[4, 4, 0, 0]}>
                 {data.map((_, i) => (
-                  <Cell
-                    key={`rev-${i}`}
-                    fill={CAT_COLORS[i % CAT_COLORS.length]}
-                  />
+                  <Cell key={`r-${i}`} fill={SERIES[i % SERIES.length]} />
                 ))}
               </Bar>
             </BarChart>
@@ -186,13 +188,22 @@ function ChartCard({
         </div>
       )}
 
-      <div className="mt-3 flex items-center gap-4 text-xs text-[#8b95a8]">
+      <div
+        className="mt-2 flex items-center gap-4 text-[11px]"
+        style={{ color: 'var(--text-muted)' }}
+      >
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue-500/55" />
+          <span
+            className="inline-block h-2.5 w-2.5 rounded-[3px]"
+            style={{ background: SERIES[0], opacity: 0.4 }}
+          />
           Cost
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-blue-500" />
+          <span
+            className="inline-block h-2.5 w-2.5 rounded-[3px]"
+            style={{ background: SERIES[0] }}
+          />
           Revenue
         </span>
       </div>

@@ -3,23 +3,33 @@
 import { useState, useCallback } from 'react';
 import type { AnalyzeResponse } from '@/types/api';
 import { exportCsvUrl, exportXlsxUrl } from '@/lib/apiClient';
+import { num, str, obj } from '@/lib/format';
 import FileUpload from '@/components/FileUpload';
 import SummaryCards from '@/components/SummaryCards';
 import TermsTable from '@/components/TermsTable';
 import NgramsTable from '@/components/NgramsTable';
 import RecommendationsPanel from '@/components/RecommendationsPanel';
 import CategoryChart from '@/components/CategoryChart';
+import ThemeToggle from '@/components/ThemeToggle';
+
+type Tab = 'overview' | 'recommendations' | 'ngrams' | 'terms';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'recommendations', label: 'Recommendations' },
+  { id: 'ngrams', label: 'N-grams' },
+  { id: 'terms', label: 'Search Terms' },
+];
 
 export default function Page() {
   const [data, setData] = useState<AnalyzeResponse | null>(null);
   const [fileName, setFileName] = useState<string>('');
+  const [tab, setTab] = useState<Tab>('overview');
 
   const handleResult = useCallback((res: AnalyzeResponse, name: string) => {
     setData(res);
     setFileName(name);
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    setTab('overview');
   }, []);
 
   const reset = useCallback(() => {
@@ -27,88 +37,163 @@ export default function Page() {
     setFileName('');
   }, []);
 
-  return (
-    <main className="mx-auto min-h-screen w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8">
-      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-            Shopping Search Term Analyzer
-          </h1>
-          <p className="mt-1 text-sm text-[#8b95a8]">
-            Upload a Google Shopping search-terms report to get tiering,
-            n-grams, and recommendations.
-          </p>
-        </div>
-
-        {data && (
-          <div className="flex flex-wrap items-center gap-2">
-            <a
-              className="btn-ghost"
-              href={exportCsvUrl(data.session_id)}
-              download
-            >
-              <DownloadIcon /> CSV
-            </a>
-            <a
-              className="btn-ghost"
-              href={exportXlsxUrl(data.session_id)}
-              download
-            >
-              <DownloadIcon /> XLSX
-            </a>
-            <button className="btn-primary" onClick={reset}>
-              New Upload
-            </button>
+  // --- Landing state (no data) ---
+  if (!data) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-4 py-8 sm:px-6 lg:px-8">
+        <Header onReset={reset} hasData={false} />
+        <div className="flex flex-1 items-center justify-center py-10">
+          <div className="w-full">
+            <FileUpload onResult={handleResult} />
           </div>
-        )}
-      </header>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
 
-      {!data ? (
-        <FileUpload onResult={handleResult} />
-      ) : (
-        <div className="fade-in space-y-6">
-          {fileName && (
-            <div className="flex items-center gap-2 text-sm text-[#8b95a8]">
-              <FileIcon />
-              <span className="font-medium text-[#e5e9f0]">{fileName}</span>
-              <span>·</span>
-              <span>
-                {data.summary.unique_terms.toLocaleString()} unique terms
-              </span>
-            </div>
-          )}
+  // --- Loaded state (single-frame) ---
+  const summary = obj<AnalyzeResponse['summary']>(data.summary);
+  const sessionId = str(data.session_id);
+  const uniqueTerms = num(summary.unique_terms);
 
-          <SummaryCards summary={data.summary} />
+  return (
+    <main className="mx-auto flex h-screen w-full max-w-[1440px] flex-col overflow-hidden px-4 py-5 sm:px-6 lg:px-8">
+      <Header
+        onReset={reset}
+        hasData
+        sessionId={sessionId}
+        fileName={fileName}
+        uniqueTerms={uniqueTerms}
+      />
 
+      {/* Summary always visible */}
+      <div className="mt-3 shrink-0">
+        <SummaryCards summary={data.summary} />
+      </div>
+
+      {/* Tabs */}
+      <div className="mt-3 shrink-0">
+        <div className="seg">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              className="seg-btn"
+              data-active={tab === t.id}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Single content frame — fills remaining height, swaps per tab */}
+      <div className="fade-in mt-3 min-h-0 flex-1" key={tab}>
+        {tab === 'overview' && (
           <CategoryChart
             categories={data.category_summary}
             intents={data.intent_summary}
           />
-
+        )}
+        {tab === 'recommendations' && (
           <RecommendationsPanel recommendations={data.recommendations} />
-
-          <NgramsTable sessionId={data.session_id} initial={data.ngrams} />
-
+        )}
+        {tab === 'ngrams' && (
+          <NgramsTable sessionId={sessionId} initial={data.ngrams} />
+        )}
+        {tab === 'terms' && (
           <TermsTable
-            sessionId={data.session_id}
+            sessionId={sessionId}
             initialTerms={data.terms}
             initialPagination={data.pagination}
           />
-        </div>
-      )}
-
-      <footer className="mt-10 border-t border-[#232d42] pt-6 text-center text-xs text-[#5c6677]">
-        Google Shopping Search Term Analyzer
-      </footer>
+        )}
+      </div>
     </main>
+  );
+}
+
+function Header({
+  onReset,
+  hasData,
+  sessionId,
+  fileName,
+  uniqueTerms,
+}: {
+  onReset: () => void;
+  hasData: boolean;
+  sessionId?: string;
+  fileName?: string;
+  uniqueTerms?: number;
+}) {
+  return (
+    <header className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h1 className="display text-2xl leading-none sm:text-[1.7rem]">
+          Search Term Analyzer
+        </h1>
+        {hasData && fileName ? (
+          <p
+            className="mt-1.5 flex items-center gap-2 text-[0.8125rem]"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            <FileIcon />
+            <span
+              className="font-medium"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              {fileName}
+            </span>
+            <span>·</span>
+            <span className="tnum">
+              {(uniqueTerms ?? 0).toLocaleString('en-IN')} unique terms
+            </span>
+          </p>
+        ) : (
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
+            Upload a Google Shopping search-terms report for tiering, n-grams,
+            and recommendations.
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {hasData && sessionId && (
+          <>
+            <a className="btn-ghost" href={exportCsvUrl(sessionId)} download>
+              <DownloadIcon /> CSV
+            </a>
+            <a className="btn-ghost" href={exportXlsxUrl(sessionId)} download>
+              <DownloadIcon /> XLSX
+            </a>
+            <button className="btn-primary" onClick={onReset}>
+              New Upload
+            </button>
+          </>
+        )}
+        <ThemeToggle />
+      </div>
+    </header>
+  );
+}
+
+function Footer() {
+  return (
+    <footer
+      className="mt-8 shrink-0 border-t pt-5 text-center text-[11px]"
+      style={{ borderColor: 'var(--border)', color: 'var(--text-faint)' }}
+    >
+      Google Shopping Search Term Analyzer
+    </footer>
   );
 }
 
 function DownloadIcon() {
   return (
     <svg
-      width="16"
-      height="16"
+      width="15"
+      height="15"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -126,8 +211,8 @@ function DownloadIcon() {
 function FileIcon() {
   return (
     <svg
-      width="16"
-      height="16"
+      width="14"
+      height="14"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
