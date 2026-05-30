@@ -741,7 +741,6 @@ function CategorySpendMixCardsPanel({
 }) {
   const [minSpend, setMinSpend] = useState(0);
   const [matchType, setMatchType] = useState<"exact" | "phrase" | "broad">("exact");
-  const [wasteExportType, setWasteExportType] = useState<"review" | "google_ads" | "copy">("review");
   const [openCategory, setOpenCategory] = useState<string>("");
   const [viewMode, setViewMode] = useState<"summary" | "terms" | "negatives">("summary");
 
@@ -1636,6 +1635,10 @@ function PageContent({
   }, [wasteRows, matchType]);
 
   function handleWasteSpenderExport() {
+    const exportType = (
+      document.getElementById("waste-export-type") as HTMLSelectElement | null
+    )?.value || "review";
+
     const rows = wasteRows.map((row) => {
       const term = str(row.search_term).trim().toLowerCase();
       const spend = num(row.cost);
@@ -1645,7 +1648,7 @@ function PageContent({
       const revenue = num((row as AnyObj).revenue ?? (row as AnyObj).conv_value);
       const roas = spend > 0 ? revenue / spend : 0;
 
-      if (wasteExportType === "google_ads") {
+      if (exportType === "google_ads") {
         return {
           Campaign: str((row as AnyObj).campaign, ""),
           "Ad group": str((row as AnyObj).ad_group, ""),
@@ -1671,13 +1674,13 @@ function PageContent({
       };
     });
 
-    if (wasteExportType === "copy") {
+    if (exportType === "copy") {
       copyToClipboard(negativeLines, "Waste Spender negative list copied.");
       return;
     }
 
     exportRowsCsv(
-      wasteExportType === "google_ads" ? "google-ads-negative-keywords.csv" : "waste-spender-review.csv",
+      exportType === "google_ads" ? "google-ads-negative-keywords.csv" : "waste-spender-review.csv",
       rows
     );
   }
@@ -1979,8 +1982,8 @@ function PageContent({
               </div>
 
               <select
-                value={wasteExportType}
-                onChange={(e) => setWasteExportType(e.target.value as "review" | "google_ads" | "copy")}
+                id="waste-export-type"
+                defaultValue="review"
               >
                 <option value="review">Review CSV with metrics</option>
                 <option value="google_ads">Google Ads negative CSV</option>
