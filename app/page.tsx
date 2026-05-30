@@ -1494,7 +1494,7 @@ function ActionReportPanel({
                       <td className="right">{int(row.clicks)}</td>
                       <td className="right">{reportPct(row.ctr)}</td>
                       <td className="right">{num(row.conversions).toFixed(2)}</td>
-                      <td className="right">{money(row.revenue ?? row.conv_value)}</td>
+                      <td className="right">{money(row.revenue ?? (row as AnyObj).conv_value)}</td>
                       <td className="right">{x(row.roas)}</td>
                       <td>{str(row.campaign, "-")}</td>
                       <td>{str(row.ad_group, "-")}</td>
@@ -1560,7 +1560,7 @@ function PageContent({
           impressions,
           ctr,
           conversions,
-          revenue: num(row.revenue ?? row.conv_value),
+          revenue: num(row.revenue ?? (row as AnyObj).conv_value),
           roas: num(row.roas),
           category,
         };
@@ -1750,7 +1750,7 @@ function PageContent({
         const clicks = num(row.clicks);
         const impressions = num(row.impressions);
         const ctr = num(row.ctr) || (impressions > 0 ? clicks / impressions : 0);
-        const revenue = num(row.revenue ?? row.conv_value);
+        const revenue = num((row as AnyObj).revenue ?? (row as AnyObj).conv_value);
         const roas = spend > 0 ? revenue / spend : 0;
         const category = str(row.category, "Waste");
 
