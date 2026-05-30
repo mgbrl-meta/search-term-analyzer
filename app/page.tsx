@@ -1338,8 +1338,8 @@ function PageContent({
       .join("\n");
   }, [wasteRows, matchType]);
 
-  const spendMix = useMemo(() => {
-    const map = new Map<string, { category: string; spend: number; clicks: number; terms: number; conversions: number; revenue: number }>();
+  const spendMix = useMemo<AnyObj[]>(() => {
+    const map = new Map<string, AnyObj>();
 
     terms.forEach((row) => {
       const category = str(row.category, "Unknown");
