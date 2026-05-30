@@ -1331,6 +1331,12 @@ function PageContent({
     return terms.filter((row) => num(row.cost) >= threshold && num(row.conversions) === 0);
   }, [terms, threshold]);
 
+  const wasteAverageCtr = useMemo(() => {
+    const clicks = wasteRows.reduce((sum, row) => sum + num(row.clicks), 0);
+    const impressions = wasteRows.reduce((sum, row) => sum + num(row.impressions), 0);
+    return impressions > 0 ? clicks / impressions : 0;
+  }, [wasteRows]);
+
   const negativeLines = useMemo(() => {
     return wasteRows
       .map((row) => syntax(str(row.search_term), matchType))
@@ -1563,7 +1569,7 @@ function PageContent({
               <Kpi label="Filter" value={`₹${threshold.toLocaleString("en-IN")}+`} />
               <Kpi label="Terms" value={int(wasteRows.length)} />
               <Kpi label="Spend at risk" value={money(wasteRows.reduce((s, r) => s + num(r.cost), 0))} tone="red" />
-              <Kpi label="CTR" value={ctrPct(averageCtr)} tone="blue" />
+              <Kpi label="CTR" value={ctrPct(wasteAverageCtr)} tone="blue" />
               <Kpi label="Purchases" value="0" />
             </div>
 
