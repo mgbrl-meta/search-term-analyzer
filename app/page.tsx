@@ -2027,17 +2027,15 @@ function PageContent({
               empty="No zero-purchase terms above the selected threshold."
               columns={[
                 { key: "search_term", label: "Search term" },
-                {
-                  key: "syntax",
-                  label: "Negative syntax",
-                  render: (row) => <code>{syntax(str(row.search_term), matchType)}</code>,
-                },
+                { key: "syntax", label: "Negative syntax", render: (row) => <code>{syntax(str(row.search_term), matchType)}</code> },
+                { key: "campaign", label: "Campaign", render: (row) => str((row as AnyObj).campaign, "-") },
+                { key: "ad_group", label: "Ad group", render: (row) => str((row as AnyObj).ad_group, "-") },
                 { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
                 { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
                 { key: "ctr", label: "CTR", right: true, render: (row) => ctrPct(row.ctr) },
                 { key: "conversions", label: "Conv.", right: true, render: (row) => num(row.conversions).toFixed(2) },
                 { key: "category", label: "Category" },
-              ]}
+]}
             />
           </div>
 
