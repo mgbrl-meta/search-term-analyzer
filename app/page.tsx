@@ -25,7 +25,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "kill_list", label: "Kill List" },
   { key: "watch_list", label: "Watch List" },
   { key: "winners", label: "Winners" },
-  { key: "action_plan", label: "Action Plan" },
+  { key: "action_plan", label: "Action Report" },
 ];
 
 const GOOGLE = {
@@ -1248,6 +1248,243 @@ function NgramTabPanel({
 }
 
 
+
+function exportRowsCsv(filename: string, rows: AnyObj[]) {
+  if (!rows.length) return;
+
+  const headers = Array.from(
+    rows.reduce((set, row) => {
+      Object.keys(row || {}).forEach((key) => set.add(key));
+      return set;
+    }, new Set<string>())
+  );
+
+  const csv = [
+    headers.join(","),
+    ...rows.map((row) =>
+      headers
+        .map((header) => `"${String(row?.[header] ?? "").replaceAll('"', '""')}"`)
+        .join(",")
+    ),
+  ].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+async function copyToClipboard(value: string, successMessage = "Copied.") {
+  try {
+    await navigator.clipboard.writeText(value);
+    alert(successMessage);
+  } catch {
+    alert("Could not copy. Please select and copy manually.");
+  }
+}
+
+function ActionReportPanel({
+  execSummary,
+  checklist,
+  markdown,
+  negatives,
+  fallbackKillSpend,
+  fallbackWatchCount,
+  fallbackWinnerCount,
+}: {
+  execSummary: string[];
+  checklist: AnyObj[];
+  markdown: string;
+  negatives: AnyObj[];
+  fallbackKillSpend: number;
+  fallbackWatchCount: number;
+  fallbackWinnerCount: number;
+}) {
+  const hasReport = execSummary.length > 0 || checklist.length > 0 || negatives.length > 0;
+
+  const grouped = ["Cut Now", "Add Negatives", "Fix Don't Cut", "Scale", "Prove-Out", "Investigate"]
+    .map((group) => ({
+      group,
+      items: checklist.filter((item) => str(item.group) === group),
+    }))
+    .filter((section) => section.items.length > 0);
+
+  if (!hasReport) {
+    return (
+      <section className="wr-panel">
+        <div className="wr-panel-head">
+          <div>
+            <span>Action Report</span>
+            <h2>Backend action report not found</h2>
+          </div>
+        </div>
+
+        <div className="wr-steps">
+          <div className="wr-step red">
+            <h3>1. Add Waste Spender negatives first</h3>
+            <p>Start with zero-purchase search terms above your selected spend threshold. Use exact match first.</p>
+            <strong>Immediate budget cleanup</strong>
+          </div>
+
+          <div className="wr-step red">
+            <h3>2. Apply Kill List clusters</h3>
+            <p>Competitor, marketplace, informational, generic, and off-product terms should be blocked aggressively.</p>
+            <strong>{money(fallbackKillSpend)} direct leakage identified</strong>
+          </div>
+
+          <div className="wr-step yellow">
+            <h3>3. Fix core watchlist terms</h3>
+            <p>If a relevant term gets clicks but no purchases, it is likely a PDP, price, offer, review, or checkout issue.</p>
+            <strong>{fallbackWatchCount} core terms need investigation</strong>
+          </div>
+
+          <div className="wr-step green">
+            <h3>4. Protect and scale winners</h3>
+            <p>Winner terms should be isolated into controlled structures, improved in feed titles, and used for copy/PDP learning.</p>
+            <strong>{fallbackWinnerCount} converting terms found</strong>
+          </div>
+        </div>
+
+        <p className="wr-report-warning">
+          The frontend did not receive <code>action_report</code> from the backend response. Upload again after Railway finishes deployment.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="wr-action-report-page">
+      <div className="wr-panel">
+        <div className="wr-panel-head">
+          <div>
+            <span>Action Report</span>
+            <h2>Executive action report</h2>
+          </div>
+
+          <div className="wr-report-actions">
+            <button
+              type="button"
+              onClick={() => copyToClipboard(markdown, "Markdown action report copied.")}
+              disabled={!markdown}
+            >
+              Copy Markdown
+            </button>
+
+            <button
+              type="button"
+              onClick={() => exportRowsCsv("negative-keyword-sheet.csv", negatives)}
+              disabled={!negatives.length}
+            >
+              Export negatives CSV
+            </button>
+
+            <button
+              type="button"
+              onClick={() => exportRowsCsv("action-checklist.csv", checklist)}
+              disabled={!checklist.length}
+            >
+              Export checklist CSV
+            </button>
+          </div>
+        </div>
+
+        <div className="wr-exec-summary">
+          {execSummary.slice(0, 8).map((line, index) => (
+            <div key={index}>
+              <span>{index + 1}</span>
+              <p>{line}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="wr-action-grid">
+        <div className="wr-panel">
+          <div className="wr-panel-head">
+            <div>
+              <span>Prioritized checklist</span>
+              <h2>Sorted by ₹ impact</h2>
+            </div>
+          </div>
+
+          <div className="wr-checklist-sections">
+            {grouped.map((section) => (
+              <div key={section.group} className="wr-checklist-section">
+                <h3>{section.group}</h3>
+
+                {section.items.slice(0, 40).map((item, index) => (
+                  <label key={item.id || `${section.group}-${index}`} className="wr-checklist-item">
+                    <input type="checkbox" />
+
+                    <div>
+                      <div className="wr-checklist-line">
+                        <strong>{str(item.instruction, str(item.title, "Review action"))}</strong>
+                        <em>{money(item.impact)}</em>
+                      </div>
+
+                      <p>{str(item.reason, str(item.description))}</p>
+
+                      <div className="wr-checklist-meta">
+                        <span>{str(item.type, "action")}</span>
+                        <span>{str(item.match_type, "review")}</span>
+                        <span>{str(item.confidence, "Medium")} confidence</span>
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            ))}
+
+            {!grouped.length ? (
+              <div className="wr-empty">
+                <strong>No action checklist rows</strong>
+                <p>The backend did not return checklist items.</p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="wr-panel">
+          <div className="wr-panel-head">
+            <div>
+              <span>Operator deliverable</span>
+              <h2>Negative keyword sheet</h2>
+            </div>
+          </div>
+
+          <div className="wr-negative-sheet">
+            {negatives.slice(0, 120).map((row, index) => (
+              <div key={`${row.syntax}-${index}`} className="wr-negative-row">
+                <div>
+                  <strong>{str(row.syntax, str(row.term))}</strong>
+                  <p>{str(row.reason)}</p>
+                </div>
+
+                <div>
+                  <span>{str(row.match_type, "exact")}</span>
+                  <em>{money(row.wasted_spend)}</em>
+                  <b>{str(row.overlap_safe, "Y") === "Y" ? "Safe" : "Overlap"}</b>
+                </div>
+              </div>
+            ))}
+
+            {!negatives.length ? (
+              <div className="wr-empty">
+                <strong>No negative sheet rows</strong>
+                <p>No overlap-checked negatives were returned by the backend.</p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 function PageContent({
   result,
   fileName,
@@ -1295,6 +1532,13 @@ function PageContent({
   }, [data]);
 
   const recommendations = useMemo(() => arr<AnyObj>(data.recommendations), [data]);
+
+  const actionReport = (data.action_report || {}) as AnyObj;
+  const actionChecklist = arr<AnyObj>(actionReport.checklist);
+  const actionExecSummary = arr<string>(actionReport.exec_summary);
+  const actionMarkdown = str(actionReport.markdown);
+  const negativeKeywordSheet = arr<AnyObj>(data.negative_keyword_sheet);
+
 
   const ngramRows = useMemo<AnyObj[]>(() => {
     const ngrams = (data.ngrams || {}) as AnyObj;
@@ -1723,40 +1967,15 @@ function PageContent({
       ) : null}
 
       {activeTab === "action_plan" ? (
-        <section className="wr-panel">
-          <div className="wr-panel-head">
-            <div>
-              <span>Action Plan</span>
-              <h2>Sequenced operator actions</h2>
-            </div>
-          </div>
-
-          <div className="wr-steps">
-            <div className="wr-step red">
-              <h3>1. Add Waste Spender negatives first</h3>
-              <p>Start with zero-purchase search terms above your selected spend threshold. Use exact match first.</p>
-              <strong>Immediate budget cleanup</strong>
-            </div>
-
-            <div className="wr-step red">
-              <h3>2. Apply Kill List clusters</h3>
-              <p>Competitor, marketplace, informational, generic, and off-product terms should be blocked aggressively.</p>
-              <strong>{money(killSpend)} direct leakage identified</strong>
-            </div>
-
-            <div className="wr-step yellow">
-              <h3>3. Fix core watchlist terms</h3>
-              <p>If a relevant term gets clicks but no purchases, it is likely a PDP, price, offer, review, or checkout issue.</p>
-              <strong>{watchRows.length} core terms need investigation</strong>
-            </div>
-
-            <div className="wr-step green">
-              <h3>4. Protect and scale winners</h3>
-              <p>Winner terms should be isolated into controlled structures, improved in feed titles, and used for copy/PDP learning.</p>
-              <strong>{winnerRows.length} converting terms found</strong>
-            </div>
-          </div>
-        </section>
+        <ActionReportPanel
+          execSummary={actionExecSummary}
+          checklist={actionChecklist}
+          markdown={actionMarkdown}
+          negatives={negativeKeywordSheet}
+          fallbackKillSpend={killSpend}
+          fallbackWatchCount={watchRows.length}
+          fallbackWinnerCount={winnerRows.length}
+        />
       ) : null}
     </main>
   );
@@ -2758,6 +2977,216 @@ body {
 }
 
 
+
+.wr-action-report-page {
+  max-width: 1220px;
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+
+.wr-report-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wr-report-actions button {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-ink);
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wr-report-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.wr-exec-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.wr-exec-summary div {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  border-radius: 14px;
+  padding: 11px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.wr-exec-summary span {
+  display: inline-grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border-radius: 999px;
+  background: rgba(66,133,244,0.16);
+  color: #4285F4;
+  font-size: 11px;
+  font-weight: 800;
+  flex: 0 0 auto;
+}
+
+.wr-exec-summary p {
+  margin: 0;
+  color: var(--wr-dim);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.wr-action-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.75fr);
+  gap: 12px;
+}
+
+.wr-checklist-sections {
+  display: grid;
+  gap: 14px;
+}
+
+.wr-checklist-section h3 {
+  margin: 0 0 8px;
+  color: var(--wr-ink);
+  font-size: 15px;
+  letter-spacing: -0.025em;
+}
+
+.wr-checklist-item {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  border-radius: 14px;
+  padding: 11px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.wr-checklist-item input {
+  margin-top: 3px;
+}
+
+.wr-checklist-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wr-checklist-line strong {
+  color: var(--wr-ink);
+  font-size: 13px;
+}
+
+.wr-checklist-line em {
+  color: #34A853;
+  font-style: normal;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.wr-checklist-item p {
+  margin: 6px 0 0;
+  color: var(--wr-dim);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.wr-checklist-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.wr-checklist-meta span {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
+  color: var(--wr-faint);
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.wr-negative-sheet {
+  display: grid;
+  gap: 8px;
+  max-height: calc(100vh - 360px);
+  overflow: auto;
+}
+
+.wr-negative-row {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  border-radius: 14px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.wr-negative-row strong {
+  display: block;
+  color: var(--wr-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+}
+
+.wr-negative-row p {
+  margin: 5px 0 0;
+  color: var(--wr-dim);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.wr-negative-row div:last-child {
+  display: grid;
+  gap: 5px;
+  justify-items: end;
+  align-content: start;
+}
+
+.wr-negative-row span,
+.wr-negative-row b {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
+  color: var(--wr-faint);
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: 10px;
+}
+
+.wr-negative-row em {
+  color: #34A853;
+  font-style: normal;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.wr-report-warning {
+  margin: 12px 0 0;
+  color: #fbbc04;
+  font-size: 13px;
+}
+
+.wr-report-warning code {
+  border: 1px solid var(--wr-line);
+  border-radius: 8px;
+  padding: 2px 5px;
+  background: var(--wr-panel2);
+}
+
+
 @media(max-width: 980px) {
   .wr-kpis,
   .wr-mini-kpis {
@@ -2776,6 +3205,17 @@ body {
     flex-direction: column;
     align-items: stretch;
   }
+
+  .wr-exec-summary,
+  .wr-action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wr-report-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
 
   .wr-ngram-card-grid,
   .wr-ngram-detail-grid {
