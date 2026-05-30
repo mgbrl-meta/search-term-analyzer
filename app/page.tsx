@@ -741,6 +741,7 @@ function CategorySpendMixCardsPanel({
 }) {
   const [minSpend, setMinSpend] = useState(0);
   const [matchType, setMatchType] = useState<"exact" | "phrase" | "broad">("exact");
+  const [wasteExportType, setWasteExportType] = useState<"review" | "google_ads" | "copy">("review");
   const [openCategory, setOpenCategory] = useState<string>("");
   const [viewMode, setViewMode] = useState<"summary" | "terms" | "negatives">("summary");
 
@@ -1634,6 +1635,53 @@ function PageContent({
       .join("\n");
   }, [wasteRows, matchType]);
 
+  function handleWasteSpenderExport() {
+    const rows = wasteRows.map((row) => {
+      const term = str(row.search_term).trim().toLowerCase();
+      const spend = num(row.cost);
+      const clicks = num(row.clicks);
+      const impressions = num(row.impressions);
+      const ctr = num(row.ctr) || (impressions > 0 ? clicks / impressions : 0);
+      const revenue = num((row as AnyObj).revenue ?? (row as AnyObj).conv_value);
+      const roas = spend > 0 ? revenue / spend : 0;
+
+      if (wasteExportType === "google_ads") {
+        return {
+          Campaign: str((row as AnyObj).campaign, ""),
+          "Ad group": str((row as AnyObj).ad_group, ""),
+          Keyword: syntax(term, matchType),
+          "Match type": matchType,
+        };
+      }
+
+      return {
+        Campaign: str((row as AnyObj).campaign, ""),
+        "Ad group": str((row as AnyObj).ad_group, ""),
+        "Search term": term,
+        "Negative keyword": syntax(term, matchType),
+        "Match type": matchType,
+        Spend: Math.round(spend),
+        Clicks: Math.round(clicks),
+        Impressions: Math.round(impressions),
+        CTR: `${(ctr * 100).toFixed(2)}%`,
+        Conversions: num(row.conversions).toFixed(2),
+        "Conv. value": Math.round(revenue),
+        ROAS: roas.toFixed(2),
+        Reason: `Zero-purchase search term with ${money(spend)} spend and ${int(clicks)} clicks.`,
+      };
+    });
+
+    if (wasteExportType === "copy") {
+      copyToClipboard(negativeLines, "Waste Spender negative list copied.");
+      return;
+    }
+
+    exportRowsCsv(
+      wasteExportType === "google_ads" ? "google-ads-negative-keywords.csv" : "waste-spender-review.csv",
+      rows
+    );
+  }
+
   const spendMix = useMemo<AnyObj[]>(() => {
     const map = new Map<string, AnyObj>();
 
@@ -1922,6 +1970,31 @@ function PageContent({
               <Kpi label="Spend at risk" value={money(wasteRows.reduce((s, r) => s + num(r.cost), 0))} tone="red" />
               <Kpi label="CTR" value={ctrPct(wasteAverageCtr)} tone="blue" />
               <Kpi label="Purchases" value="0" />
+            </div>
+
+            <div className="wr-waste-export-bar">
+              <div>
+                <strong>Export zero-purchase search terms</strong>
+                <span>{int(wasteRows.length)} terms above selected spend threshold</span>
+              </div>
+
+              <select
+                value={wasteExportType}
+                onChange={(e) => setWasteExportType(e.target.value as "review" | "google_ads" | "copy")}
+              >
+                <option value="review">Review CSV with metrics</option>
+                <option value="google_ads">Google Ads negative CSV</option>
+                <option value="copy">Copy negative list</option>
+              </select>
+
+              <button
+                type="button"
+                className="wr-export-inline-button"
+                onClick={handleWasteSpenderExport}
+                disabled={!wasteRows.length}
+              >
+                Export
+              </button>
             </div>
 
             <DataTable
@@ -3530,6 +3603,58 @@ body {
 
 .wr-exec-summary.compact {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+
+
+.wr-waste-export-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin: 10px 0;
+}
+
+.wr-waste-export-bar strong {
+  display: block;
+  color: var(--wr-ink);
+  font-size: 13px;
+}
+
+.wr-waste-export-bar span {
+  display: block;
+  margin-top: 3px;
+  color: var(--wr-faint);
+  font-size: 11px;
+}
+
+.wr-waste-export-bar select {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
+  color: var(--wr-ink);
+  border-radius: 11px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.wr-export-inline-button {
+  border: 1px solid rgba(66,133,244,0.55);
+  background: rgba(66,133,244,0.16);
+  color: var(--wr-ink);
+  border-radius: 11px;
+  padding: 9px 13px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.wr-export-inline-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 
