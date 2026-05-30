@@ -468,14 +468,20 @@ export default function Page() {
   const intentSummary = useMemo(() => arr<AnyObj>(data?.intent_summary || data?.intents), [data]);
   const terms = useMemo(() => arr<AnyObj>(data?.terms).slice().sort((a, b) => num(b.cost) - num(a.cost)), [data]);
 
-  const ngramRows = useMemo(() => {
-    const ngrams = data?.ngrams || {};
-    const rows = [
-      ...arr<AnyObj>(ngrams["1"]).map((r) => ({ ...r, n: 1 })),
-      ...arr<AnyObj>(ngrams["2"]).map((r) => ({ ...r, n: 2 })),
-      ...arr<AnyObj>(ngrams["3"]).map((r) => ({ ...r, n: 3 })),
+  const ngramRows = useMemo<AnyObj[]>(() => {
+    const ngrams = (data?.ngrams || {}) as AnyObj;
+
+    const rows: AnyObj[] = [
+      ...arr<AnyObj>(ngrams["1"]).map((r): AnyObj => ({ ...r, n: 1 })),
+      ...arr<AnyObj>(ngrams["2"]).map((r): AnyObj => ({ ...r, n: 2 })),
+      ...arr<AnyObj>(ngrams["3"]).map((r): AnyObj => ({ ...r, n: 3 })),
     ];
-    return rows.sort((a, b) => num(b.waste_score || b.aggregate_wasted_spend || b.cost) - num(a.waste_score || a.aggregate_wasted_spend || a.cost));
+
+    return rows.sort(
+      (a: AnyObj, b: AnyObj) =>
+        num(b.waste_score || b.aggregate_wasted_spend || b.cost) -
+        num(a.waste_score || a.aggregate_wasted_spend || a.cost)
+    );
   }, [data]);
 
   const filteredRecommendations = useMemo(() => {
