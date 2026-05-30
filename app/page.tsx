@@ -175,12 +175,15 @@ function recMatchesTab(rec: AnyObj, tab: TabKey) {
 function exportCsv(filename: string, rows: AnyObj[]) {
   if (!rows.length) return;
 
-  const headers = Array.from(
-    rows.reduce((set, row) => {
-      Object.keys(row).forEach((key) => set.add(key));
-      return set;
-    }, new Set<string>())
-  );
+  const headerSet = new Set<string>();
+
+  rows.forEach((row) => {
+    Object.keys(row).forEach((key) => {
+      headerSet.add(key);
+    });
+  });
+
+  const headers = Array.from(headerSet);
 
   const csv = [
     headers.join(","),
