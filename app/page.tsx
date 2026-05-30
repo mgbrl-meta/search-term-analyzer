@@ -1252,12 +1252,15 @@ function NgramTabPanel({
 function exportRowsCsv(filename: string, rows: AnyObj[]) {
   if (!rows.length) return;
 
-  const headers = Array.from(
-    rows.reduce((set, row) => {
-      Object.keys(row || {}).forEach((key) => set.add(key));
-      return set;
-    }, new Set<string>())
-  );
+  const headerSet: Set<string> = new Set<string>();
+
+  rows.forEach((row) => {
+    Object.keys(row || {}).forEach((key) => {
+      headerSet.add(key);
+    });
+  });
+
+  const headers: string[] = Array.from(headerSet);
 
   const csv = [
     headers.join(","),
