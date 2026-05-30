@@ -1589,7 +1589,7 @@ function PageContent({
         const clicks = num(row.clicks);
         const impressions = num(row.impressions);
         const cost = num(row.cost);
-        const revenue = num(row.revenue ?? row.conv_value);
+        const revenue = num((row as AnyObj).revenue ?? (row as AnyObj).conv_value);
         const roas = num(row.roas) || (cost > 0 ? revenue / cost : 0);
         const ctr = num(row.ctr) || (impressions > 0 ? clicks / impressions : 0);
 
