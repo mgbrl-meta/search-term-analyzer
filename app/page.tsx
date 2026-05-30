@@ -1728,6 +1728,67 @@ function PageContent({
     .filter((row) => num(row.conversions) === 0)
     .reduce((sum, row) => sum + num(row.cost), 0);
   const killSpend = killRows.reduce((sum, row) => sum + num(row.cost), 0);
+
+  const operatorNegativeKeywordSheet = useMemo(() => {
+    if (negativeKeywordSheet.length > 0) {
+      return negativeKeywordSheet;
+    }
+
+    const candidates = [...killRows, ...wasteRows]
+      .filter((row) => num(row.conversions) === 0 && num(row.cost) > 0)
+      .sort((a, b) => num(b.cost) - num(a.cost));
+
+    const seen = new Set<string>();
+
+    return candidates
+      .map((row) => {
+        const term = str(row.search_term).trim().toLowerCase();
+        if (!term || seen.has(term)) return null;
+        seen.add(term);
+
+        const spend = num(row.cost);
+        const clicks = num(row.clicks);
+        const impressions = num(row.impressions);
+        const ctr = num(row.ctr) || (impressions > 0 ? clicks / impressions : 0);
+        const revenue = num(row.revenue ?? row.conv_value);
+        const roas = spend > 0 ? revenue / spend : 0;
+        const category = str(row.category, "Waste");
+
+        let matchType: "exact" | "phrase" | "broad" = "exact";
+
+        if (
+          category.toLowerCase().includes("marketplace") ||
+          category.toLowerCase().includes("informational") ||
+          category.toLowerCase().includes("competitor")
+        ) {
+          matchType = "exact";
+        }
+
+        return {
+          term,
+          search_term: term,
+          syntax: syntax(term, matchType),
+          match_type: matchType,
+          spend,
+          wasted_spend: spend,
+          clicks,
+          impressions,
+          ctr,
+          conversions: num(row.conversions),
+          revenue,
+          conv_value: revenue,
+          roas,
+          campaign: str(row.campaign, "-"),
+          ad_group: str(row.ad_group, "-"),
+          category,
+          reason: `${category} search term with ${money(spend)} spend, ${int(clicks)} clicks, and zero purchases.`,
+          overlap_safe: "Y",
+          confidence: spend >= 500 ? "High" : "Medium",
+          source: "frontend_operator_fallback",
+        };
+      })
+      .filter(Boolean) as AnyObj[];
+  }, [negativeKeywordSheet, killRows, wasteRows]);
   const maxSpendMix = Math.max(...spendMix.map((row) => row.spend), 1);
   const maxFrag = Math.max(...fragmentation.map((row) => row.spend), 1);
   const maxPattern = Math.max(...ngramRows.slice(0, 20).map((row) => num(row.cost)), 1);
@@ -2008,7 +2069,7 @@ function PageContent({
           execSummary={actionExecSummary}
           checklist={actionChecklist}
           markdown={actionMarkdown}
-          negatives={negativeKeywordSheet}
+          negatives={operatorNegativeKeywordSheet}
           fallbackKillSpend={killSpend}
           fallbackWatchCount={watchRows.length}
           fallbackWinnerCount={winnerRows.length}
