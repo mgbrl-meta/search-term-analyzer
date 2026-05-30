@@ -2027,6 +2027,7 @@ body {
 
 
 
+
 .wr-category-page {
   max-width: 1220px;
   margin: 0 auto;
