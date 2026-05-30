@@ -1561,9 +1561,31 @@ function PageContent({
         const impressions = num(row.impressions);
         const ctr = num(row.ctr) || (impressions > 0 ? clicks / impressions : 0);
 
+        const campaign = str(
+          (row as AnyObj).campaign ??
+            (row as AnyObj).campaign_name ??
+            (row as AnyObj).Campaign ??
+            (row as AnyObj)["Campaign"] ??
+            "-",
+          "-"
+        );
+
+        const adGroup = str(
+          (row as AnyObj).ad_group ??
+            (row as AnyObj).ad_group_name ??
+            (row as AnyObj).adgroup ??
+            (row as AnyObj)["Ad group"] ??
+            (row as AnyObj)["Ad group name"] ??
+            (row as AnyObj).AdGroup ??
+            "-",
+          "-"
+        );
+
         return {
           ...row,
           search_term: searchTerm,
+          campaign,
+          ad_group: adGroup,
           cost: num(row.cost),
           clicks,
           impressions,
