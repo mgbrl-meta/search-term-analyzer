@@ -10,8 +10,7 @@ interface Props {
 
 type N = 1 | 2 | 3;
 
-type SortKey = keyof Pick<
-  Ngram,
+type SortKey =
   | 'ngram'
   | 'count'
   | 'impressions'
@@ -22,8 +21,7 @@ type SortKey = keyof Pick<
   | 'roas'
   | 'ctr'
   | 'cvr'
-  | 'cpa'
->;
+  | 'cpa';
 
 const COLUMNS: { key: SortKey; label: string; numeric: boolean }[] = [
   { key: 'ngram', label: 'N-gram', numeric: false },
@@ -39,10 +37,19 @@ const COLUMNS: { key: SortKey; label: string; numeric: boolean }[] = [
   { key: 'cpa', label: 'CPA', numeric: true },
 ];
 
-function fmtCurrency(n: number): string {
-  return '₹' + Math.round(n).toLocaleString('en-IN');
+// Safe numeric coercion — missing/undefined fields become 0 instead of crashing.
+function num(v: unknown): number {
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : 0;
 }
-function fmtPct(n: number): string {
+function fmtInt(v: unknown): string {
+  return num(v).toLocaleString();
+}
+function fmtCurrency(v: unknown): string {
+  return '₹' + Math.round(num(v)).toLocaleString('en-IN');
+}
+function fmtPct(v: unknown): string {
+  const n = num(v);
   const val = n <= 1 ? n * 100 : n;
   return val.toFixed(1) + '%';
 }
@@ -55,23 +62,23 @@ export default function NgramsTable({ initial }: Props) {
 
   const rows = useMemo<Ngram[]>(() => {
     const key = String(active) as '1' | '2' | '3';
-    return initial[key] ?? [];
+    return (initial && initial[key]) ? initial[key] : [];
   }, [initial, active]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     const base = term
-      ? rows.filter((r) => r.ngram.toLowerCase().includes(term))
+      ? rows.filter((r) => (r.ngram ?? '').toLowerCase().includes(term))
       : rows.slice();
 
     base.sort((a, b) => {
       const av = a[sort];
       const bv = b[sort];
       let cmp: number;
-      if (typeof av === 'string' && typeof bv === 'string') {
-        cmp = av.localeCompare(bv);
+      if (sort === 'ngram') {
+        cmp = String(av ?? '').localeCompare(String(bv ?? ''));
       } else {
-        cmp = (av as number) - (bv as number);
+        cmp = num(av) - num(bv);
       }
       return order === 'asc' ? cmp : -cmp;
     });
@@ -169,20 +176,20 @@ export default function NgramsTable({ initial }: Props) {
             ) : (
               filtered.map((r, idx) => (
                 <tr
-                  key={`${r.ngram}-${idx}`}
+                  key={`${r.ngram ?? ''}-${idx}`}
                   className="border-b border-[#1c2536] transition hover:bg-[#161f30]"
                 >
                   <td className="max-w-[280px] truncate px-3 py-2.5 font-medium">
-                    <span title={r.ngram}>{r.ngram}</span>
+                    <span title={r.ngram ?? ''}>{r.ngram ?? ''}</span>
                   </td>
                   <td className="px-3 py-2.5 text-right tabular-nums">
-                    {r.count.toLocaleString()}
+                    {fmtInt(r.count)}
                   </td>
                   <td className="px-3 py-2.5 text-right tabular-nums">
-                    {r.impressions.toLocaleString()}
+                    {fmtInt(r.impressions)}
                   </td>
                   <td className="px-3 py-2.5 text-right tabular-nums">
-                    {r.clicks.toLocaleString()}
+                    {fmtInt(r.clicks)}
                   </td>
                   <td className="px-3 py-2.5 text-right tabular-nums">
                     {fmtPct(r.ctr)}
@@ -191,7 +198,7 @@ export default function NgramsTable({ initial }: Props) {
                     {fmtCurrency(r.cost)}
                   </td>
                   <td className="px-3 py-2.5 text-right tabular-nums">
-                    {r.conversions.toLocaleString()}
+                    {fmtInt(r.conversions)}
                   </td>
                   <td className="px-3 py-2.5 text-right tabular-nums">
                     {fmtPct(r.cvr)}
@@ -200,7 +207,7 @@ export default function NgramsTable({ initial }: Props) {
                     {fmtCurrency(r.revenue)}
                   </td>
                   <td className="px-3 py-2.5 text-right font-semibold tabular-nums">
-                    {r.roas.toFixed(2)}x
+                    {num(r.roas).toFixed(2)}x
                   </td>
                   <td className="px-3 py-2.5 text-right tabular-nums">
                     {fmtCurrency(r.cpa)}
