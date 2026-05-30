@@ -28,7 +28,7 @@ type TabKey =
 
 const TABS: { key: TabKey; label: string; short: string }[] = [
   { key: "brief", label: "Action Brief", short: "Brief" },
-  { key: "spend_wasters", label: "Spend Wasters", short: "Wasters" },
+  { key: "spend_wasters", label: "Waste Spender", short: "Waste Spender" },
   { key: "negative_keywords", label: "Negative Keywords", short: "Negatives" },
   { key: "ngram_waste", label: "N-Gram Waste", short: "N-Grams" },
   { key: "pdp_issues", label: "PDP / Offer Issues", short: "PDP Issues" },
@@ -473,11 +473,172 @@ function IntentPanel({
   );
 }
 
+
+function NegativeSyntax(term: string, matchType: "exact" | "phrase" | "broad") {
+  const clean = term.trim();
+  if (!clean) return "";
+  if (matchType === "exact") return `[${clean}]`;
+  if (matchType === "phrase") return `"${clean}"`;
+  return clean;
+}
+
+function WasteSpenderPanel({
+  rows,
+  threshold,
+  setThreshold,
+  matchType,
+  setMatchType,
+  negativeLines,
+}: {
+  rows: AnyObj[];
+  threshold: number;
+  setThreshold: (value: number) => void;
+  matchType: "exact" | "phrase" | "broad";
+  setMatchType: (value: "exact" | "phrase" | "broad") => void;
+  negativeLines: string;
+}) {
+  const totalSpend = rows.reduce((sum, row) => sum + num(row.cost), 0);
+  const totalClicks = rows.reduce((sum, row) => sum + num(row.clicks), 0);
+
+  async function copyNegatives() {
+    try {
+      await navigator.clipboard.writeText(negativeLines);
+      alert("Negative keyword list copied.");
+    } catch {
+      alert("Could not copy. Please select and copy manually.");
+    }
+  }
+
+  return (
+    <div className="sta-waste-layout">
+      <div className="sta-panel">
+        <div className="sta-panel-head">
+          <div>
+            <div className="sta-section-kicker">Waste Spender</div>
+            <h2>Zero-purchase search terms above spend threshold</h2>
+          </div>
+
+          <div className="sta-waste-controls">
+            <select
+              value={threshold}
+              onChange={(e) => setThreshold(Number(e.target.value))}
+            >
+              {[100, 200, 500, 1000, 2000, 5000, 10000].map((value) => (
+                <option key={value} value={value}>
+                  Spend ≥ ₹{value}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={matchType}
+              onChange={(e) => setMatchType(e.target.value as "exact" | "phrase" | "broad")}
+            >
+              <option value="exact">Exact negatives</option>
+              <option value="phrase">Phrase negatives</option>
+              <option value="broad">Broad negatives</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="sta-waste-summary">
+          <div>
+            <span>Terms found</span>
+            <strong>{int(rows.length)}</strong>
+          </div>
+          <div>
+            <span>Spend at risk</span>
+            <strong>{money(totalSpend)}</strong>
+          </div>
+          <div>
+            <span>Clicks</span>
+            <strong>{int(totalClicks)}</strong>
+          </div>
+          <div>
+            <span>Purchases</span>
+            <strong>0</strong>
+          </div>
+        </div>
+
+        {rows.length === 0 ? (
+          <EmptyState label="waste spender terms" />
+        ) : (
+          <div className="sta-table-wrap">
+            <div className="sta-table-scroll">
+              <table className="sta-table">
+                <thead>
+                  <tr>
+                    <th>Search term</th>
+                    <th>Negative syntax</th>
+                    <th className="right">Spend</th>
+                    <th className="right">Clicks</th>
+                    <th className="right">Conv.</th>
+                    <th className="right">Revenue</th>
+                    <th className="right">ROAS</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, index) => {
+                    const term = str(row.search_term);
+                    return (
+                      <tr key={`${term}-${index}`}>
+                        <td className="strong">{term}</td>
+                        <td>
+                          <span className="sta-copy-code">
+                            {NegativeSyntax(term, matchType)}
+                          </span>
+                        </td>
+                        <td className="right strong">{money(row.cost)}</td>
+                        <td className="right">{int(row.clicks)}</td>
+                        <td className="right">{num(row.conversions).toFixed(2)}</td>
+                        <td className="right">{money(row.revenue ?? row.conv_value)}</td>
+                        <td className="right">{x(row.roas)}</td>
+                        <td>
+                          <Pill color={GOOGLE.red}>Add negative</Pill>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="sta-panel">
+        <div className="sta-section-kicker">Copy-ready Google Ads negatives</div>
+        <h2>Negative keyword syntax</h2>
+        <p className="sta-panel-copy">
+          Copy this list and paste into Google Ads negatives. Exact match is safest by default.
+          Use phrase/broad only after checking overlap with profitable terms.
+        </p>
+
+        <div className="sta-negative-box">
+          {negativeLines || "No zero-purchase terms above selected spend threshold."}
+        </div>
+
+        <button
+          type="button"
+          className="sta-wide-button"
+          onClick={copyNegatives}
+          disabled={!negativeLines}
+        >
+          Copy negative keyword list
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Page() {
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [fileName, setFileName] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("brief");
   const [chartMode, setChartMode] = useState<"category" | "intent">("intent");
+  const [wasteSpendThreshold, setWasteSpendThreshold] = useState<number>(100);
+  const [negativeMatchType, setNegativeMatchType] = useState<"exact" | "phrase" | "broad">("exact");
 
   const data = result as AnyObj | null;
   const summary = (data?.summary || {}) as AnyObj;
@@ -500,6 +661,25 @@ export default function Page() {
       .slice()
       .sort((a, b) => num(b.cost) - num(a.cost));
   }, [data]);
+
+  const wasteSpenderTerms = useMemo(() => {
+    return terms
+      .filter((row) => num(row.cost) >= wasteSpendThreshold && num(row.conversions) === 0)
+      .sort((a, b) => num(b.cost) - num(a.cost));
+  }, [terms, wasteSpendThreshold]);
+
+  const wasteSpenderNegativeLines = useMemo(() => {
+    return wasteSpenderTerms
+      .map((row) => {
+        const term = str(row.search_term).trim();
+        if (!term) return "";
+        if (negativeMatchType === "exact") return `[${term}]`;
+        if (negativeMatchType === "phrase") return `"${term}"`;
+        return term;
+      })
+      .filter(Boolean)
+      .join("\n");
+  }, [wasteSpenderTerms, negativeMatchType]);
 
   const ngramRows = useMemo<AnyObj[]>(() => {
     const ngrams = (data?.ngrams || {}) as AnyObj;
@@ -535,7 +715,7 @@ export default function Page() {
   const tabCounts = useMemo(() => {
     return {
       brief: recommendations.length,
-      spend_wasters: recommendations.filter((r) => recMatchesTab(r, "spend_wasters")).length,
+      spend_wasters: wasteSpenderTerms.length,
       negative_keywords: recommendations.filter((r) => recMatchesTab(r, "negative_keywords")).length,
       ngram_waste: recommendations.filter((r) => recMatchesTab(r, "ngram_waste")).length + ngramRows.length,
       pdp_issues: recommendations.filter((r) => recMatchesTab(r, "pdp_issues")).length,
@@ -543,7 +723,7 @@ export default function Page() {
       intent_brand: recommendations.filter((r) => recMatchesTab(r, "intent_brand")).length + intentSummary.length,
       raw_terms: terms.length,
     } as Record<TabKey, number>;
-  }, [recommendations, ngramRows, intentSummary, terms]);
+  }, [recommendations, ngramRows, intentSummary, terms, wasteSpenderTerms]);
 
   if (!result) {
     return (
@@ -641,91 +821,60 @@ export default function Page() {
           <KpiCard label="NB ROAS" value={x(summary.non_brand_roas || summary.true_acquisition_roas)} tone="blue" />
         </section>
 
-        <section className="sta-top-grid">
-          <div className="sta-panel">
-            <div className="sta-panel-head">
-              <div>
-                <div className="sta-section-kicker">Dynamic view</div>
-                <h2>Spend vs revenue</h2>
-              </div>
-
-              <select value={chartMode} onChange={(e) => setChartMode(e.target.value as "category" | "intent")}>
-                <option value="intent">By intent</option>
-                <option value="category">By category</option>
-              </select>
-            </div>
-
-            <div className="sta-chart">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--sta-chart-grid)" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 10, fill: "var(--sta-muted)" }}
-                    interval={0}
-                    angle={-18}
-                    textAnchor="end"
-                    height={54}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 10, fill: "var(--sta-muted)" }}
-                    tickFormatter={(v) => `₹${Math.round(Number(v) / 1000)}k`}
-                  />
-                  <Tooltip
-                    formatter={(value: any) => money(value)}
-                    contentStyle={{
-                      background: "var(--sta-panel-2)",
-                      border: "1px solid var(--sta-border)",
-                      borderRadius: 14,
-                      color: "var(--sta-text)",
-                    }}
-                  />
-                  <Bar dataKey="spend" fill={GOOGLE.blue} radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="revenue" fill={GOOGLE.green} radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+        <section className="sta-current-context">
+          <div>
+            <div className="sta-section-kicker">Current analysis</div>
+            <h2>{TABS.find((tab) => tab.key === activeTab)?.label}</h2>
           </div>
 
-          <div className="sta-panel">
-            <div className="sta-panel-head">
-              <div>
-                <div className="sta-section-kicker">Selected analysis</div>
-                <h2>{TABS.find((tab) => tab.key === activeTab)?.label}</h2>
-              </div>
+          <div className="sta-context-actions">
+            <select value={activeTab} onChange={(e) => setActiveTab(e.target.value as TabKey)}>
+              {TABS.map((tab) => (
+                <option key={tab.key} value={tab.key}>
+                  {tab.label} ({tabCounts[tab.key] || 0})
+                </option>
+              ))}
+            </select>
 
-              <select value={activeTab} onChange={(e) => setActiveTab(e.target.value as TabKey)}>
-                {TABS.map((tab) => (
-                  <option key={tab.key} value={tab.key}>
-                    {tab.label} ({tabCounts[tab.key] || 0})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="sta-mini-brief">
-              <div>
-                <span>Current view</span>
-                <strong>{tabCounts[activeTab] || 0}</strong>
-              </div>
-              <div>
-                <span>Actions</span>
-                <strong>{recommendations.length}</strong>
-              </div>
-              <div>
-                <span>Terms</span>
-                <strong>{int(terms.length)}</strong>
-              </div>
-            </div>
-
-            <p className="sta-panel-copy">
-              Use the header tabs to switch between operator decisions. Export actions when the current view is ready.
-            </p>
+            {activeTab === "spend_wasters" ? (
+              <button
+                type="button"
+                className="sta-secondary-button"
+                onClick={() =>
+                  exportCsv(
+                    "waste-spender-zero-purchase-terms.csv",
+                    wasteSpenderTerms.map((row) => ({
+                      search_term: str(row.search_term),
+                      exact_negative: `[${str(row.search_term)}]`,
+                      phrase_negative: `"${str(row.search_term)}"`,
+                      broad_negative: str(row.search_term),
+                      cost: num(row.cost),
+                      clicks: num(row.clicks),
+                      conversions: num(row.conversions),
+                      revenue: num(row.revenue ?? row.conv_value),
+                      roas: num(row.roas),
+                      recommended_action: "Add as negative after review",
+                    }))
+                  )
+                }
+              >
+                Export Waste Spender
+              </button>
+            ) : null}
           </div>
         </section>
 
         <section className="sta-main-section">
-          {activeTab === "ngram_waste" ? (
+          {activeTab === "spend_wasters" ? (
+            <WasteSpenderPanel
+              rows={wasteSpenderTerms}
+              threshold={wasteSpendThreshold}
+              setThreshold={setWasteSpendThreshold}
+              matchType={negativeMatchType}
+              setMatchType={setNegativeMatchType}
+              negativeLines={wasteSpenderNegativeLines}
+            />
+          ) : activeTab === "ngram_waste" ? (
             <NgramTable rows={ngramRows} />
           ) : activeTab === "raw_terms" ? (
             <TermsTable rows={terms} />
@@ -1270,6 +1419,116 @@ body {
 .sta-intent-roas {
   color: var(--sta-text);
   font-weight: 700;
+}
+
+
+.sta-current-context {
+  margin-top: 14px;
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel);
+  color: var(--sta-text);
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: var(--sta-shadow);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sta-current-context h2 {
+  margin: 6px 0 0;
+  color: var(--sta-text);
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+
+.sta-context-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sta-context-actions select,
+.sta-waste-controls select {
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel-2);
+  color: var(--sta-text);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 12px;
+  outline: none;
+}
+
+.sta-waste-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.65fr);
+  gap: 14px;
+}
+
+.sta-waste-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sta-waste-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.sta-waste-summary div {
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel-2);
+  border-radius: 15px;
+  padding: 12px;
+}
+
+.sta-waste-summary span {
+  display: block;
+  color: var(--sta-muted);
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.sta-waste-summary strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--sta-text);
+  font-size: 22px;
+  letter-spacing: -0.04em;
+}
+
+.sta-negative-box {
+  margin: 14px 0;
+  min-height: 280px;
+  max-height: 480px;
+  overflow: auto;
+  white-space: pre-wrap;
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel-2);
+  color: var(--sta-text);
+  border-radius: 16px;
+  padding: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.sta-copy-code {
+  display: inline-flex;
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel-2);
+  color: var(--sta-text);
+  border-radius: 10px;
+  padding: 6px 9px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
 }
 
 @media (max-width: 1180px) {
