@@ -1,15 +1,12 @@
 """
-parser.py — Handles ingestion of Google Shopping Search Term reports.
-Supports CSV and XLSX uploads, normalises column names, and returns
-a clean DataFrame ready for downstream analysis.
+parser.py — Robust ingestion for Google Shopping Search Term reports.
+Supports CSV, TSV, UTF-16 CSV, XLSX files, and Google Ads report metadata rows.
 """
 
 import csv
 import io
-import re
 from typing import Any
 
-import numpy as np
 import pandas as pd
 
 
@@ -95,16 +92,15 @@ NUMERIC_COLUMNS = ["impressions", "clicks", "cost", "conversions", "conv_value",
 
 
 def _header_key(raw_col: object) -> str:
-    """Normalize Google Ads headers for reliable alias matching."""
     key = str(raw_col).strip().lower()
     key = key.replace("\ufeff", "")
+    key = key.replace("\x00", "")
     key = key.replace("\n", " ")
     key = " ".join(key.split())
     return key
 
 
 def _normalise_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Rename raw column headers to canonical names."""
     rename_map: dict[Any, str] = {}
 
     for raw_col in df.columns:
@@ -114,28 +110,62 @@ def _normalise_columns(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.rename(columns=rename_map)
 
-    # If duplicate canonical columns appear, keep the first non-empty value.
+    # If duplicate canonical columns appear, keep first non-empty value.
     if df.columns.duplicated().any():
         df = df.T.groupby(level=0).first().T
 
     return df
 
 
-def _decode_csv_bytes(file_bytes: bytes) -> str:
-    """Decode uploaded CSV bytes safely."""
-    for encoding in ("utf-8-sig", "utf-8", "latin-1"):
+def _decode_text(file_bytes: bytes) -> str:
+    for encoding in ("utf-8-sig", "utf-8", "utf-16", "utf-16-le", "utf-16-be", "latin-1"):
         try:
-            return file_bytes.decode(encoding)
+            text = file_bytes.decode(encoding)
+            # Avoid accepting binary-looking garbage.
+            if "Search term" in text or "search term" in text.lower() or "Clicks" in text or "clicks" in text.lower():
+                return text
         except UnicodeDecodeError:
             continue
+
     return file_bytes.decode("latin-1", errors="replace")
 
 
-def _find_google_ads_header_line(text: str) -> int:
-    """
-    Google Ads sometimes exports CSV files with report metadata before the real table.
-    Find the row containing the actual header, usually starting with Search term.
-    """
+def _sniff_delimiter(sample: str) -> str:
+    candidates = [",", "\t", ";"]
+    lines = [line for line in sample.splitlines()[:30] if line.strip()]
+
+    best_delimiter = ","
+    best_score = 0
+
+    for delimiter in candidates:
+        score = 0
+        for line in lines:
+            try:
+                cells = next(csv.reader([line], delimiter=delimiter))
+                if len(cells) > score:
+                    score = len(cells)
+            except Exception:
+                continue
+
+        if score > best_score:
+            best_score = score
+            best_delimiter = delimiter
+
+    return best_delimiter
+
+
+def _row_has_required_headers(cells: list[object]) -> bool:
+    keys = {_header_key(cell) for cell in cells}
+
+    has_search_term = "search term" in keys or "search terms" in keys
+    has_clicks = "clicks" in keys or "click" in keys
+    has_cost = "cost" in keys or "spend" in keys
+    has_impressions = "impr." in keys or "impr" in keys or "impressions" in keys
+
+    return has_search_term and has_clicks and has_cost and has_impressions
+
+
+def _find_header_line(text: str, delimiter: str) -> int:
     lines = text.splitlines()
 
     for idx, line in enumerate(lines):
@@ -143,59 +173,83 @@ def _find_google_ads_header_line(text: str) -> int:
             continue
 
         try:
-            cells = next(csv.reader([line]))
+            cells = next(csv.reader([line], delimiter=delimiter, quotechar='"'))
         except Exception:
             continue
 
-        normalised_cells = {_header_key(cell) for cell in cells}
-
-        has_search_term = "search term" in normalised_cells or "search terms" in normalised_cells
-        has_required_metrics = (
-            ("clicks" in normalised_cells or "click" in normalised_cells)
-            and ("cost" in normalised_cells or "spend" in normalised_cells)
-            and ("impr." in normalised_cells or "impr" in normalised_cells or "impressions" in normalised_cells)
-        )
-
-        if has_search_term and has_required_metrics:
+        if _row_has_required_headers(cells):
             return idx
 
     return 0
 
 
-def _read_csv(file_bytes: bytes, filename: str) -> pd.DataFrame:
-    """Read Google Ads CSV robustly, including files with pre-header report metadata."""
-    text = _decode_csv_bytes(file_bytes)
-    header_line = _find_google_ads_header_line(text)
+def _read_csv_like(file_bytes: bytes, filename: str) -> pd.DataFrame:
+    text = _decode_text(file_bytes)
+    delimiter = _sniff_delimiter(text)
+    header_line = _find_header_line(text, delimiter)
 
     try:
-        return pd.read_csv(
+        df = pd.read_csv(
             io.StringIO(text),
             skiprows=header_line,
             engine="python",
-            sep=",",
+            sep=delimiter,
             quotechar='"',
-            escapechar="\\",
             on_bad_lines="skip",
         )
-    except Exception as first_exc:
-        # Fallback for unusual Google exports / locale variants.
-        try:
-            return pd.read_csv(
-                io.StringIO(text),
-                skiprows=header_line,
-                engine="python",
-                sep=None,
-                quotechar='"',
-                on_bad_lines="skip",
-            )
-        except Exception as second_exc:
-            raise ValueError(
-                f"Could not read file '{filename}'. First error: {first_exc}. Second error: {second_exc}"
-            ) from second_exc
+    except Exception as exc:
+        raise ValueError(f"Could not read file '{filename}' as CSV/TSV: {exc}") from exc
+
+    # If we still got one garbage column, fail with clear guidance.
+    if len(df.columns) <= 1 and not any(_header_key(c) in COLUMN_ALIASES for c in df.columns):
+        preview = str(df.columns[0])[:80] if len(df.columns) else "no columns"
+        raise ValueError(
+            f"Could not detect Google Ads table headers. Found first column: {preview!r}. "
+            "Please export/download the report as CSV or XLSX directly from Google Ads, not an Excel temporary/system file."
+        )
+
+    return df
+
+
+def _read_excel_any_header(file_bytes: bytes, filename: str) -> pd.DataFrame:
+    try:
+        raw = pd.read_excel(io.BytesIO(file_bytes), header=None, engine="openpyxl")
+    except Exception as exc:
+        raise ValueError(f"Could not read file '{filename}' as Excel: {exc}") from exc
+
+    raw = raw.dropna(how="all").reset_index(drop=True)
+
+    header_idx = None
+    for idx in range(len(raw)):
+        cells = raw.iloc[idx].tolist()
+        if _row_has_required_headers(cells):
+            header_idx = idx
+            break
+
+    if header_idx is None:
+        preview = raw.head(5).to_string(index=False)
+        raise ValueError(
+            "Could not find Google Ads header row in Excel file. "
+            f"Expected Search term, Clicks, Impr., and Cost. Preview:\n{preview}"
+        )
+
+    columns = raw.iloc[header_idx].tolist()
+    df = raw.iloc[header_idx + 1 :].copy()
+    df.columns = [str(c).strip() for c in columns]
+    df = df.dropna(how="all").reset_index(drop=True)
+
+    return df
+
+
+def _looks_like_xlsx(file_bytes: bytes) -> bool:
+    return file_bytes[:2] == b"PK"
+
+
+def _looks_like_legacy_xls(file_bytes: bytes) -> bool:
+    return file_bytes[:8] == b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
 
 def _coerce_numerics(df: pd.DataFrame) -> pd.DataFrame:
-    """Strip currency/percentage symbols and coerce to float."""
     for col in NUMERIC_COLUMNS:
         if col not in df.columns:
             continue
@@ -220,7 +274,6 @@ def _coerce_numerics(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _add_missing_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Add optional columns with sensible defaults if not present."""
     defaults: dict[str, float | str] = {
         "conversions": 0.0,
         "avg_cpc": 0.0,
@@ -243,18 +296,17 @@ def _add_missing_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _validate(df: pd.DataFrame) -> None:
-    """Raise ValueError if required columns are missing."""
     missing = REQUIRED_COLUMNS - set(df.columns)
 
     if missing:
+        found = ", ".join(map(str, df.columns.tolist()[:30]))
         raise ValueError(
             f"Upload is missing required columns: {', '.join(sorted(missing))}. "
-            f"Found columns: {', '.join(map(str, df.columns.tolist()))}"
+            f"Found columns: {found}"
         )
 
 
 def _drop_google_ads_summary_rows(df: pd.DataFrame) -> pd.DataFrame:
-    """Remove footer/summary rows from Google Ads exports."""
     if "search_term" not in df.columns:
         return df
 
@@ -273,33 +325,28 @@ def _drop_google_ads_summary_rows(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def parse_upload(file_bytes: bytes, filename: str) -> pd.DataFrame:
-    """
-    Parse an uploaded Google Ads Search Term report.
-
-    Parameters
-    ----------
-    file_bytes : bytes
-        Raw file content.
-    filename : str
-        Original filename.
-
-    Returns
-    -------
-    pd.DataFrame
-        Normalised DataFrame with canonical column names.
-    """
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
+    if filename.startswith("._"):
+        raise ValueError(
+            "You uploaded a macOS system/resource-fork file. "
+            "Please upload the real Google Ads CSV/XLSX file, not the file starting with ._"
+        )
+
     try:
-        if ext in ("xls", "xlsx"):
-            df = pd.read_excel(io.BytesIO(file_bytes), engine="openpyxl")
-        elif ext == "csv":
-            df = _read_csv(file_bytes, filename)
+        if ext in ("xlsx", "xls") or _looks_like_xlsx(file_bytes):
+            df = _read_excel_any_header(file_bytes, filename)
+        elif _looks_like_legacy_xls(file_bytes):
+            raise ValueError(
+                "Legacy .xls files are not supported. Please download/export the report as .xlsx or .csv."
+            )
+        elif ext in ("csv", "tsv", "txt") or ext == "":
+            df = _read_csv_like(file_bytes, filename)
         else:
             raise ValueError(f"Unsupported file type: '{ext}'. Please upload CSV or XLSX.")
+    except ValueError:
+        raise
     except Exception as exc:
-        if isinstance(exc, ValueError):
-            raise
         raise ValueError(f"Could not read file '{filename}': {exc}") from exc
 
     df = df.dropna(how="all").reset_index(drop=True)
