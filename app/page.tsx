@@ -1311,161 +1311,129 @@ function ActionReportPanel({
   fallbackWatchCount: number;
   fallbackWinnerCount: number;
 }) {
+  const [reportView, setReportView] = useState<"negatives" | "actions" | "summary">("negatives");
+  const [exportType, setExportType] = useState<"negatives" | "actions" | "markdown">("negatives");
+
   const hasReport = execSummary.length > 0 || checklist.length > 0 || negatives.length > 0;
 
-  const grouped = ["Cut Now", "Add Negatives", "Fix Don't Cut", "Scale", "Prove-Out", "Investigate"]
-    .map((group) => ({
-      group,
-      items: checklist.filter((item) => str(item.group) === group),
-    }))
-    .filter((section) => section.items.length > 0);
+  const groupedActions = ["Cut Now", "Add Negatives", "Fix Don't Cut", "Scale", "Prove-Out", "Investigate"]
+    .flatMap((group) =>
+      checklist
+        .filter((item) => str(item.group) === group)
+        .map((item) => ({ ...item, group }))
+    );
+
+  function handleExport() {
+    if (exportType === "negatives") {
+      exportRowsCsv("negative-keyword-sheet.csv", negatives);
+      return;
+    }
+
+    if (exportType === "actions") {
+      exportRowsCsv("action-checklist.csv", checklist);
+      return;
+    }
+
+    copyToClipboard(markdown, "Markdown action report copied.");
+  }
 
   if (!hasReport) {
     return (
-      <section className="wr-panel">
-        <div className="wr-panel-head">
-          <div>
-            <span>Action Report</span>
-            <h2>Backend action report not found</h2>
+      <section className="wr-action-report-page">
+        <div className="wr-panel">
+          <div className="wr-panel-head">
+            <div>
+              <span>Action Report</span>
+              <h2>Backend action report not found</h2>
+            </div>
           </div>
+
+          <div className="wr-steps">
+            <div className="wr-step red">
+              <h3>1. Add Waste Spender negatives first</h3>
+              <p>Start with zero-purchase search terms above your selected spend threshold. Use exact match first.</p>
+              <strong>Immediate budget cleanup</strong>
+            </div>
+
+            <div className="wr-step red">
+              <h3>2. Apply Kill List clusters</h3>
+              <p>Competitor, marketplace, informational, generic, and off-product terms should be blocked aggressively.</p>
+              <strong>{money(fallbackKillSpend)} direct leakage identified</strong>
+            </div>
+
+            <div className="wr-step yellow">
+              <h3>3. Fix core watchlist terms</h3>
+              <p>If a relevant term gets clicks but no purchases, it is likely a PDP, price, offer, review, or checkout issue.</p>
+              <strong>{fallbackWatchCount} core terms need investigation</strong>
+            </div>
+
+            <div className="wr-step green">
+              <h3>4. Protect and scale winners</h3>
+              <p>Winner terms should be isolated into controlled structures, improved in feed titles, and used for copy/PDP learning.</p>
+              <strong>{fallbackWinnerCount} converting terms found</strong>
+            </div>
+          </div>
+
+          <p className="wr-report-warning">
+            The frontend did not receive <code>action_report</code> from the backend response. Upload again after Railway finishes deployment.
+          </p>
         </div>
-
-        <div className="wr-steps">
-          <div className="wr-step red">
-            <h3>1. Add Waste Spender negatives first</h3>
-            <p>Start with zero-purchase search terms above your selected spend threshold. Use exact match first.</p>
-            <strong>Immediate budget cleanup</strong>
-          </div>
-
-          <div className="wr-step red">
-            <h3>2. Apply Kill List clusters</h3>
-            <p>Competitor, marketplace, informational, generic, and off-product terms should be blocked aggressively.</p>
-            <strong>{money(fallbackKillSpend)} direct leakage identified</strong>
-          </div>
-
-          <div className="wr-step yellow">
-            <h3>3. Fix core watchlist terms</h3>
-            <p>If a relevant term gets clicks but no purchases, it is likely a PDP, price, offer, review, or checkout issue.</p>
-            <strong>{fallbackWatchCount} core terms need investigation</strong>
-          </div>
-
-          <div className="wr-step green">
-            <h3>4. Protect and scale winners</h3>
-            <p>Winner terms should be isolated into controlled structures, improved in feed titles, and used for copy/PDP learning.</p>
-            <strong>{fallbackWinnerCount} converting terms found</strong>
-          </div>
-        </div>
-
-        <p className="wr-report-warning">
-          The frontend did not receive <code>action_report</code> from the backend response. Upload again after Railway finishes deployment.
-        </p>
       </section>
     );
   }
 
   return (
     <section className="wr-action-report-page">
-      <div className="wr-panel">
-        <div className="wr-panel-head">
+      <div className="wr-panel wr-report-shell">
+        <div className="wr-report-top">
           <div>
             <span>Action Report</span>
-            <h2>Executive action report</h2>
+            <h2>Operator action sheet</h2>
+            <p>
+              Compact campaign-ready output: export negatives, review other actions, or copy the executive summary.
+            </p>
           </div>
 
-          <div className="wr-report-actions">
-            <button
-              type="button"
-              onClick={() => copyToClipboard(markdown, "Markdown action report copied.")}
-              disabled={!markdown}
-            >
-              Copy Markdown
-            </button>
+          <div className="wr-report-controls">
+            <label>
+              View
+              <select value={reportView} onChange={(e) => setReportView(e.target.value as "negatives" | "actions" | "summary")}>
+                <option value="negatives">Negative keywords ({negatives.length})</option>
+                <option value="actions">Other actions ({groupedActions.length})</option>
+                <option value="summary">Executive summary</option>
+              </select>
+            </label>
 
-            <button
-              type="button"
-              onClick={() => exportRowsCsv("negative-keyword-sheet.csv", negatives)}
-              disabled={!negatives.length}
-            >
-              Export negatives CSV
-            </button>
+            <label>
+              Export
+              <select value={exportType} onChange={(e) => setExportType(e.target.value as "negatives" | "actions" | "markdown")}>
+                <option value="negatives">Negative CSV</option>
+                <option value="actions">Action CSV</option>
+                <option value="markdown">Markdown copy</option>
+              </select>
+            </label>
 
-            <button
-              type="button"
-              onClick={() => exportRowsCsv("action-checklist.csv", checklist)}
-              disabled={!checklist.length}
-            >
-              Export checklist CSV
+            <button type="button" onClick={handleExport}>
+              Export
             </button>
           </div>
         </div>
 
-        <div className="wr-exec-summary">
-          {execSummary.slice(0, 8).map((line, index) => (
-            <div key={index}>
-              <span>{index + 1}</span>
-              <p>{line}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="wr-action-grid">
-        <div className="wr-panel">
-          <div className="wr-panel-head">
-            <div>
-              <span>Prioritized checklist</span>
-              <h2>Sorted by ₹ impact</h2>
-            </div>
-          </div>
-
-          <div className="wr-checklist-sections">
-            {grouped.length ? (
-              grouped.map((section) => (
-                <div key={section.group} className="wr-checklist-section">
-                  <h3>{section.group}</h3>
-
-                  {section.items.slice(0, 40).map((item, index) => (
-                    <label key={item.id || `${section.group}-${index}`} className="wr-checklist-item">
-                      <input type="checkbox" />
-
-                      <div>
-                        <div className="wr-checklist-line">
-                          <strong>{str(item.instruction, str(item.title, "Review action"))}</strong>
-                          <em>{money(item.impact)}</em>
-                        </div>
-
-                        <p>{str(item.reason, str(item.description))}</p>
-
-                        <div className="wr-checklist-meta">
-                          <span>{str(item.type, "action")}</span>
-                          <span>{str(item.match_type, "review")}</span>
-                          <span>{str(item.confidence, "Medium")} confidence</span>
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              ))
-            ) : (
-              <div className="wr-empty">
-                <strong>No action checklist rows</strong>
-                <p>The backend did not return checklist items.</p>
+        {reportView === "summary" ? (
+          <div className="wr-exec-summary compact">
+            {execSummary.slice(0, 8).map((line, index) => (
+              <div key={index}>
+                <span>{index + 1}</span>
+                <p>{line}</p>
               </div>
-            )}
+            ))}
           </div>
-        </div>
+        ) : null}
 
-        <div className="wr-panel">
-          <div className="wr-panel-head">
-            <div>
-              <span>Operator deliverable</span>
-              <h2>Negative keyword sheet</h2>
-            </div>
-          </div>
-
-          <div className="wr-negative-sheet-table-wrap">
+        {reportView === "negatives" ? (
+          <div className="wr-report-table-wrap">
             {negatives.length ? (
-              <table className="wr-negative-sheet-table">
+              <table className="wr-report-table">
                 <thead>
                   <tr>
                     <th>Negative keyword</th>
@@ -1484,7 +1452,7 @@ function ActionReportPanel({
                 </thead>
 
                 <tbody>
-                  {negatives.slice(0, 250).map((row, index) => (
+                  {negatives.slice(0, 300).map((row, index) => (
                     <tr key={`${row.syntax || row.term}-${index}`}>
                       <td>
                         <code>{str(row.syntax, str(row.term))}</code>
@@ -1494,7 +1462,7 @@ function ActionReportPanel({
                       <td className="right">{int(row.clicks)}</td>
                       <td className="right">{reportPct(row.ctr)}</td>
                       <td className="right">{num(row.conversions).toFixed(2)}</td>
-                      <td className="right">{money(row.revenue ?? (row as AnyObj).conv_value)}</td>
+                      <td className="right">{money(row.revenue ?? row.conv_value)}</td>
                       <td className="right">{x(row.roas)}</td>
                       <td>{str(row.campaign, "-")}</td>
                       <td>{str(row.ad_group, "-")}</td>
@@ -1510,12 +1478,53 @@ function ActionReportPanel({
               </table>
             ) : (
               <div className="wr-empty">
-                <strong>No negative sheet rows</strong>
-                <p>No overlap-checked negatives were returned by the backend.</p>
+                <strong>No negative keyword rows</strong>
+                <p>No operator-ready negative sheet was returned or generated.</p>
               </div>
             )}
           </div>
-        </div>
+        ) : null}
+
+        {reportView === "actions" ? (
+          <div className="wr-report-table-wrap">
+            {groupedActions.length ? (
+              <table className="wr-report-table actions">
+                <thead>
+                  <tr>
+                    <th>Group</th>
+                    <th>Instruction</th>
+                    <th>Term</th>
+                    <th className="right">₹ Impact</th>
+                    <th>Type</th>
+                    <th>Confidence</th>
+                    <th>Reason</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {groupedActions.slice(0, 300).map((row, index) => (
+                    <tr key={`${row.id || row.term}-${index}`}>
+                      <td>{str(row.group)}</td>
+                      <td className="strong">{str(row.instruction, str(row.title, "Review action"))}</td>
+                      <td>
+                        <code>{str(row.term, "-")}</code>
+                      </td>
+                      <td className="right strong">{money(row.impact)}</td>
+                      <td>{str(row.type, "action")}</td>
+                      <td>{str(row.confidence, "Medium")}</td>
+                      <td>{str(row.reason, str(row.description))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="wr-empty">
+                <strong>No action rows</strong>
+                <p>The backend did not return checklist items.</p>
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -3363,6 +3372,167 @@ body {
 }
 
 
+
+.wr-report-shell {
+  max-width: 1220px;
+  margin: 0 auto;
+}
+
+.wr-report-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.wr-report-top span {
+  color: var(--wr-faint);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.wr-report-top h2 {
+  margin: 5px 0 0;
+  color: var(--wr-ink);
+  font-size: 20px;
+  letter-spacing: -0.04em;
+}
+
+.wr-report-top p {
+  margin: 6px 0 0;
+  color: var(--wr-dim);
+  font-size: 13px;
+}
+
+.wr-report-controls {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.wr-report-controls label {
+  display: grid;
+  gap: 5px;
+  color: var(--wr-faint);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.wr-report-controls select {
+  min-width: 170px;
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-ink);
+  border-radius: 11px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.wr-report-controls button {
+  border: 1px solid rgba(66,133,244,0.55);
+  background: rgba(66,133,244,0.16);
+  color: var(--wr-ink);
+  border-radius: 11px;
+  padding: 9px 13px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.wr-report-table-wrap {
+  width: 100%;
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  border-radius: 14px;
+  overflow: auto;
+  max-height: calc(100vh - 330px);
+}
+
+.wr-report-table {
+  width: 100%;
+  min-width: 1280px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.wr-report-table.actions {
+  min-width: 1050px;
+}
+
+.wr-report-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--wr-panel2);
+  color: var(--wr-faint);
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--wr-line);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.wr-report-table td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--wr-grid);
+  color: var(--wr-dim);
+  vertical-align: top;
+  line-height: 1.35;
+}
+
+.wr-report-table .right {
+  text-align: right;
+}
+
+.wr-report-table .strong {
+  color: var(--wr-ink);
+  font-weight: 800;
+}
+
+.wr-report-table code {
+  display: inline-block;
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
+  color: var(--wr-ink);
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.wr-report-table span.safe,
+.wr-report-table span.warn {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.wr-report-table span.safe {
+  background: rgba(52,168,83,0.12);
+  color: #34A853;
+}
+
+.wr-report-table span.warn {
+  background: rgba(251,188,4,0.14);
+  color: #FBBC04;
+}
+
+.wr-exec-summary.compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+
 @media(max-width: 980px) {
   .wr-kpis,
   .wr-mini-kpis {
@@ -3381,6 +3551,21 @@ body {
     flex-direction: column;
     align-items: stretch;
   }
+
+  .wr-report-top,
+  .wr-report-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wr-report-controls select {
+    min-width: 100%;
+  }
+
+  .wr-exec-summary.compact {
+    grid-template-columns: 1fr;
+  }
+
 
   .wr-exec-summary,
   .wr-action-grid {
