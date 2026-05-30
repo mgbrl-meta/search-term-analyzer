@@ -1,15 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import FileUpload from "@/components/FileUpload";
 import ThemeToggle from "@/components/ThemeToggle";
 import type { AnalyzeResponse } from "@/types/api";
@@ -17,24 +8,24 @@ import type { AnalyzeResponse } from "@/types/api";
 type AnyObj = Record<string, any>;
 
 type TabKey =
-  | "brief"
-  | "spend_wasters"
-  | "negative_keywords"
-  | "ngram_waste"
-  | "pdp_issues"
-  | "scale"
-  | "intent_brand"
-  | "raw_terms";
+  | "waste_spender"
+  | "spend_mix"
+  | "fragmentation"
+  | "pattern_waste"
+  | "kill_list"
+  | "watch_list"
+  | "winners"
+  | "action_plan";
 
-const TABS: { key: TabKey; label: string; short: string }[] = [
-  { key: "brief", label: "Action Brief", short: "Brief" },
-  { key: "spend_wasters", label: "Waste Spender", short: "Waste Spender" },
-  { key: "negative_keywords", label: "Negative Keywords", short: "Negatives" },
-  { key: "ngram_waste", label: "N-Gram Waste", short: "N-Grams" },
-  { key: "pdp_issues", label: "PDP / Offer Issues", short: "PDP Issues" },
-  { key: "scale", label: "Scale Signals", short: "Scale" },
-  { key: "intent_brand", label: "Intent / Brand", short: "Intent" },
-  { key: "raw_terms", label: "Raw Terms", short: "Terms" },
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "waste_spender", label: "Waste Spender" },
+  { key: "spend_mix", label: "Spend Mix" },
+  { key: "fragmentation", label: "Fragmentation" },
+  { key: "pattern_waste", label: "Pattern Waste" },
+  { key: "kill_list", label: "Kill List" },
+  { key: "watch_list", label: "Watch List" },
+  { key: "winners", label: "Winners" },
+  { key: "action_plan", label: "Action Plan" },
 ];
 
 const GOOGLE = {
@@ -43,6 +34,53 @@ const GOOGLE = {
   yellow: "#FBBC04",
   green: "#34A853",
 };
+
+const COMPETITORS = [
+  "traya",
+  "olaplex",
+  "anomaly",
+  "ybera",
+  "loreal",
+  "krone",
+  "mamaearth",
+  "minimalist",
+  "wishcare",
+  "bare anatomy",
+  "plum",
+  "biotique",
+  "wow",
+];
+
+const MARKETPLACES = ["amazon", "flipkart", "nykaa", "myntra", "meesho", "snapdeal"];
+
+const OFF_PRODUCT = [
+  "oil",
+  "serum",
+  "conditioner",
+  "lotion",
+  "cream",
+  "gel",
+  "soap",
+  "face wash",
+  "capsule",
+  "gummies",
+  "hair colour",
+  "hair color",
+];
+
+const INFO_WORDS = [
+  "how to",
+  "home remedy",
+  "remedy",
+  "naturally",
+  "get rid",
+  "cure",
+  "why",
+  "what causes",
+  "at home",
+  "meaning",
+  "benefits",
+];
 
 function arr<T = AnyObj>(value: any): T[] {
   if (Array.isArray(value)) return value;
@@ -62,13 +100,6 @@ function str(value: any, fallback = ""): string {
   return String(value);
 }
 
-function pick(row: AnyObj, keys: string[], fallback: any = "") {
-  for (const key of keys) {
-    if (row?.[key] !== undefined && row?.[key] !== null) return row[key];
-  }
-  return fallback;
-}
-
 function money(value: any) {
   return `₹${Math.round(num(value)).toLocaleString("en-IN")}`;
 }
@@ -81,132 +112,40 @@ function x(value: any) {
   return `${num(value).toFixed(2)}x`;
 }
 
-function pct(value: any) {
-  const n = num(value);
-  if (n <= 1) return `${(n * 100).toFixed(1)}%`;
-  return `${n.toFixed(1)}%`;
+function syntax(term: string, matchType: "exact" | "phrase" | "broad") {
+  const clean = term.trim();
+  if (!clean) return "";
+  if (matchType === "exact") return `[${clean}]`;
+  if (matchType === "phrase") return `"${clean}"`;
+  return clean;
 }
 
-function priorityRank(priority: any) {
-  const p = str(priority);
-  if (p === "Critical") return 0;
-  if (p === "High") return 1;
-  if (p === "Medium") return 2;
-  if (p === "Low") return 3;
-  return 9;
-}
+function classifyTerm(termRaw: string, conversions = 0) {
+  const term = termRaw.toLowerCase();
 
-function getTerms(rec: AnyObj): string[] {
-  const affected = arr<string>(rec.affected_terms);
-  if (affected.length) return affected;
-  return arr<string>(rec.terms);
-}
-
-function getMatchType(rec: AnyObj) {
-  const raw = str(rec.match_type).toUpperCase();
-  if (raw.includes("EXACT")) return "EXACT";
-  if (raw.includes("PHRASE")) return "PHRASE";
-  if (raw.includes("BROAD")) return "BROAD";
-  if (raw.includes("NONE")) return "NONE";
-
-  const type = str(rec.type).toLowerCase();
-  if (type.includes("ngram")) return Number(rec.metadata?.n) === 1 ? "BROAD" : "PHRASE";
-  if (type.includes("negative") || type.includes("zero") || type.includes("low_roas")) return "EXACT";
-  if (type.includes("pdp") || type.includes("scale")) return "NONE";
-  return "REVIEW";
-}
-
-function recMatchesTab(rec: AnyObj, tab: TabKey) {
-  const type = str(rec.type).toLowerCase();
-  const title = str(rec.title).toLowerCase();
-  const reason = str(rec.reason).toLowerCase();
-
-  if (tab === "brief") return true;
-
-  if (tab === "spend_wasters") {
-    return (
-      type.includes("negative") ||
-      type.includes("zero") ||
-      type.includes("low_roas") ||
-      type.includes("ngram") ||
-      type.includes("intent_waste") ||
-      title.includes("waste") ||
-      reason.includes("below break-even")
-    );
+  if (conversions > 0) return "Converters";
+  if (MARKETPLACES.some((w) => term.includes(w))) return "Marketplace";
+  if (COMPETITORS.some((w) => term.includes(w))) return "Competitor";
+  if (INFO_WORDS.some((w) => term.includes(w))) return "Informational";
+  if (OFF_PRODUCT.some((w) => term.includes(w))) return "Off-product";
+  if (term.includes("hair care") || term.includes("hair products") || term.includes("best hair")) {
+    return "Generic hair";
   }
-
-  if (tab === "negative_keywords") {
-    return (
-      type.includes("negative") ||
-      type.includes("zero") ||
-      type.includes("low_roas") ||
-      type.includes("ngram")
-    );
-  }
-
-  if (tab === "ngram_waste") return type.includes("ngram");
-  if (tab === "pdp_issues") return type.includes("pdp") || type.includes("investigate_pdp");
-  if (tab === "scale") return type.includes("scale");
-  if (tab === "intent_brand") {
-    return (
-      type.includes("intent") ||
-      type.includes("brand") ||
-      title.includes("informational") ||
-      title.includes("marketplace")
-    );
-  }
-
-  return false;
-}
-
-function flattenRecommendations(recommendations: AnyObj[]) {
-  const rows: AnyObj[] = [];
-
-  recommendations.forEach((rec) => {
-    const terms = getTerms(rec);
-    const base = {
-      priority: str(rec.priority),
-      type: str(rec.type),
-      match_type: getMatchType(rec),
-      severity: str(rec.severity),
-      impact: num(rec.impact),
-      reason: str(rec.reason),
-      recommended_action: str(rec.recommended_action),
-      title: str(rec.title),
-      description: str(rec.description),
-    };
-
-    if (!terms.length) {
-      rows.push({ ...base, keyword_or_phrase: "" });
-      return;
-    }
-
-    terms.forEach((term) => {
-      rows.push({ ...base, keyword_or_phrase: term });
-    });
-  });
-
-  return rows;
+  return "Core";
 }
 
 function exportCsv(filename: string, rows: AnyObj[]) {
   if (!rows.length) return;
 
   const headerSet = new Set<string>();
-  rows.forEach((row) => {
-    Object.keys(row).forEach((key) => headerSet.add(key));
-  });
-
+  rows.forEach((row) => Object.keys(row).forEach((key) => headerSet.add(key)));
   const headers = Array.from(headerSet);
 
   const csv = [
     headers.join(","),
     ...rows.map((row) =>
       headers
-        .map((header) => {
-          const value = row[header] ?? "";
-          return `"${String(value).replaceAll('"', '""')}"`;
-        })
+        .map((header) => `"${String(row[header] ?? "").replaceAll('"', '""')}"`)
         .join(",")
     ),
   ].join("\n");
@@ -220,545 +159,640 @@ function exportCsv(filename: string, rows: AnyObj[]) {
   URL.revokeObjectURL(url);
 }
 
-function KpiCard({
+function Kpi({ label, value, tone = "default" }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="wr-kpi">
+      <span>{label}</span>
+      <strong className={`tone-${tone}`}>{value}</strong>
+    </div>
+  );
+}
+
+function BarRow({
   label,
   value,
-  tone = "neutral",
+  max,
+  meta,
+  color,
 }: {
   label: string;
-  value: string;
-  tone?: "neutral" | "blue" | "red" | "green" | "yellow";
+  value: number;
+  max: number;
+  meta?: string;
+  color: string;
 }) {
-  return (
-    <div className="sta-kpi">
-      <div className="sta-kpi-label">{label}</div>
-      <div className={`sta-kpi-value tone-${tone}`}>{value}</div>
-    </div>
-  );
-}
+  const width = max > 0 ? Math.max(3, (value / max) * 100) : 0;
 
-function Pill({
-  children,
-  color = GOOGLE.blue,
-}: {
-  children: any;
-  color?: string;
-}) {
   return (
-    <span className="sta-pill" style={{ boxShadow: `inset 3px 0 0 ${color}` }}>
-      {children}
-    </span>
-  );
-}
-
-function EmptyState({ label }: { label: string }) {
-  return (
-    <div className="sta-empty">
-      <div className="sta-empty-icon">✓</div>
-      <div className="sta-empty-title">No {label.toLowerCase()} found</div>
-      <div className="sta-empty-copy">
-        The engine did not find high-confidence actions for this section using the current thresholds.
+    <div className="wr-bar-row">
+      <div className="wr-bar-label">
+        <span>{label}</span>
+        <em>{meta}</em>
       </div>
-    </div>
-  );
-}
-
-function RecommendationsTable({ rows, label }: { rows: AnyObj[]; label: string }) {
-  if (!rows.length) return <EmptyState label={label} />;
-
-  return (
-    <div className="sta-table-wrap">
-      <div className="sta-table-scroll">
-        <table className="sta-table">
-          <thead>
-            <tr>
-              <th>Priority</th>
-              <th>Type</th>
-              <th>Match</th>
-              <th>Keywords / Phrases</th>
-              <th className="right">Impact</th>
-              <th>Action</th>
-              <th>Reason</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((rec, index) => {
-              const terms = getTerms(rec);
-              const match = getMatchType(rec);
-              const priority = str(rec.priority, "Low");
-
-              return (
-                <tr key={rec.id || `${rec.type}-${index}`}>
-                  <td>
-                    <Pill
-                      color={
-                        priority === "Critical"
-                          ? GOOGLE.red
-                          : priority === "High"
-                          ? GOOGLE.yellow
-                          : GOOGLE.blue
-                      }
-                    >
-                      {priority}
-                    </Pill>
-                  </td>
-                  <td className="strong">{str(rec.type, "action")}</td>
-                  <td>
-                    <Pill
-                      color={
-                        match === "EXACT"
-                          ? GOOGLE.blue
-                          : match === "PHRASE"
-                          ? GOOGLE.yellow
-                          : match === "BROAD"
-                          ? GOOGLE.red
-                          : GOOGLE.green
-                      }
-                    >
-                      {match}
-                    </Pill>
-                  </td>
-                  <td>
-                    <div className="sta-term-list">
-                      {terms.slice(0, 8).map((term, i) => (
-                        <span key={`${term}-${i}`} className="sta-term-chip">
-                          {term}
-                        </span>
-                      ))}
-                      {terms.length > 8 ? (
-                        <span className="sta-term-chip muted">+{terms.length - 8}</span>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="right strong">{money(rec.impact)}</td>
-                  <td>{str(rec.recommended_action, "Review manually")}</td>
-                  <td>{str(rec.reason, str(rec.description)).slice(0, 170)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="wr-bar-track">
+        <i style={{ width: `${width}%`, background: color }} />
       </div>
+      <strong style={{ color }}>{money(value)}</strong>
     </div>
   );
 }
 
-function NgramTable({ rows }: { rows: AnyObj[] }) {
-  if (!rows.length) return <EmptyState label="N-gram waste" />;
-
-  return (
-    <div className="sta-table-wrap">
-      <div className="sta-table-scroll">
-        <table className="sta-table">
-          <thead>
-            <tr>
-              <th>N-gram</th>
-              <th className="right">Terms</th>
-              <th className="right">Spend</th>
-              <th className="right">Revenue</th>
-              <th className="right">ROAS</th>
-              <th className="right">Waste</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.slice(0, 150).map((row, index) => (
-              <tr key={`${row.ngram}-${index}`}>
-                <td className="strong">{str(row.ngram)}</td>
-                <td className="right">{int(row.term_count)}</td>
-                <td className="right">{money(row.cost)}</td>
-                <td className="right">{money(row.revenue)}</td>
-                <td className="right">{x(row.roas)}</td>
-                <td className="right strong">{money(row.aggregate_wasted_spend || row.waste_score)}</td>
-                <td>
-                  <Pill color={num(row.n) === 1 ? GOOGLE.red : GOOGLE.yellow}>
-                    negative {num(row.n) === 1 ? "broad" : "phrase"}
-                  </Pill>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function TermsTable({ rows }: { rows: AnyObj[] }) {
-  if (!rows.length) return <EmptyState label="search terms" />;
-
-  return (
-    <div className="sta-table-wrap">
-      <div className="sta-table-scroll">
-        <table className="sta-table">
-          <thead>
-            <tr>
-              <th>Search term</th>
-              <th>Tier</th>
-              <th>Intent</th>
-              <th>Segment</th>
-              <th className="right">Spend</th>
-              <th className="right">Revenue</th>
-              <th className="right">ROAS</th>
-              <th className="right">Conv.</th>
-              <th className="right">Clicks</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.slice(0, 500).map((row, index) => (
-              <tr key={`${row.search_term}-${index}`}>
-                <td className="strong">{str(row.search_term)}</td>
-                <td>
-                  <Pill
-                    color={
-                      str(row.tier) === "Drain"
-                        ? GOOGLE.red
-                        : str(row.tier) === "Star"
-                        ? GOOGLE.green
-                        : GOOGLE.blue
-                    }
-                  >
-                    {str(row.tier, "Untested")}
-                  </Pill>
-                </td>
-                <td>{str(row.intent)}</td>
-                <td>{str(row.segment, row.is_brand ? "Brand" : "Non-brand")}</td>
-                <td className="right">{money(row.cost)}</td>
-                <td className="right">{money(row.revenue ?? row.conv_value)}</td>
-                <td className="right">{x(row.roas)}</td>
-                <td className="right">{num(row.conversions).toFixed(2)}</td>
-                <td className="right">{int(row.clicks)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function IntentPanel({
-  intentSummary,
+function DataTable({
   rows,
+  columns,
+  empty,
 }: {
-  intentSummary: AnyObj[];
   rows: AnyObj[];
+  columns: { key: string; label: string; right?: boolean; render?: (row: AnyObj) => any }[];
+  empty: string;
 }) {
+  if (!rows.length) {
+    return (
+      <div className="wr-empty">
+        <strong>No data found</strong>
+        <p>{empty}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="sta-two-col">
-      <div className="sta-panel">
-        <div className="sta-section-kicker">Intent mix</div>
-        <div className="sta-intent-list">
-          {intentSummary.map((row, index) => (
-            <div key={index} className="sta-intent-row">
-              <div>
-                <div className="sta-intent-name">
-                  {str(pick(row, ["intent", "name", "label"], "Unknown"))}
-                </div>
-                <div className="sta-intent-meta">
-                  {money(pick(row, ["cost", "spend", "total_cost"], 0))} spend ·{" "}
-                  {money(pick(row, ["revenue", "conv_value", "total_revenue"], 0))} revenue
-                </div>
-              </div>
-              <div className="sta-intent-roas">
-                {x(pick(row, ["roas", "blended_roas"], 0))}
-              </div>
-            </div>
+    <div className="wr-table-wrap">
+      <table className="wr-table">
+        <thead>
+          <tr>
+            {columns.map((col) => (
+              <th key={col.key} className={col.right ? "right" : ""}>
+                {col.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={index}>
+              {columns.map((col) => (
+                <td key={col.key} className={col.right ? "right" : ""}>
+                  {col.render ? col.render(row) : str(row[col.key])}
+                </td>
+              ))}
+            </tr>
           ))}
-        </div>
-      </div>
-
-      <RecommendationsTable rows={rows} label="intent / brand actions" />
+        </tbody>
+      </table>
     </div>
   );
 }
 
-
-function NegativeSyntax(term: string, matchType: "exact" | "phrase" | "broad") {
-  const clean = term.trim();
-  if (!clean) return "";
-  if (matchType === "exact") return `[${clean}]`;
-  if (matchType === "phrase") return `"${clean}"`;
-  return clean;
+function CopyBox({
+  text,
+  onCopy,
+}: {
+  text: string;
+  onCopy: () => void;
+}) {
+  return (
+    <div className="wr-copy-card">
+      <div className="wr-card-head">
+        <div>
+          <span>Copy-ready Google Ads negatives</span>
+          <h2>Negative keyword syntax</h2>
+        </div>
+        <button type="button" onClick={onCopy} disabled={!text}>
+          Copy list
+        </button>
+      </div>
+      <pre>{text || "No keywords in this view."}</pre>
+    </div>
+  );
 }
 
-function WasteSpenderPanel({
-  rows,
-  threshold,
-  setThreshold,
-  matchType,
-  setMatchType,
-  negativeLines,
+function PageContent({
+  result,
+  fileName,
+  onNewUpload,
 }: {
-  rows: AnyObj[];
-  threshold: number;
-  setThreshold: (value: number) => void;
-  matchType: "exact" | "phrase" | "broad";
-  setMatchType: (value: "exact" | "phrase" | "broad") => void;
-  negativeLines: string;
+  result: AnalyzeResponse;
+  fileName: string;
+  onNewUpload: () => void;
 }) {
-  const totalSpend = rows.reduce((sum, row) => sum + num(row.cost), 0);
-  const totalClicks = rows.reduce((sum, row) => sum + num(row.clicks), 0);
+  const [activeTab, setActiveTab] = useState<TabKey>("waste_spender");
+  const [threshold, setThreshold] = useState(100);
+  const [matchType, setMatchType] = useState<"exact" | "phrase" | "broad">("exact");
+
+  const data = result as AnyObj;
+  const summary = (data.summary || {}) as AnyObj;
+
+  const terms = useMemo(() => {
+    return arr<AnyObj>(data.terms)
+      .slice()
+      .map((row) => {
+        const searchTerm = str(row.search_term);
+        const conversions = num(row.conversions);
+        const category = classifyTerm(searchTerm, conversions);
+        return {
+          ...row,
+          search_term: searchTerm,
+          cost: num(row.cost),
+          clicks: num(row.clicks),
+          conversions,
+          revenue: num(row.revenue ?? row.conv_value),
+          roas: num(row.roas),
+          category,
+        };
+      })
+      .sort((a, b) => num(b.cost) - num(a.cost));
+  }, [data]);
+
+  const recommendations = useMemo(() => arr<AnyObj>(data.recommendations), [data]);
+
+  const ngramRows = useMemo<AnyObj[]>(() => {
+    const ngrams = (data.ngrams || {}) as AnyObj;
+
+    return [
+      ...arr<AnyObj>(ngrams["1"]).map((r): AnyObj => ({ ...r, n: 1 })),
+      ...arr<AnyObj>(ngrams["2"]).map((r): AnyObj => ({ ...r, n: 2 })),
+      ...arr<AnyObj>(ngrams["3"]).map((r): AnyObj => ({ ...r, n: 3 })),
+    ]
+      .map((row) => ({
+        ...row,
+        cost: num(row.cost),
+        clicks: num(row.clicks),
+        conversions: num(row.conversions),
+        revenue: num(row.revenue ?? row.conv_value),
+        roas: num(row.roas),
+        waste: num(row.aggregate_wasted_spend || row.waste_score || row.cost),
+      }))
+      .sort((a, b) => num(b.waste) - num(a.waste));
+  }, [data]);
+
+  const wasteRows = useMemo(() => {
+    return terms.filter((row) => num(row.cost) >= threshold && num(row.conversions) === 0);
+  }, [terms, threshold]);
+
+  const negativeLines = useMemo(() => {
+    return wasteRows
+      .map((row) => syntax(str(row.search_term), matchType))
+      .filter(Boolean)
+      .join("\n");
+  }, [wasteRows, matchType]);
+
+  const spendMix = useMemo(() => {
+    const map = new Map<string, { category: string; spend: number; clicks: number; terms: number; conversions: number; revenue: number }>();
+
+    terms.forEach((row) => {
+      const category = str(row.category, "Unknown");
+      const current = map.get(category) || {
+        category,
+        spend: 0,
+        clicks: 0,
+        terms: 0,
+        conversions: 0,
+        revenue: 0,
+      };
+
+      current.spend += num(row.cost);
+      current.clicks += num(row.clicks);
+      current.terms += 1;
+      current.conversions += num(row.conversions);
+      current.revenue += num(row.revenue);
+      map.set(category, current);
+    });
+
+    return Array.from(map.values()).sort((a, b) => b.spend - a.spend);
+  }, [terms]);
+
+  const fragmentation = useMemo(() => {
+    const buckets = [
+      { label: "1 click", min: 1, max: 1, spend: 0, terms: 0, clicks: 0 },
+      { label: "2–3 clicks", min: 2, max: 3, spend: 0, terms: 0, clicks: 0 },
+      { label: "4–10 clicks", min: 4, max: 10, spend: 0, terms: 0, clicks: 0 },
+      { label: "11+ clicks", min: 11, max: Infinity, spend: 0, terms: 0, clicks: 0 },
+      { label: "Converting terms", min: 0, max: Infinity, spend: 0, terms: 0, clicks: 0 },
+    ];
+
+    terms.forEach((row) => {
+      if (num(row.conversions) > 0) {
+        buckets[4].spend += num(row.cost);
+        buckets[4].terms += 1;
+        buckets[4].clicks += num(row.clicks);
+        return;
+      }
+
+      const clicks = num(row.clicks);
+      const bucket = buckets.find((b, i) => i < 4 && clicks >= b.min && clicks <= b.max);
+      if (bucket) {
+        bucket.spend += num(row.cost);
+        bucket.terms += 1;
+        bucket.clicks += clicks;
+      }
+    });
+
+    return buckets;
+  }, [terms]);
+
+  const killRows = useMemo(() => {
+    return terms.filter((row) => {
+      const category = str(row.category);
+      return (
+        num(row.conversions) === 0 &&
+        ["Competitor", "Marketplace", "Informational", "Off-product", "Generic hair"].includes(category)
+      );
+    });
+  }, [terms]);
+
+  const watchRows = useMemo(() => {
+    return terms
+      .filter((row) => num(row.conversions) === 0 && str(row.category) === "Core" && num(row.clicks) >= 5)
+      .sort((a, b) => num(b.cost) - num(a.cost));
+  }, [terms]);
+
+  const winnerRows = useMemo(() => {
+    return terms
+      .filter((row) => num(row.conversions) > 0)
+      .sort((a, b) => num(b.roas) - num(a.roas));
+  }, [terms]);
 
   async function copyNegatives() {
     try {
       await navigator.clipboard.writeText(negativeLines);
       alert("Negative keyword list copied.");
     } catch {
-      alert("Could not copy. Please select and copy manually.");
+      alert("Could not copy. Please copy manually.");
     }
   }
 
-  return (
-    <div className="sta-waste-stack">
-      <div className="sta-panel">
-        <div className="sta-panel-head">
-          <div>
-            <div className="sta-section-kicker">Waste Spender</div>
-            <h2>Zero-purchase search terms above spend threshold</h2>
-          </div>
+  const totalSpend = num(summary.total_cost) || terms.reduce((sum, row) => sum + num(row.cost), 0);
+  const zeroPurchaseSpend = terms
+    .filter((row) => num(row.conversions) === 0)
+    .reduce((sum, row) => sum + num(row.cost), 0);
+  const killSpend = killRows.reduce((sum, row) => sum + num(row.cost), 0);
+  const maxSpendMix = Math.max(...spendMix.map((row) => row.spend), 1);
+  const maxFrag = Math.max(...fragmentation.map((row) => row.spend), 1);
+  const maxPattern = Math.max(...ngramRows.slice(0, 20).map((row) => num(row.cost)), 1);
 
-          <div className="sta-waste-controls">
-            <div className="sta-threshold-control">
-              <label>Minimum spend</label>
-              <div className="sta-threshold-input-wrap">
-                <span>₹</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="50"
-                  value={threshold}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    setThreshold(Number.isFinite(value) && value >= 0 ? value : 0);
-                  }}
-                  placeholder="Enter spend"
-                />
+  const tabCounts: Record<TabKey, number> = {
+    waste_spender: wasteRows.length,
+    spend_mix: spendMix.length,
+    fragmentation: fragmentation.length,
+    pattern_waste: ngramRows.length,
+    kill_list: killRows.length,
+    watch_list: watchRows.length,
+    winners: winnerRows.length,
+    action_plan: recommendations.length || 6,
+  };
+
+  return (
+    <main className="wr-shell">
+      <style jsx global>{styles}</style>
+
+      <header className="wr-header">
+        <div>
+          <h1>Search Term Analyzer</h1>
+          <p>{fileName} · {int(terms.length)} spend-bearing terms analyzed</p>
+        </div>
+
+        <div className="wr-actions">
+          <button
+            type="button"
+            onClick={() =>
+              exportCsv(
+                "search-term-war-room-export.csv",
+                terms.map((row) => ({
+                  search_term: row.search_term,
+                  category: row.category,
+                  cost: row.cost,
+                  clicks: row.clicks,
+                  conversions: row.conversions,
+                  revenue: row.revenue,
+                  roas: row.roas,
+                }))
+              )
+            }
+          >
+            Export data
+          </button>
+          <button type="button" className="primary" onClick={onNewUpload}>
+            New upload
+          </button>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <nav className="wr-tabs">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className={activeTab === tab.key ? "active" : ""}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            {tab.label}
+            <em>{tabCounts[tab.key] || 0}</em>
+          </button>
+        ))}
+      </nav>
+
+      <section className="wr-kpis">
+        <Kpi label="Spend" value={money(totalSpend)} />
+        <Kpi label="Revenue" value={money(summary.total_revenue)} tone="green" />
+        <Kpi label="ROAS" value={x(summary.blended_roas)} tone="red" />
+        <Kpi label="Zero-purchase spend" value={money(zeroPurchaseSpend)} tone="red" />
+        <Kpi label="Kill-list spend" value={money(killSpend)} tone="green" />
+        <Kpi label="Clicks" value={int(summary.total_clicks)} tone="blue" />
+      </section>
+
+      {activeTab === "waste_spender" ? (
+        <section className="wr-stack">
+          <div className="wr-panel">
+            <div className="wr-panel-head">
+              <div>
+                <span>Waste Spender</span>
+                <h2>Zero-purchase search terms above spend threshold</h2>
+              </div>
+
+              <div className="wr-controls">
+                <label>
+                  Min spend
+                  <input
+                    type="number"
+                    value={threshold}
+                    min={0}
+                    step={50}
+                    onChange={(e) => setThreshold(Math.max(0, Number(e.target.value) || 0))}
+                  />
+                </label>
+
+                <select value={matchType} onChange={(e) => setMatchType(e.target.value as any)}>
+                  <option value="exact">Exact negatives</option>
+                  <option value="phrase">Phrase negatives</option>
+                  <option value="broad">Broad negatives</option>
+                </select>
               </div>
             </div>
 
-            <select
-              value={matchType}
-              onChange={(e) => setMatchType(e.target.value as "exact" | "phrase" | "broad")}
-            >
-              <option value="exact">Exact negatives</option>
-              <option value="phrase">Phrase negatives</option>
-              <option value="broad">Broad negatives</option>
-            </select>
-          </div>
-        </div>
+            <div className="wr-presets">
+              {[100, 200, 500, 1000, 2000, 5000, 10000].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={threshold === value ? "active" : ""}
+                  onClick={() => setThreshold(value)}
+                >
+                  ₹{value.toLocaleString("en-IN")}+
+                </button>
+              ))}
+            </div>
 
-        <div className="sta-threshold-presets">
-          {[100, 200, 500, 1000, 2000, 5000, 10000].map((value) => (
-            <button
-              key={value}
-              type="button"
-              className={threshold === value ? "active" : ""}
-              onClick={() => setThreshold(value)}
-            >
-              ₹{value.toLocaleString("en-IN")}+
-            </button>
-          ))}
-        </div>
+            <div className="wr-mini-kpis">
+              <Kpi label="Filter" value={`₹${threshold.toLocaleString("en-IN")}+`} />
+              <Kpi label="Terms" value={int(wasteRows.length)} />
+              <Kpi label="Spend at risk" value={money(wasteRows.reduce((s, r) => s + num(r.cost), 0))} tone="red" />
+              <Kpi label="Purchases" value="0" />
+            </div>
 
-        <div className="sta-waste-summary">
-          <div>
-            <span>Spend filter</span>
-            <strong>₹{threshold.toLocaleString("en-IN")}+</strong>
+            <DataTable
+              rows={wasteRows}
+              empty="No zero-purchase terms above the selected threshold."
+              columns={[
+                { key: "search_term", label: "Search term" },
+                {
+                  key: "syntax",
+                  label: "Negative syntax",
+                  render: (row) => <code>{syntax(str(row.search_term), matchType)}</code>,
+                },
+                { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
+                { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
+                { key: "conversions", label: "Conv.", right: true, render: (row) => num(row.conversions).toFixed(2) },
+                { key: "category", label: "Category" },
+              ]}
+            />
           </div>
-          <div>
-            <span>Terms found</span>
-            <strong>{int(rows.length)}</strong>
-          </div>
-          <div>
-            <span>Spend at risk</span>
-            <strong>{money(totalSpend)}</strong>
-          </div>
-          <div>
-            <span>Clicks</span>
-            <strong>{int(totalClicks)}</strong>
-          </div>
-          <div>
-            <span>Purchases</span>
-            <strong>0</strong>
-          </div>
-        </div>
 
-        {rows.length === 0 ? (
-          <EmptyState label="waste spender terms" />
-        ) : (
-          <div className="sta-table-wrap">
-            <div className="sta-table-scroll compact">
-              <table className="sta-table">
-                <thead>
-                  <tr>
-                    <th>Search term</th>
-                    <th>Negative syntax</th>
-                    <th className="right">Spend</th>
-                    <th className="right">Clicks</th>
-                    <th className="right">Conv.</th>
-                    <th className="right">Revenue</th>
-                    <th className="right">ROAS</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, index) => {
-                    const term = str(row.search_term);
-                    return (
-                      <tr key={`${term}-${index}`}>
-                        <td className="strong">{term}</td>
-                        <td>
-                          <span className="sta-copy-code">
-                            {NegativeSyntax(term, matchType)}
-                          </span>
-                        </td>
-                        <td className="right strong">{money(row.cost)}</td>
-                        <td className="right">{int(row.clicks)}</td>
-                        <td className="right">{num(row.conversions).toFixed(2)}</td>
-                        <td className="right">{money(row.revenue ?? row.conv_value)}</td>
-                        <td className="right">{x(row.roas)}</td>
-                        <td>
-                          <Pill color={GOOGLE.red}>Add negative</Pill>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          <CopyBox text={negativeLines} onCopy={copyNegatives} />
+        </section>
+      ) : null}
+
+      {activeTab === "spend_mix" ? (
+        <section className="wr-panel">
+          <div className="wr-panel-head">
+            <div>
+              <span>Spend Mix</span>
+              <h2>Spend by intent/category cluster</h2>
             </div>
           </div>
-        )}
-      </div>
 
-      <div className="sta-panel sta-negative-panel">
-        <div className="sta-negative-head">
-          <div>
-            <div className="sta-section-kicker">Copy-ready Google Ads negatives</div>
-            <h2>Negative keyword syntax</h2>
-            <p className="sta-panel-copy">
-              Copy this list and paste into Google Ads negatives. Exact match is safest by default.
-              Use phrase/broad only after checking overlap with profitable terms.
-            </p>
+          <div className="wr-bars">
+            {spendMix.map((row) => (
+              <BarRow
+                key={row.category}
+                label={row.category}
+                value={row.spend}
+                max={maxSpendMix}
+                color={
+                  row.category === "Converters"
+                    ? GOOGLE.green
+                    : row.category === "Core"
+                    ? GOOGLE.blue
+                    : row.category === "Competitor"
+                    ? "#9b8cff"
+                    : GOOGLE.red
+                }
+                meta={`${row.terms} terms · ${int(row.clicks)} clicks · ${num(row.conversions).toFixed(2)} conv`}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {activeTab === "fragmentation" ? (
+        <section className="wr-panel">
+          <div className="wr-panel-head">
+            <div>
+              <span>Fragmentation</span>
+              <h2>How spend is scattered by click depth</h2>
+            </div>
           </div>
 
-          <button
-            type="button"
-            className="sta-wide-button compact"
-            onClick={copyNegatives}
-            disabled={!negativeLines}
-          >
-            Copy list
-          </button>
-        </div>
+          <div className="wr-bars">
+            {fragmentation.map((row) => (
+              <BarRow
+                key={row.label}
+                label={row.label}
+                value={row.spend}
+                max={maxFrag}
+                color={row.label === "Converting terms" ? GOOGLE.green : GOOGLE.red}
+                meta={`${row.terms} terms · ${int(row.clicks)} clicks`}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
-        <div className="sta-negative-box horizontal">
-          {negativeLines || "No zero-purchase terms above selected spend threshold."}
-        </div>
-      </div>
-    </div>
+      {activeTab === "pattern_waste" ? (
+        <section className="wr-panel">
+          <div className="wr-panel-head">
+            <div>
+              <span>Pattern Waste</span>
+              <h2>Repeated query patterns creating waste</h2>
+            </div>
+          </div>
+
+          <div className="wr-bars">
+            {ngramRows.slice(0, 35).map((row, index) => (
+              <BarRow
+                key={`${row.ngram}-${index}`}
+                label={`${row.ngram} · ${row.n}-word pattern`}
+                value={num(row.cost)}
+                max={maxPattern}
+                color={num(row.conversions) > 0 ? GOOGLE.green : GOOGLE.red}
+                meta={`${int(row.term_count)} terms · ${int(row.clicks)} clicks · ${num(row.conversions).toFixed(2)} conv · ${x(row.roas)}`}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {activeTab === "kill_list" ? (
+        <section className="wr-stack">
+          <div className="wr-panel">
+            <div className="wr-panel-head">
+              <div>
+                <span>Kill List</span>
+                <h2>Competitor, off-product, marketplace, informational drains</h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  exportCsv(
+                    "kill-list-negatives.csv",
+                    killRows.map((row) => ({
+                      search_term: row.search_term,
+                      exact_negative: `[${row.search_term}]`,
+                      phrase_negative: `"${row.search_term}"`,
+                      category: row.category,
+                      cost: row.cost,
+                      clicks: row.clicks,
+                    }))
+                  )
+                }
+              >
+                Export kill list
+              </button>
+            </div>
+
+            <DataTable
+              rows={killRows}
+              empty="No kill-list terms found."
+              columns={[
+                { key: "search_term", label: "Search term" },
+                { key: "category", label: "Category" },
+                { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
+                { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
+                { key: "syntax", label: "Exact negative", render: (row) => <code>[{row.search_term}]</code> },
+              ]}
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {activeTab === "watch_list" ? (
+        <section className="wr-panel">
+          <div className="wr-panel-head">
+            <div>
+              <span>Watch List</span>
+              <h2>Relevant search terms with clicks but no purchases</h2>
+            </div>
+          </div>
+
+          <DataTable
+            rows={watchRows}
+            empty="No core watchlist terms found."
+            columns={[
+              { key: "search_term", label: "Search term" },
+              { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
+              { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
+              { key: "conversions", label: "Conv.", right: true, render: (row) => num(row.conversions).toFixed(2) },
+              { key: "action", label: "Action", render: () => "Fix PDP / offer before negative" },
+            ]}
+          />
+        </section>
+      ) : null}
+
+      {activeTab === "winners" ? (
+        <section className="wr-panel">
+          <div className="wr-panel-head">
+            <div>
+              <span>Winners</span>
+              <h2>Terms with purchases / revenue</h2>
+            </div>
+          </div>
+
+          <DataTable
+            rows={winnerRows}
+            empty="No winner terms found."
+            columns={[
+              { key: "search_term", label: "Search term" },
+              { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
+              { key: "conversions", label: "Conv.", right: true, render: (row) => num(row.conversions).toFixed(2) },
+              { key: "revenue", label: "Revenue", right: true, render: (row) => money(row.revenue) },
+              { key: "roas", label: "ROAS", right: true, render: (row) => x(row.roas) },
+              { key: "action", label: "Action", render: () => "Protect / isolate / scale" },
+            ]}
+          />
+        </section>
+      ) : null}
+
+      {activeTab === "action_plan" ? (
+        <section className="wr-panel">
+          <div className="wr-panel-head">
+            <div>
+              <span>Action Plan</span>
+              <h2>Sequenced operator actions</h2>
+            </div>
+          </div>
+
+          <div className="wr-steps">
+            <div className="wr-step red">
+              <h3>1. Add Waste Spender negatives first</h3>
+              <p>Start with zero-purchase search terms above your selected spend threshold. Use exact match first.</p>
+              <strong>Immediate budget cleanup</strong>
+            </div>
+
+            <div className="wr-step red">
+              <h3>2. Apply Kill List clusters</h3>
+              <p>Competitor, marketplace, informational, generic, and off-product terms should be blocked aggressively.</p>
+              <strong>{money(killSpend)} direct leakage identified</strong>
+            </div>
+
+            <div className="wr-step yellow">
+              <h3>3. Fix core watchlist terms</h3>
+              <p>If a relevant term gets clicks but no purchases, it is likely a PDP, price, offer, review, or checkout issue.</p>
+              <strong>{watchRows.length} core terms need investigation</strong>
+            </div>
+
+            <div className="wr-step green">
+              <h3>4. Protect and scale winners</h3>
+              <p>Winner terms should be isolated into controlled structures, improved in feed titles, and used for copy/PDP learning.</p>
+              <strong>{winnerRows.length} converting terms found</strong>
+            </div>
+          </div>
+        </section>
+      ) : null}
+    </main>
   );
 }
 
 export default function Page() {
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [fileName, setFileName] = useState("");
-  const [activeTab, setActiveTab] = useState<TabKey>("brief");
-  const [chartMode, setChartMode] = useState<"category" | "intent">("intent");
-  const [wasteSpendThreshold, setWasteSpendThreshold] = useState<number>(100);
-  const [negativeMatchType, setNegativeMatchType] = useState<"exact" | "phrase" | "broad">("exact");
-
-  const data = result as AnyObj | null;
-  const summary = (data?.summary || {}) as AnyObj;
-
-  const recommendations = useMemo(() => {
-    return arr<AnyObj>(data?.recommendations)
-      .slice()
-      .sort((a, b) => {
-        const p = priorityRank(a.priority) - priorityRank(b.priority);
-        if (p !== 0) return p;
-        return num(b.impact) - num(a.impact);
-      });
-  }, [data]);
-
-  const categorySummary = useMemo(() => arr<AnyObj>(data?.category_summary || data?.categories), [data]);
-  const intentSummary = useMemo(() => arr<AnyObj>(data?.intent_summary || data?.intents), [data]);
-
-  const terms = useMemo(() => {
-    return arr<AnyObj>(data?.terms)
-      .slice()
-      .sort((a, b) => num(b.cost) - num(a.cost));
-  }, [data]);
-
-  const wasteSpenderTerms = useMemo(() => {
-    return terms
-      .filter((row) => num(row.cost) >= wasteSpendThreshold && num(row.conversions) === 0)
-      .sort((a, b) => num(b.cost) - num(a.cost));
-  }, [terms, wasteSpendThreshold]);
-
-  const wasteSpenderNegativeLines = useMemo(() => {
-    return wasteSpenderTerms
-      .map((row) => {
-        const term = str(row.search_term).trim();
-        if (!term) return "";
-        if (negativeMatchType === "exact") return `[${term}]`;
-        if (negativeMatchType === "phrase") return `"${term}"`;
-        return term;
-      })
-      .filter(Boolean)
-      .join("\n");
-  }, [wasteSpenderTerms, negativeMatchType]);
-
-  const ngramRows = useMemo<AnyObj[]>(() => {
-    const ngrams = (data?.ngrams || {}) as AnyObj;
-
-    const rows: AnyObj[] = [
-      ...arr<AnyObj>(ngrams["1"]).map((r): AnyObj => ({ ...r, n: 1 })),
-      ...arr<AnyObj>(ngrams["2"]).map((r): AnyObj => ({ ...r, n: 2 })),
-      ...arr<AnyObj>(ngrams["3"]).map((r): AnyObj => ({ ...r, n: 3 })),
-    ];
-
-    return rows.sort(
-      (a, b) =>
-        num(b.waste_score || b.aggregate_wasted_spend || b.cost) -
-        num(a.waste_score || a.aggregate_wasted_spend || a.cost)
-    );
-  }, [data]);
-
-  const filteredRecommendations = useMemo(() => {
-    if (activeTab === "brief") return recommendations.slice(0, 8);
-    return recommendations.filter((rec) => recMatchesTab(rec, activeTab));
-  }, [recommendations, activeTab]);
-
-  const chartData = useMemo(() => {
-    const source = chartMode === "intent" ? intentSummary : categorySummary;
-
-    return source.slice(0, 8).map((row) => ({
-      name: str(pick(row, ["intent", "category", "name", "label"], "Unknown")),
-      spend: num(pick(row, ["cost", "spend", "total_cost"], 0)),
-      revenue: num(pick(row, ["revenue", "conv_value", "total_revenue"], 0)),
-    }));
-  }, [chartMode, intentSummary, categorySummary]);
-
-  const tabCounts = useMemo(() => {
-    return {
-      brief: recommendations.length,
-      spend_wasters: wasteSpenderTerms.length,
-      negative_keywords: recommendations.filter((r) => recMatchesTab(r, "negative_keywords")).length,
-      ngram_waste: recommendations.filter((r) => recMatchesTab(r, "ngram_waste")).length + ngramRows.length,
-      pdp_issues: recommendations.filter((r) => recMatchesTab(r, "pdp_issues")).length,
-      scale: recommendations.filter((r) => recMatchesTab(r, "scale")).length,
-      intent_brand: recommendations.filter((r) => recMatchesTab(r, "intent_brand")).length + intentSummary.length,
-      raw_terms: terms.length,
-    } as Record<TabKey, number>;
-  }, [recommendations, ngramRows, intentSummary, terms, wasteSpenderTerms]);
 
   if (!result) {
     return (
-      <main className="sta-app-shell">
-        <style jsx global>{globalStyles}</style>
+      <main className="wr-shell">
+        <style jsx global>{styles}</style>
 
-        <header className="sta-home-header">
+        <header className="wr-header">
           <div>
             <h1>Search Term Analyzer</h1>
             <p>Upload a Google Shopping search-terms report for operator-grade actions.</p>
@@ -770,7 +804,6 @@ export default function Page() {
           onResult={(res, name) => {
             setResult(res);
             setFileName(name);
-            setActiveTab("brief");
           }}
         />
       </main>
@@ -778,947 +811,460 @@ export default function Page() {
   }
 
   return (
-    <main className="sta-app-shell">
-      <style jsx global>{globalStyles}</style>
-
-      <header className="sta-result-header">
-        <div className="sta-result-header-inner">
-          <div className="sta-result-title">
-            <h1>Search Term Analyzer</h1>
-            <p>
-              {fileName} · {int(summary.unique_terms || terms.length)} terms analyzed
-              {summary.break_even_roas ? ` · Break-even ${x(summary.break_even_roas)}` : ""}
-            </p>
-          </div>
-
-          <div className="sta-header-actions">
-            <button
-              type="button"
-              className="sta-secondary-button"
-              onClick={() => exportCsv("operator-action-sheet.csv", flattenRecommendations(recommendations))}
-            >
-              Export actions
-            </button>
-
-            <button
-              type="button"
-              className="sta-primary-button"
-              onClick={() => {
-                setResult(null);
-                setFileName("");
-              }}
-            >
-              New upload
-            </button>
-
-            <ThemeToggle />
-          </div>
-        </div>
-
-        <nav className="sta-tab-bar">
-          {TABS.map((tab) => {
-            const active = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={active ? "active" : ""}
-              >
-                <span>{tab.short}</span>
-                <em>{tabCounts[tab.key] || 0}</em>
-              </button>
-            );
-          })}
-        </nav>
-      </header>
-
-      <div className="sta-result-body">
-        <section className="sta-kpi-grid">
-          <KpiCard label="Spend" value={money(summary.total_cost)} />
-          <KpiCard label="Revenue" value={money(summary.total_revenue)} tone="green" />
-          <KpiCard
-            label="ROAS"
-            value={x(summary.blended_roas)}
-            tone={num(summary.blended_roas) >= num(summary.break_even_roas, 2.5) ? "green" : "red"}
-          />
-          <KpiCard label="CPA" value={money(summary.blended_cpa)} tone="yellow" />
-          <KpiCard label="Clicks" value={int(summary.total_clicks)} tone="blue" />
-          <KpiCard label="Conv." value={num(summary.total_conversions).toFixed(2)} />
-          <KpiCard label="Wasted" value={money(summary.wasted_spend)} tone="red" />
-          <KpiCard label="NB ROAS" value={x(summary.non_brand_roas || summary.true_acquisition_roas)} tone="blue" />
-        </section>
-
-        <section className="sta-current-context">
-          <div>
-            <div className="sta-section-kicker">Current analysis</div>
-            <h2>{TABS.find((tab) => tab.key === activeTab)?.label}</h2>
-          </div>
-
-          <div className="sta-context-actions">
-            <select value={activeTab} onChange={(e) => setActiveTab(e.target.value as TabKey)}>
-              {TABS.map((tab) => (
-                <option key={tab.key} value={tab.key}>
-                  {tab.label} ({tabCounts[tab.key] || 0})
-                </option>
-              ))}
-            </select>
-
-            {activeTab === "spend_wasters" ? (
-              <button
-                type="button"
-                className="sta-secondary-button"
-                onClick={() =>
-                  exportCsv(
-                    "waste-spender-zero-purchase-terms.csv",
-                    wasteSpenderTerms.map((row) => ({
-                      search_term: str(row.search_term),
-                      exact_negative: `[${str(row.search_term)}]`,
-                      phrase_negative: `"${str(row.search_term)}"`,
-                      broad_negative: str(row.search_term),
-                      cost: num(row.cost),
-                      clicks: num(row.clicks),
-                      conversions: num(row.conversions),
-                      revenue: num(row.revenue ?? row.conv_value),
-                      roas: num(row.roas),
-                      recommended_action: "Add as negative after review",
-                    }))
-                  )
-                }
-              >
-                Export Waste Spender
-              </button>
-            ) : null}
-          </div>
-        </section>
-
-        <section className="sta-main-section">
-          {activeTab === "spend_wasters" ? (
-            <WasteSpenderPanel
-              rows={wasteSpenderTerms}
-              threshold={wasteSpendThreshold}
-              setThreshold={setWasteSpendThreshold}
-              matchType={negativeMatchType}
-              setMatchType={setNegativeMatchType}
-              negativeLines={wasteSpenderNegativeLines}
-            />
-          ) : activeTab === "ngram_waste" ? (
-            <NgramTable rows={ngramRows} />
-          ) : activeTab === "raw_terms" ? (
-            <TermsTable rows={terms} />
-          ) : activeTab === "intent_brand" ? (
-            <IntentPanel intentSummary={intentSummary} rows={filteredRecommendations} />
-          ) : activeTab === "brief" ? (
-            <div className="sta-two-col">
-              <RecommendationsTable rows={filteredRecommendations} label="action brief" />
-
-              <div className="sta-side-stack">
-                <div className="sta-panel">
-                  <div className="sta-section-kicker">Efficiency diagnosis</div>
-                  <div className="sta-diagnosis">
-                    <div><span>Break-even ROAS</span><strong>{x(summary.break_even_roas || 2.5)}</strong></div>
-                    <div><span>Brand ROAS</span><strong>{x(summary.brand_roas)}</strong></div>
-                    <div><span>Non-brand ROAS</span><strong>{x(summary.non_brand_roas || summary.true_acquisition_roas)}</strong></div>
-                    <div><span>Wasted spend %</span><strong>{pct(summary.wasted_spend_pct)}</strong></div>
-                    <div><span>Significant terms</span><strong>{int(summary.significant_terms)}</strong></div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="sta-wide-button"
-                  onClick={() =>
-                    exportCsv(
-                      "spend-wasters-and-negative-keywords.csv",
-                      flattenRecommendations(recommendations.filter((r) => recMatchesTab(r, "spend_wasters")))
-                    )
-                  }
-                >
-                  Export spend wasters
-                </button>
-              </div>
-            </div>
-          ) : (
-            <RecommendationsTable rows={filteredRecommendations} label={TABS.find((tab) => tab.key === activeTab)?.label || "actions"} />
-          )}
-        </section>
-      </div>
-    </main>
+    <PageContent
+      result={result}
+      fileName={fileName}
+      onNewUpload={() => {
+        setResult(null);
+        setFileName("");
+      }}
+    />
   );
 }
 
-const globalStyles = `
+const styles = `
 :root,
 html[data-theme="light"] {
-  --sta-bg: #f8fafc;
-  --sta-bg-2: #eef3f8;
-  --sta-panel: rgba(255, 255, 255, 0.82);
-  --sta-panel-2: #ffffff;
-  --sta-panel-3: #f8fafc;
-  --sta-text: #0f172a;
-  --sta-text-2: #334155;
-  --sta-text-3: #64748b;
-  --sta-muted: #94a3b8;
-  --sta-border: rgba(15, 23, 42, 0.1);
-  --sta-border-2: rgba(15, 23, 42, 0.16);
-  --sta-shadow: 0 14px 36px rgba(15, 23, 42, 0.07);
-  --sta-chart-grid: rgba(148, 163, 184, 0.22);
+  --wr-bg: #f7f9fc;
+  --wr-panel: rgba(255,255,255,0.88);
+  --wr-panel2: #ffffff;
+  --wr-line: rgba(15,23,42,0.10);
+  --wr-line2: rgba(15,23,42,0.18);
+  --wr-ink: #0f172a;
+  --wr-dim: #475569;
+  --wr-faint: #94a3b8;
+  --wr-grid: rgba(15,23,42,0.06);
+  --wr-shadow: 0 18px 48px rgba(15,23,42,0.08);
 }
 
 html[data-theme="dark"] {
-  --sta-bg: #050816;
-  --sta-bg-2: #07101f;
-  --sta-panel: rgba(15, 23, 42, 0.82);
-  --sta-panel-2: #111827;
-  --sta-panel-3: #0b1220;
-  --sta-text: #f8fafc;
-  --sta-text-2: #dbe4ef;
-  --sta-text-3: #a7b4c6;
-  --sta-muted: #7b8aa1;
-  --sta-border: rgba(148, 163, 184, 0.18);
-  --sta-border-2: rgba(226, 232, 240, 0.28);
-  --sta-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
-  --sta-chart-grid: rgba(148, 163, 184, 0.18);
+  --wr-bg: #050816;
+  --wr-panel: rgba(15,23,42,0.82);
+  --wr-panel2: rgba(17,24,39,0.94);
+  --wr-line: rgba(148,163,184,0.18);
+  --wr-line2: rgba(226,232,240,0.28);
+  --wr-ink: #f8fafc;
+  --wr-dim: #cbd5e1;
+  --wr-faint: #7b8aa1;
+  --wr-grid: rgba(148,163,184,0.12);
+  --wr-shadow: 0 22px 60px rgba(0,0,0,0.34);
 }
 
 body {
-  background: var(--sta-bg) !important;
-  font-family: Helvetica, Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-}
-
-.font-serif,
-.display {
-  font-family: Helvetica, Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-}
-
-.sta-app-shell {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at 20% 0%, rgba(66, 133, 244, 0.10), transparent 28%),
-    radial-gradient(circle at 82% 0%, rgba(52, 168, 83, 0.08), transparent 26%),
-    var(--sta-bg);
-  color: var(--sta-text);
-}
-
-.sta-home-header {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 22px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.sta-home-header h1,
-.sta-result-title h1 {
   margin: 0;
-  font-size: 22px;
-  line-height: 1.1;
-  letter-spacing: -0.04em;
-  font-weight: 650;
-  color: var(--sta-text);
+  background: var(--wr-bg) !important;
+  font-family: Helvetica, Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
 }
 
-.sta-home-header p,
-.sta-result-title p {
-  margin: 7px 0 0;
-  color: var(--sta-text-3);
-  font-size: 13px;
+.wr-shell {
+  min-height: 100vh;
+  color: var(--wr-ink);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(66,133,244,0.12), transparent 28%),
+    radial-gradient(circle at 82% 0%, rgba(52,168,83,0.08), transparent 28%),
+    var(--wr-bg);
+  padding: 18px 20px 48px;
 }
 
-.sta-result-header {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  border-bottom: 1px solid var(--sta-border);
-  background: color-mix(in srgb, var(--sta-bg) 88%, transparent);
-  backdrop-filter: blur(22px);
-}
-
-.sta-result-header-inner {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 16px 24px 12px;
+.wr-header {
+  max-width: 1220px;
+  margin: 0 auto 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
 
-.sta-header-actions {
+.wr-header h1 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.wr-header p {
+  margin: 7px 0 0;
+  color: var(--wr-faint);
+  font-size: 13px;
+}
+
+.wr-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.sta-primary-button,
-.sta-secondary-button,
-.sta-wide-button {
-  border: 1px solid var(--sta-border);
-  border-radius: 13px;
-  padding: 9px 13px;
+.wr-actions button,
+.wr-panel button,
+.wr-copy-card button {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-ink);
+  border-radius: 12px;
+  padding: 9px 12px;
   font-size: 12px;
   font-weight: 650;
   cursor: pointer;
-  transition: transform 0.14s ease, background 0.14s ease, border-color 0.14s ease;
 }
 
-.sta-primary-button {
-  background: #4285f4;
-  color: white;
-  border-color: rgba(66, 133, 244, 0.55);
+.wr-actions button.primary {
+  background: #4285F4;
+  border-color: #4285F4;
+  color: #fff;
 }
 
-.sta-secondary-button,
-.sta-wide-button {
-  background: var(--sta-panel-2);
-  color: var(--sta-text);
-}
-
-.sta-primary-button:hover,
-.sta-secondary-button:hover,
-.sta-wide-button:hover {
-  transform: translateY(-1px);
-  border-color: var(--sta-border-2);
-}
-
-.sta-tab-bar {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 24px 14px;
+.wr-tabs {
+  max-width: 1220px;
+  margin: 0 auto 14px;
   display: flex;
   align-items: center;
   gap: 7px;
   overflow-x: auto;
+  padding-bottom: 3px;
 }
 
-.sta-tab-bar button {
+.wr-tabs button {
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel);
-  color: var(--sta-text-2);
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
+  color: var(--wr-dim);
   border-radius: 999px;
   padding: 7px 10px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 650;
   cursor: pointer;
 }
 
-.sta-tab-bar button.active {
-  background: rgba(66, 133, 244, 0.12);
-  border-color: rgba(66, 133, 244, 0.42);
-  color: var(--sta-text);
+.wr-tabs button.active {
+  border-color: rgba(66,133,244,0.45);
+  background: rgba(66,133,244,0.13);
+  color: var(--wr-ink);
 }
 
-.sta-tab-bar em {
+.wr-tabs em {
   font-style: normal;
-  color: var(--sta-muted);
-  font-size: 11px;
+  color: var(--wr-faint);
+  margin-left: 6px;
 }
 
-.sta-result-body {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 18px 24px 60px;
-}
-
-.sta-kpi-grid {
+.wr-kpis,
+.wr-mini-kpis {
+  max-width: 1220px;
+  margin: 0 auto 12px;
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.wr-mini-kpis {
+  margin: 10px 0 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.wr-kpi {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
+  border-radius: 16px;
+  padding: 11px 12px;
+  box-shadow: var(--wr-shadow);
+}
+
+.wr-kpi span {
+  display: block;
+  color: var(--wr-faint);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.wr-kpi strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--wr-ink);
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.tone-red { color: #EA4335 !important; }
+.tone-green { color: #34A853 !important; }
+.tone-blue { color: #4285F4 !important; }
+.tone-yellow { color: #F29900 !important; }
+
+.wr-stack,
+.wr-panel,
+.wr-copy-card {
+  max-width: 1220px;
+  margin: 0 auto;
+}
+
+.wr-stack {
+  display: grid;
   gap: 10px;
 }
 
-.sta-kpi {
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel);
-  color: var(--sta-text);
+.wr-panel,
+.wr-copy-card {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
   border-radius: 18px;
   padding: 14px;
-  box-shadow: var(--sta-shadow);
+  box-shadow: var(--wr-shadow);
 }
 
-.sta-kpi-label {
-  color: var(--sta-muted);
-  font-size: 10px;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.17em;
-}
-
-.sta-kpi-value {
-  margin-top: 8px;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  font-weight: 650;
-  color: var(--sta-text);
-}
-
-.tone-blue { color: #4285F4; }
-.tone-red { color: #EA4335; }
-.tone-green { color: #34A853; }
-.tone-yellow { color: #F29900; }
-
-.sta-top-grid {
-  margin-top: 14px;
-  display: grid;
-  grid-template-columns: 0.95fr 1.05fr;
-  gap: 14px;
-}
-
-.sta-panel {
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel);
-  color: var(--sta-text);
-  border-radius: 20px;
-  padding: 16px;
-  box-shadow: var(--sta-shadow);
-}
-
-.sta-panel-head {
+.wr-panel-head,
+.wr-card-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
   margin-bottom: 10px;
 }
 
-.sta-section-kicker {
-  color: var(--sta-muted);
+.wr-panel-head span,
+.wr-card-head span {
+  color: var(--wr-faint);
   font-size: 10px;
-  font-weight: 650;
-  letter-spacing: 0.18em;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.18em;
 }
 
-.sta-panel h2 {
-  margin: 6px 0 0;
-  color: var(--sta-text);
-  font-size: 18px;
-  font-weight: 650;
-  letter-spacing: -0.035em;
+.wr-panel-head h2,
+.wr-card-head h2 {
+  margin: 5px 0 0;
+  color: var(--wr-ink);
+  font-size: 17px;
+  letter-spacing: -0.03em;
 }
 
-.sta-panel select {
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel-2);
-  color: var(--sta-text);
-  border-radius: 12px;
+.wr-controls {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+
+.wr-controls label {
+  display: grid;
+  gap: 5px;
+  color: var(--wr-faint);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.wr-controls input,
+.wr-controls select {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-ink);
+  border-radius: 11px;
   padding: 8px 10px;
   font-size: 12px;
   outline: none;
 }
 
-.sta-chart {
-  height: 210px;
+.wr-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 10px;
 }
 
-.sta-mini-brief {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 14px;
+.wr-presets button {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-dim);
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 11px;
 }
 
-.sta-mini-brief div {
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel-2);
+.wr-presets button.active {
+  color: var(--wr-ink);
+  border-color: rgba(66,133,244,0.45);
+  background: rgba(66,133,244,0.12);
+}
+
+.wr-table-wrap {
+  border: 1px solid var(--wr-line);
   border-radius: 15px;
-  padding: 12px;
-}
-
-.sta-mini-brief span {
-  display: block;
-  color: var(--sta-muted);
-  font-size: 10px;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-}
-
-.sta-mini-brief strong {
-  display: block;
-  margin-top: 5px;
-  color: var(--sta-text);
-  font-size: 22px;
-  letter-spacing: -0.04em;
-}
-
-.sta-panel-copy {
-  margin: 12px 0 0;
-  color: var(--sta-text-3);
-  font-size: 13px;
-  line-height: 1.55;
-}
-
-.sta-main-section {
-  margin-top: 14px;
-}
-
-.sta-two-col {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.75fr);
-  gap: 14px;
-}
-
-.sta-side-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.sta-wide-button {
-  width: 100%;
-  padding: 13px 16px;
-}
-
-.sta-diagnosis {
-  margin-top: 14px;
-  display: grid;
-  gap: 10px;
-}
-
-.sta-diagnosis div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  color: var(--sta-text-3);
-  font-size: 13px;
-}
-
-.sta-diagnosis strong {
-  color: var(--sta-text);
-}
-
-.sta-table-wrap {
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel);
-  border-radius: 20px;
   overflow: hidden;
-  box-shadow: var(--sta-shadow);
 }
 
-.sta-table-scroll {
-  max-height: 560px;
-  overflow: auto;
-}
-
-.sta-table {
+.wr-table {
   width: 100%;
-  min-width: 980px;
   border-collapse: collapse;
   font-size: 13px;
-  color: var(--sta-text-2);
 }
 
-.sta-table thead {
+.wr-table th {
   position: sticky;
   top: 0;
-  z-index: 5;
-  background: var(--sta-panel-2);
-}
-
-.sta-table th {
-  padding: 13px 14px;
+  z-index: 2;
+  background: var(--wr-panel2);
+  color: var(--wr-faint);
   text-align: left;
-  color: var(--sta-muted);
+  padding: 9px 11px;
   font-size: 10px;
-  font-weight: 650;
-  letter-spacing: 0.16em;
   text-transform: uppercase;
-  border-bottom: 1px solid var(--sta-border);
+  letter-spacing: 0.14em;
+  border-bottom: 1px solid var(--wr-line);
 }
 
-.sta-table td {
-  padding: 14px;
-  border-top: 1px solid var(--sta-border);
-  vertical-align: top;
-  color: var(--sta-text-2);
+.wr-table td {
+  padding: 9px 11px;
+  color: var(--wr-dim);
+  border-top: 1px solid var(--wr-grid);
 }
 
-.sta-table .strong {
-  color: var(--sta-text);
-  font-weight: 600;
-}
-
-.sta-table .right {
+.wr-table .right {
   text-align: right;
 }
 
-.sta-pill {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel-2);
-  color: var(--sta-text-2);
-  border-radius: 999px;
-  padding: 6px 9px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.sta-term-list {
-  display: flex;
-  max-width: 350px;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.sta-term-chip {
-  display: inline-flex;
-  background: var(--sta-panel-2);
-  border: 1px solid var(--sta-border);
-  color: var(--sta-text-2);
-  border-radius: 999px;
+.wr-table code {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-ink);
+  border-radius: 9px;
   padding: 5px 8px;
-  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
 }
 
-.sta-term-chip.muted {
-  color: var(--sta-muted);
-}
-
-.sta-empty {
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel);
-  border-radius: 20px;
-  padding: 42px 24px;
+.wr-empty {
+  border: 1px solid var(--wr-line);
+  border-radius: 15px;
+  padding: 38px 18px;
   text-align: center;
-  color: var(--sta-text-3);
-  box-shadow: var(--sta-shadow);
+  color: var(--wr-dim);
 }
 
-.sta-empty-icon {
-  margin: 0 auto 12px;
-  display: grid;
-  place-items: center;
-  height: 38px;
-  width: 38px;
-  border-radius: 999px;
-  background: rgba(52, 168, 83, 0.12);
-  color: #34A853;
-}
-
-.sta-empty-title {
-  color: var(--sta-text);
+.wr-empty strong {
+  display: block;
+  color: var(--wr-ink);
   font-size: 18px;
-  font-weight: 650;
 }
 
-.sta-empty-copy {
-  margin: 8px auto 0;
-  max-width: 520px;
+.wr-empty p {
+  margin: 8px 0 0;
   font-size: 13px;
-  line-height: 1.6;
 }
 
-.sta-intent-list {
-  display: grid;
-  gap: 9px;
-  margin-top: 14px;
-}
-
-.sta-intent-row {
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel-2);
-  border-radius: 15px;
-  padding: 12px;
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.sta-intent-name {
-  color: var(--sta-text);
-  font-weight: 650;
-}
-
-.sta-intent-meta {
-  margin-top: 4px;
-  color: var(--sta-text-3);
-  font-size: 12px;
-}
-
-.sta-intent-roas {
-  color: var(--sta-text);
-  font-weight: 700;
-}
-
-
-.sta-current-context {
-  margin-top: 14px;
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel);
-  color: var(--sta-text);
-  border-radius: 20px;
-  padding: 14px 16px;
-  box-shadow: var(--sta-shadow);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.sta-current-context h2 {
-  margin: 6px 0 0;
-  color: var(--sta-text);
-  font-size: 18px;
-  font-weight: 650;
-  letter-spacing: -0.035em;
-}
-
-.sta-context-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sta-context-actions select,
-.sta-waste-controls select {
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel-2);
-  color: var(--sta-text);
-  border-radius: 12px;
-  padding: 8px 10px;
-  font-size: 12px;
-  outline: none;
-}
-
-.sta-waste-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.65fr);
-  gap: 14px;
-}
-
-.sta-waste-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sta-waste-summary {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  margin: 14px 0;
-}
-
-.sta-waste-summary div {
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel-2);
-  border-radius: 15px;
-  padding: 12px;
-}
-
-.sta-waste-summary span {
-  display: block;
-  color: var(--sta-muted);
-  font-size: 10px;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-}
-
-.sta-waste-summary strong {
-  display: block;
-  margin-top: 5px;
-  color: var(--sta-text);
-  font-size: 22px;
-  letter-spacing: -0.04em;
-}
-
-
-.sta-threshold-control {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sta-threshold-control label {
-  color: var(--sta-muted);
-  font-size: 10px;
-  font-weight: 650;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.sta-threshold-input-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel-2);
-  color: var(--sta-text);
-  border-radius: 12px;
-  padding: 0 10px;
-  min-width: 150px;
-}
-
-.sta-threshold-input-wrap span {
-  color: var(--sta-text-3);
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.sta-threshold-input-wrap input {
-  width: 100%;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--sta-text);
-  padding: 9px 0;
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.sta-threshold-input-wrap input::placeholder {
-  color: var(--sta-muted);
-}
-
-.sta-threshold-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 12px 0 14px;
-}
-
-.sta-threshold-presets button {
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel-2);
-  color: var(--sta-text-2);
-  border-radius: 999px;
-  padding: 7px 10px;
-  font-size: 12px;
-  font-weight: 650;
-  cursor: pointer;
-  transition: border-color 0.14s ease, background 0.14s ease, transform 0.14s ease;
-}
-
-.sta-threshold-presets button:hover {
-  transform: translateY(-1px);
-  border-color: var(--sta-border-2);
-}
-
-.sta-threshold-presets button.active {
-  border-color: rgba(66, 133, 244, 0.48);
-  background: rgba(66, 133, 244, 0.14);
-  color: var(--sta-text);
-}
-
-.sta-negative-box {
-  margin: 14px 0;
-  min-height: 280px;
-  max-height: 480px;
+.wr-copy-card pre {
+  margin: 12px 0 0;
+  max-height: 210px;
   overflow: auto;
   white-space: pre-wrap;
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel-2);
-  color: var(--sta-text);
-  border-radius: 16px;
-  padding: 14px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 13px;
-  line-height: 1.6;
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-ink);
+  border-radius: 14px;
+  padding: 13px;
+  font-size: 12px;
+  line-height: 1.5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-
-.sta-negative-panel {
-  padding: 12px;
-}
-
-.sta-negative-head {
+.wr-bars {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.wr-bar-row {
+  display: grid;
+  grid-template-columns: 240px 1fr 110px;
+  align-items: center;
   gap: 12px;
-  align-items: start;
 }
 
-.sta-wide-button.compact {
-  width: auto;
-  white-space: nowrap;
-  padding: 9px 12px;
+.wr-bar-label span {
+  display: block;
+  color: var(--wr-ink);
+  font-weight: 650;
+  font-size: 13px;
 }
 
-.sta-table-scroll.compact {
-  max-height: calc(100vh - 520px);
-  min-height: 230px;
+.wr-bar-label em {
+  display: block;
+  margin-top: 3px;
+  color: var(--wr-faint);
+  font-size: 11px;
+  font-style: normal;
 }
 
-.sta-negative-box.horizontal {
-  min-height: 130px;
-  max-height: 190px;
+.wr-bar-track {
+  height: 8px;
+  background: var(--wr-grid);
+  border-radius: 999px;
+  overflow: hidden;
 }
 
-.sta-copy-code {
-  display: inline-flex;
-  border: 1px solid var(--sta-border);
-  background: var(--sta-panel-2);
-  color: var(--sta-text);
-  border-radius: 10px;
-  padding: 6px 9px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+.wr-bar-track i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.wr-bar-row strong {
+  text-align: right;
+}
+
+.wr-steps {
+  display: grid;
+  gap: 10px;
+}
+
+.wr-step {
+  border: 1px solid var(--wr-line);
+  border-left: 4px solid #4285F4;
+  background: var(--wr-panel2);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.wr-step.red { border-left-color: #EA4335; }
+.wr-step.yellow { border-left-color: #FBBC04; }
+.wr-step.green { border-left-color: #34A853; }
+
+.wr-step h3 {
+  margin: 0;
+  color: var(--wr-ink);
+  font-size: 15px;
+}
+
+.wr-step p {
+  margin: 6px 0 0;
+  color: var(--wr-dim);
+  font-size: 13px;
+}
+
+.wr-step strong {
+  display: block;
+  margin-top: 8px;
+  color: #34A853;
   font-size: 12px;
 }
 
-@media (max-width: 1180px) {
-  .sta-kpi-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .sta-top-grid,
-  .sta-two-col {
-    grid-template-columns: 1fr;
-  }
-}
-
-
-@media (max-width: 1180px) {
-  .sta-waste-summary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-
-@media (max-width: 900px) {
-  .sta-negative-head {
-    grid-template-columns: 1fr;
-  }
-
-  .sta-wide-button.compact {
-    width: 100%;
-  }
-}
-
-@media (max-width: 720px) {
-  .sta-result-header-inner {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .sta-kpi-grid {
+@media(max-width: 980px) {
+  .wr-kpis,
+  .wr-mini-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .sta-top-grid {
+  .wr-bar-row {
     grid-template-columns: 1fr;
+    gap: 6px;
   }
 
-  .sta-waste-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .sta-waste-controls {
-    align-items: stretch;
+  .wr-controls,
+  .wr-panel-head,
+  .wr-card-head,
+  .wr-header {
     flex-direction: column;
-  }
-
-  .sta-mini-brief {
-    grid-template-columns: 1fr;
+    align-items: stretch;
   }
 }
 `;
