@@ -57,6 +57,12 @@ COLUMN_ALIASES: dict[str, str] = {
     "all conv. value by conversion time": "conv_value",
     "revenue": "conv_value",
     "total revenue": "conv_value",
+    "conv_value": "conv_value",
+    "conversion_value": "conv_value",
+    "total_conv_value": "conv_value",
+    "all_conv_value": "conv_value",
+    "all_conversions_value": "conv_value",
+
 
     # CTR
     "ctr": "ctr",
@@ -89,6 +95,7 @@ COLUMN_ALIASES: dict[str, str] = {
 
 REQUIRED_COLUMNS = {"search_term", "impressions", "clicks", "cost"}
 NUMERIC_COLUMNS = ["impressions", "clicks", "cost", "conversions", "conv_value", "avg_cpc"]
+OPTIONAL_TEXT_COLUMNS = ["campaign", "ad_group", "match_type", "added_excluded"]
 
 
 def _header_key(raw_col: object) -> str:
