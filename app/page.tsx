@@ -730,17 +730,30 @@ function CategorySpendMixCardsPanel({
 }) {
   const [minSpend, setMinSpend] = useState(0);
   const [matchType, setMatchType] = useState<"exact" | "phrase" | "broad">("exact");
+  const [openCategory, setOpenCategory] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"summary" | "terms" | "negatives">("summary");
 
   const categoryColors: Record<string, string> = {
-    Core: GOOGLE.blue,
-    Treatment: GOOGLE.blue,
-    Converters: GOOGLE.green,
-    Competitor: "#9b8cff",
-    Marketplace: GOOGLE.red,
+    "Converters": GOOGLE.green,
+    "Marketplace Intent": GOOGLE.red,
+    "Competitor Intent": "#9b8cff",
     "DIY / Informational": GOOGLE.yellow,
+    "Problem / Treatment": GOOGLE.yellow,
+    "High Purchase Intent": GOOGLE.green,
+    "Product Format Intent": GOOGLE.blue,
+    "Broad Category Intent": GOOGLE.blue,
+    "Unclassified / Other": "#94a3b8",
+    "Core": GOOGLE.blue,
+    "Treatment": GOOGLE.yellow,
+    "Competitor": "#9b8cff",
+    "Marketplace": GOOGLE.red,
     "Off-product": GOOGLE.red,
     "Generic hair": GOOGLE.yellow,
   };
+
+  const totalSpend = categoryRows.reduce((sum, row) => sum + num(row.spend), 0);
+  const maxSpend = Math.max(...categoryRows.map((row) => num(row.spend)), 1);
+  const activeCategory = openCategory || str(categoryRows[0]?.category, "");
 
   async function copyText(value: string) {
     try {
@@ -765,12 +778,16 @@ function CategorySpendMixCardsPanel({
   }
 
   return (
-    <section className="wr-category-page">
+    <section className="wr-category-page compact">
       <div className="wr-panel wr-category-control">
         <div className="wr-panel-head">
           <div>
             <span>Category Spend Mix</span>
-            <h2>Keyword category classification with cumulative spend and negative actions</h2>
+            <h2>Category-level keyword classification</h2>
+            <p className="wr-category-help">
+              Each category is collapsed by default. Open a category to review specific search terms,
+              recommendation logic, and copy-ready negative keywords.
+            </p>
           </div>
 
           <div className="wr-controls">
@@ -793,15 +810,51 @@ function CategorySpendMixCardsPanel({
           </div>
         </div>
 
-        <p className="wr-category-help">
-          Each card below is dynamically created from the uploaded search-term data. It groups queries into Treatment, DIY / Informational,
-          Competitor, Marketplace, Off-product, Generic hair, Core, and Converters.
-        </p>
+        <div className="wr-category-summary-strip compact">
+          {categoryRows.map((category) => {
+            const categoryName = str(category.category, "Unknown");
+            const color = categoryColors[categoryName] || GOOGLE.blue;
+            const spend = num(category.spend);
+            const roas = spend > 0 ? num(category.revenue) / spend : 0;
+            const width = Math.max(3, (spend / maxSpend) * 100);
+            const isActive = categoryName === activeCategory;
+
+            return (
+              <button
+                type="button"
+                key={categoryName}
+                className={isActive ? "active" : ""}
+                onClick={() => {
+                  setOpenCategory(categoryName);
+                  setViewMode("summary");
+                }}
+              >
+                <div className="wr-category-summary-top">
+                  <span>
+                    <i style={{ backgroundColor: color }} />
+                    {categoryName}
+                  </span>
+                  <strong>{money(spend)}</strong>
+                </div>
+
+                <div className="wr-category-summary-bar">
+                  <b style={{ width: `${width}%`, backgroundColor: color }} />
+                </div>
+
+                <div className="wr-category-summary-meta">
+                  {int(category.terms)} terms · {int(category.clicks)} clicks · {num(category.conversions).toFixed(2)} purch · {x(roas)}
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="wr-category-card-grid">
+      <div className="wr-category-accordion">
         {categoryRows.map((category) => {
           const categoryName = str(category.category, "Unknown");
+          const color = categoryColors[categoryName] || GOOGLE.blue;
+          const isOpen = categoryName === activeCategory;
           const categoryTerms = terms
             .filter((row) => str(row.category) === categoryName)
             .sort((a, b) => num(b.cost) - num(a.cost));
@@ -813,85 +866,146 @@ function CategorySpendMixCardsPanel({
           const negativeLines = negativeTerms
             .map((row) => syntax(str(row.search_term), matchType))
             .filter(Boolean)
-            .join("\\n");
+            .join("\n");
 
           const recommendation = getCategoryCardRecommendation(categoryName, category);
           const roas = num(category.spend) > 0 ? num(category.revenue) / num(category.spend) : 0;
-          const color = categoryColors[categoryName] || GOOGLE.blue;
+          const spendShare = totalSpend > 0 ? (num(category.spend) / totalSpend) * 100 : 0;
 
           return (
-            <div className="wr-category-card" key={categoryName}>
-              <div className="wr-category-card-head">
-                <div>
+            <div className={`wr-category-accordion-card ${isOpen ? "open" : ""}`} key={categoryName}>
+              <button
+                type="button"
+                className="wr-category-accordion-head"
+                onClick={() => {
+                  setOpenCategory(isOpen ? "" : categoryName);
+                  setViewMode("summary");
+                }}
+              >
+                <div className="wr-category-title-block">
                   <span className="wr-category-dot" style={{ backgroundColor: color }} />
-                  <h3>{categoryName}</h3>
-                </div>
-                <em className={`tone-${recommendation.tone}`}>{recommendation.title}</em>
-              </div>
-
-              <div className="wr-category-metrics">
-                <div>
-                  <span>Search terms</span>
-                  <strong>{int(category.terms)}</strong>
-                </div>
-                <div>
-                  <span>Spend</span>
-                  <strong>{money(category.spend)}</strong>
-                </div>
-                <div>
-                  <span>Clicks</span>
-                  <strong>{int(category.clicks)}</strong>
-                </div>
-                <div>
-                  <span>Purchases</span>
-                  <strong>{num(category.conversions).toFixed(2)}</strong>
-                </div>
-                <div>
-                  <span>Revenue</span>
-                  <strong>{money(category.revenue)}</strong>
-                </div>
-                <div>
-                  <span>ROAS</span>
-                  <strong>{x(roas)}</strong>
-                </div>
-              </div>
-
-              <p className="wr-category-reco">{recommendation.body}</p>
-
-              <div className="wr-category-keywords">
-                <div className="wr-category-subhead">
-                  <span>Top search terms in this category</span>
-                  <strong>{categoryTerms.length} terms</strong>
+                  <div>
+                    <h3>{categoryName}</h3>
+                    <p>{int(category.terms)} terms · {money(category.spend)} spend · {num(category.conversions).toFixed(2)} purchases · {x(roas)} ROAS</p>
+                  </div>
                 </div>
 
-                <div className="wr-category-term-list">
-                  {categoryTerms.slice(0, 12).map((row, index) => (
-                    <div key={`${row.search_term}-${index}`} className="wr-category-term-row">
-                      <span>{str(row.search_term)}</span>
-                      <em>{money(row.cost)} · {int(row.clicks)} clicks · {num(row.conversions).toFixed(2)} purch</em>
+                <div className="wr-category-head-metrics">
+                  <span>{spendShare.toFixed(1)}% spend share</span>
+                  <strong className={`tone-${recommendation.tone}`}>{recommendation.title}</strong>
+                  <em>{isOpen ? "Collapse" : "Open"}</em>
+                </div>
+              </button>
+
+              {isOpen ? (
+                <div className="wr-category-accordion-body">
+                  <div className="wr-category-view-tabs">
+                    {[
+                      ["summary", "Summary"],
+                      ["terms", `Search Terms (${categoryTerms.length})`],
+                      ["negatives", `Negatives (${negativeTerms.length})`],
+                    ].map(([key, label]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        className={viewMode === key ? "active" : ""}
+                        onClick={() => setViewMode(key as "summary" | "terms" | "negatives")}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {viewMode === "summary" ? (
+                    <div className="wr-category-summary-detail">
+                      <div className="wr-category-metrics compact">
+                        <div>
+                          <span>Search terms</span>
+                          <strong>{int(category.terms)}</strong>
+                        </div>
+                        <div>
+                          <span>Spend</span>
+                          <strong>{money(category.spend)}</strong>
+                        </div>
+                        <div>
+                          <span>Clicks</span>
+                          <strong>{int(category.clicks)}</strong>
+                        </div>
+                        <div>
+                          <span>Purchases</span>
+                          <strong>{num(category.conversions).toFixed(2)}</strong>
+                        </div>
+                        <div>
+                          <span>Revenue</span>
+                          <strong>{money(category.revenue)}</strong>
+                        </div>
+                        <div>
+                          <span>ROAS</span>
+                          <strong>{x(roas)}</strong>
+                        </div>
+                      </div>
+
+                      <div className="wr-category-reco-card">
+                        <span className={`tone-${recommendation.tone}`}>{recommendation.title}</span>
+                        <p>{recommendation.body}</p>
+                      </div>
                     </div>
-                  ))}
+                  ) : null}
+
+                  {viewMode === "terms" ? (
+                    <DataTable
+                      rows={categoryTerms.slice(0, 150)}
+                      empty="No search terms found in this category."
+                      columns={[
+                        { key: "search_term", label: "Search term" },
+                        { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
+                        { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
+                        { key: "conversions", label: "Purch.", right: true, render: (row) => num(row.conversions).toFixed(2) },
+                        { key: "revenue", label: "Revenue", right: true, render: (row) => money(row.revenue) },
+                        { key: "roas", label: "ROAS", right: true, render: (row) => x(row.roas) },
+                      ]}
+                    />
+                  ) : null}
+
+                  {viewMode === "negatives" ? (
+                    <div className="wr-category-negative-layout">
+                      <div>
+                        <DataTable
+                          rows={negativeTerms.slice(0, 150)}
+                          empty="No negative candidates in this category at the selected spend threshold."
+                          columns={[
+                            { key: "search_term", label: "Search term" },
+                            { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
+                            { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
+                            { key: "syntax", label: "Syntax", render: (row) => <code>{syntax(str(row.search_term), matchType)}</code> },
+                          ]}
+                        />
+                      </div>
+
+                      <div className="wr-category-copy-panel compact">
+                        <div className="wr-category-negative-head">
+                          <div>
+                            <span>Copy-ready negatives</span>
+                            <strong>{negativeTerms.length} candidates</strong>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => copyText(negativeLines)}
+                            disabled={!negativeLines}
+                          >
+                            Copy
+                          </button>
+                        </div>
+
+                        <pre className="wr-category-copybox compact">
+                          {negativeLines || "No negative keywords in this category at the selected spend threshold."}
+                        </pre>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-
-              <div className="wr-category-negative-head">
-                <div>
-                  <span>Copy-ready negatives</span>
-                  <strong>{negativeTerms.length} candidates</strong>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => copyText(negativeLines)}
-                  disabled={!negativeLines}
-                >
-                  Copy
-                </button>
-              </div>
-
-              <pre className="wr-category-copybox">
-                {negativeLines || "No negative keywords in this category at the selected spend threshold."}
-              </pre>
+              ) : null}
             </div>
           );
         })}
@@ -1912,6 +2026,7 @@ body {
 
 
 
+
 .wr-category-page {
   max-width: 1220px;
   margin: 0 auto;
@@ -1919,30 +2034,38 @@ body {
   gap: 12px;
 }
 
+.wr-category-page.compact {
+  gap: 10px;
+}
+
 .wr-category-control {
   max-width: none;
 }
 
 .wr-category-help {
-  margin-top: 10px;
+  margin: 6px 0 0;
   color: var(--wr-dim);
   font-size: 12px;
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 .wr-category-summary-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 9px;
-  margin-top: 12px;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.wr-category-summary-strip.compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .wr-category-summary-strip button {
   border: 1px solid var(--wr-line);
   background: var(--wr-panel2);
   color: var(--wr-ink);
-  border-radius: 14px;
-  padding: 10px;
+  border-radius: 13px;
+  padding: 9px;
   text-align: left;
   cursor: pointer;
 }
@@ -1981,11 +2104,11 @@ body {
 }
 
 .wr-category-summary-bar {
-  height: 6px;
+  height: 5px;
   overflow: hidden;
   background: var(--wr-grid);
   border-radius: 999px;
-  margin-top: 8px;
+  margin-top: 7px;
 }
 
 .wr-category-summary-bar b {
@@ -1995,48 +2118,61 @@ body {
 }
 
 .wr-category-summary-meta {
-  margin-top: 7px;
+  margin-top: 6px;
   color: var(--wr-faint);
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1.35;
 }
 
-.wr-category-detail-grid {
+.wr-category-accordion {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.65fr);
-  gap: 12px;
+  gap: 8px;
 }
 
-.wr-category-detail-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+.wr-category-accordion-card {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
+  border-radius: 16px;
+  box-shadow: var(--wr-shadow);
+  overflow: hidden;
 }
 
-.wr-category-detail-head h2 {
-  display: inline-flex;
-  align-items: center;
-  margin: 0 0 6px;
+.wr-category-accordion-card.open {
+  border-color: rgba(66,133,244,0.38);
+}
+
+.wr-category-accordion-head {
+  width: 100%;
+  border: 0;
+  background: transparent;
   color: var(--wr-ink);
-  font-size: 20px;
-  letter-spacing: -0.04em;
+  padding: 13px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  text-align: left;
+  cursor: pointer;
 }
 
-.wr-category-detail-head p {
+.wr-category-title-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.wr-category-title-block h3 {
   margin: 0;
-  color: var(--wr-dim);
-  font-size: 13px;
-  line-height: 1.5;
+  color: var(--wr-ink);
+  font-size: 16px;
+  letter-spacing: -0.025em;
 }
 
-.wr-category-detail-head em {
-  flex: 0 0 auto;
-  font-style: normal;
+.wr-category-title-block p {
+  margin: 4px 0 0;
+  color: var(--wr-faint);
   font-size: 12px;
-  font-weight: 800;
-  white-space: nowrap;
 }
 
 .wr-category-dot {
@@ -2044,184 +2180,80 @@ body {
   height: 9px;
   width: 9px;
   border-radius: 999px;
-  margin-right: 8px;
+  flex: 0 0 auto;
+}
+
+.wr-category-head-metrics {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+}
+
+.wr-category-head-metrics span {
+  color: var(--wr-faint);
+  font-size: 12px;
+}
+
+.wr-category-head-metrics strong {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.wr-category-head-metrics em {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-dim);
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-style: normal;
+}
+
+.wr-category-accordion-body {
+  border-top: 1px solid var(--wr-line);
+  padding: 12px 14px 14px;
+}
+
+.wr-category-view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.wr-category-view-tabs button {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-dim);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.wr-category-view-tabs button.active {
+  border-color: rgba(66,133,244,0.5);
+  background: rgba(66,133,244,0.13);
+  color: var(--wr-ink);
+}
+
+.wr-category-summary-detail {
+  display: grid;
+  gap: 10px;
 }
 
 .wr-category-metrics {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
-  margin-bottom: 12px;
 }
 
 .wr-category-metrics div {
   border: 1px solid var(--wr-line);
   background: var(--wr-panel2);
-  border-radius: 13px;
-  padding: 9px 10px;
-}
-
-.wr-category-metrics span {
-  display: block;
-  color: var(--wr-faint);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.wr-category-metrics strong {
-  display: block;
-  margin-top: 5px;
-  color: var(--wr-ink);
-  font-size: 17px;
-  letter-spacing: -0.035em;
-}
-
-.wr-category-negative-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.wr-category-negative-head span {
-  display: block;
-  color: var(--wr-faint);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.wr-category-negative-head strong {
-  display: block;
-  margin-top: 3px;
-  color: var(--wr-ink);
-  font-size: 13px;
-}
-
-.wr-category-negative-head button {
-  border: 1px solid var(--wr-line);
-  background: var(--wr-panel2);
-  color: var(--wr-ink);
-  border-radius: 10px;
-  padding: 7px 10px;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.wr-category-copy-panel {
-  align-self: start;
-}
-
-.wr-category-copybox {
-  margin: 0;
-  max-height: 125px;
-  overflow: auto;
-  white-space: pre-wrap;
-  border: 1px solid var(--wr-line);
-  background: var(--wr-panel2);
-  color: var(--wr-ink);
-  border-radius: 13px;
-  padding: 11px;
-  font-size: 12px;
-  line-height: 1.5;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-}
-
-.wr-category-copybox.large {
-  min-height: 330px;
-  max-height: calc(100vh - 390px);
-}
-
-.tone-neutral { color: var(--wr-faint) !important; }
-
-
-
-.wr-category-page {
-  max-width: 1220px;
-  margin: 0 auto;
-  display: grid;
-  gap: 12px;
-}
-
-.wr-category-control {
-  max-width: none;
-}
-
-.wr-category-help {
-  margin: 8px 0 0;
-  color: var(--wr-dim);
-  font-size: 13px;
-  line-height: 1.55;
-}
-
-.wr-category-card-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.wr-category-card {
-  border: 1px solid var(--wr-line);
-  background: var(--wr-panel);
-  border-radius: 18px;
-  padding: 14px;
-  box-shadow: var(--wr-shadow);
-  min-width: 0;
-}
-
-.wr-category-card-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.wr-category-card-head > div {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 0;
-}
-
-.wr-category-card-head h3 {
-  margin: 0;
-  color: var(--wr-ink);
-  font-size: 18px;
-  line-height: 1.1;
-  letter-spacing: -0.035em;
-}
-
-.wr-category-card-head em {
-  flex: 0 0 auto;
-  font-style: normal;
-  font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.wr-category-dot {
-  display: inline-block;
-  height: 9px;
-  width: 9px;
-  border-radius: 999px;
-  flex: 0 0 auto;
-}
-
-.wr-category-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.wr-category-metrics div {
-  border: 1px solid var(--wr-line);
-  background: var(--wr-panel2);
-  border-radius: 13px;
+  border-radius: 12px;
   padding: 9px 10px;
 }
 
@@ -2243,14 +2275,40 @@ body {
   letter-spacing: -0.035em;
 }
 
-.wr-category-reco {
-  margin: 12px 0;
-  color: var(--wr-dim);
-  font-size: 13px;
-  line-height: 1.55;
+.wr-category-reco-card {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  border-radius: 13px;
+  padding: 12px;
 }
 
-.wr-category-subhead,
+.wr-category-reco-card span {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.wr-category-reco-card p {
+  margin: 7px 0 0;
+  color: var(--wr-dim);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.wr-category-negative-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.6fr);
+  gap: 10px;
+}
+
+.wr-category-copy-panel.compact {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  border-radius: 14px;
+  padding: 12px;
+  align-self: start;
+}
+
 .wr-category-negative-head {
   display: flex;
   align-items: center;
@@ -2259,7 +2317,6 @@ body {
   margin-bottom: 8px;
 }
 
-.wr-category-subhead span,
 .wr-category-negative-head span {
   display: block;
   color: var(--wr-faint);
@@ -2269,46 +2326,15 @@ body {
   text-transform: uppercase;
 }
 
-.wr-category-subhead strong,
 .wr-category-negative-head strong {
   display: block;
   color: var(--wr-ink);
   font-size: 12px;
 }
 
-.wr-category-term-list {
-  display: grid;
-  gap: 6px;
-  margin-bottom: 12px;
-  max-height: 230px;
-  overflow: auto;
-}
-
-.wr-category-term-row {
-  border: 1px solid var(--wr-line);
-  background: var(--wr-panel2);
-  border-radius: 11px;
-  padding: 8px 9px;
-}
-
-.wr-category-term-row span {
-  display: block;
-  color: var(--wr-ink);
-  font-size: 13px;
-  font-weight: 650;
-}
-
-.wr-category-term-row em {
-  display: block;
-  margin-top: 3px;
-  color: var(--wr-faint);
-  font-size: 11px;
-  font-style: normal;
-}
-
 .wr-category-negative-head button {
   border: 1px solid var(--wr-line);
-  background: var(--wr-panel2);
+  background: var(--wr-panel);
   color: var(--wr-ink);
   border-radius: 10px;
   padding: 7px 10px;
@@ -2318,18 +2344,21 @@ body {
 
 .wr-category-copybox {
   margin: 0;
-  min-height: 120px;
-  max-height: 180px;
   overflow: auto;
   white-space: pre-wrap;
   border: 1px solid var(--wr-line);
-  background: var(--wr-panel2);
+  background: var(--wr-panel);
   color: var(--wr-ink);
-  border-radius: 13px;
+  border-radius: 12px;
   padding: 11px;
   font-size: 12px;
   line-height: 1.5;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.wr-category-copybox.compact {
+  min-height: 250px;
+  max-height: calc(100vh - 430px);
 }
 
 .tone-neutral { color: var(--wr-faint) !important; }
@@ -2353,6 +2382,26 @@ body {
     flex-direction: column;
     align-items: stretch;
   }
+
+  .wr-category-summary-strip,
+  .wr-category-summary-strip.compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wr-category-accordion-head,
+  .wr-category-head-metrics {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .wr-category-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wr-category-negative-layout {
+    grid-template-columns: 1fr;
+  }
+
 
   .wr-category-summary-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
