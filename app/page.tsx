@@ -26,47 +26,15 @@ type TabKey =
   | "intent_brand"
   | "raw_terms";
 
-const TABS: { key: TabKey; label: string; helper: string }[] = [
-  {
-    key: "brief",
-    label: "Action Brief",
-    helper: "The shortest operator summary: what to cut, fix, scale, and export.",
-  },
-  {
-    key: "spend_wasters",
-    label: "Spend Wasters",
-    helper: "Terms, themes, and intents spending below break-even efficiency.",
-  },
-  {
-    key: "negative_keywords",
-    label: "Negative Keywords",
-    helper: "Exact, phrase, and broad negative opportunities with reason and risk logic.",
-  },
-  {
-    key: "ngram_waste",
-    label: "N-Gram Waste",
-    helper: "Repeated phrases creating inefficient spend across multiple queries.",
-  },
-  {
-    key: "pdp_issues",
-    label: "PDP / Offer Issues",
-    helper: "High-interest terms failing after click. These should not be negatived first.",
-  },
-  {
-    key: "scale",
-    label: "Scale Signals",
-    helper: "Profitable significant terms to isolate, feed, bid up, or scale.",
-  },
-  {
-    key: "intent_brand",
-    label: "Intent / Brand",
-    helper: "Intent mix, brand vs non-brand, and marketplace/informational leakage.",
-  },
-  {
-    key: "raw_terms",
-    label: "Raw Terms",
-    helper: "Cleaned searchable term table sorted by spend.",
-  },
+const TABS: { key: TabKey; label: string; short: string }[] = [
+  { key: "brief", label: "Action Brief", short: "Brief" },
+  { key: "spend_wasters", label: "Spend Wasters", short: "Wasters" },
+  { key: "negative_keywords", label: "Negative Keywords", short: "Negatives" },
+  { key: "ngram_waste", label: "N-Gram Waste", short: "N-Grams" },
+  { key: "pdp_issues", label: "PDP / Offer Issues", short: "PDP Issues" },
+  { key: "scale", label: "Scale Signals", short: "Scale" },
+  { key: "intent_brand", label: "Intent / Brand", short: "Intent" },
+  { key: "raw_terms", label: "Raw Terms", short: "Terms" },
 ];
 
 const GOOGLE = {
@@ -115,16 +83,23 @@ function x(value: any) {
 
 function pct(value: any) {
   const n = num(value);
-  return `${n > 1 ? n.toFixed(1) : (n * 100).toFixed(1)}%`;
+  if (n <= 1) return `${(n * 100).toFixed(1)}%`;
+  return `${n.toFixed(1)}%`;
 }
 
 function priorityRank(priority: any) {
   const p = str(priority);
-  return p === "Critical" ? 0 : p === "High" ? 1 : p === "Medium" ? 2 : p === "Low" ? 3 : 9;
+  if (p === "Critical") return 0;
+  if (p === "High") return 1;
+  if (p === "Medium") return 2;
+  if (p === "Low") return 3;
+  return 9;
 }
 
 function getTerms(rec: AnyObj): string[] {
-  return arr<string>(rec.affected_terms).length ? arr<string>(rec.affected_terms) : arr<string>(rec.terms);
+  const affected = arr<string>(rec.affected_terms);
+  if (affected.length) return affected;
+  return arr<string>(rec.terms);
 }
 
 function getMatchType(rec: AnyObj) {
@@ -161,49 +136,27 @@ function recMatchesTab(rec: AnyObj, tab: TabKey) {
   }
 
   if (tab === "negative_keywords") {
-    return type.includes("negative") || type.includes("zero") || type.includes("low_roas") || type.includes("ngram");
+    return (
+      type.includes("negative") ||
+      type.includes("zero") ||
+      type.includes("low_roas") ||
+      type.includes("ngram")
+    );
   }
 
   if (tab === "ngram_waste") return type.includes("ngram");
   if (tab === "pdp_issues") return type.includes("pdp") || type.includes("investigate_pdp");
   if (tab === "scale") return type.includes("scale");
-  if (tab === "intent_brand") return type.includes("intent") || type.includes("brand") || title.includes("informational") || title.includes("marketplace");
+  if (tab === "intent_brand") {
+    return (
+      type.includes("intent") ||
+      type.includes("brand") ||
+      title.includes("informational") ||
+      title.includes("marketplace")
+    );
+  }
 
   return false;
-}
-
-function exportCsv(filename: string, rows: AnyObj[]) {
-  if (!rows.length) return;
-
-  const headerSet = new Set<string>();
-
-  rows.forEach((row) => {
-    Object.keys(row).forEach((key) => {
-      headerSet.add(key);
-    });
-  });
-
-  const headers = Array.from(headerSet);
-
-  const csv = [
-    headers.join(","),
-    ...rows.map((row) =>
-      headers
-        .map((header) => {
-          const value = row[header] ?? "";
-          return `"${String(value).replaceAll('"', '""')}"`;
-        })
-        .join(",")
-    ),
-  ].join("\n");
-
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
 }
 
 function flattenRecommendations(recommendations: AnyObj[]) {
@@ -236,111 +189,150 @@ function flattenRecommendations(recommendations: AnyObj[]) {
   return rows;
 }
 
+function exportCsv(filename: string, rows: AnyObj[]) {
+  if (!rows.length) return;
+
+  const headerSet = new Set<string>();
+  rows.forEach((row) => {
+    Object.keys(row).forEach((key) => headerSet.add(key));
+  });
+
+  const headers = Array.from(headerSet);
+
+  const csv = [
+    headers.join(","),
+    ...rows.map((row) =>
+      headers
+        .map((header) => {
+          const value = row[header] ?? "";
+          return `"${String(value).replaceAll('"', '""')}"`;
+        })
+        .join(",")
+    ),
+  ].join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function KpiCard({
   label,
   value,
-  tone = "slate",
+  tone = "neutral",
 }: {
   label: string;
   value: string;
-  tone?: "slate" | "blue" | "red" | "green" | "yellow";
+  tone?: "neutral" | "blue" | "red" | "green" | "yellow";
 }) {
-  const colors = {
-    slate: "text-slate-950 dark:text-white",
-    blue: "text-[#4285F4]",
-    red: "text-[#EA4335]",
-    green: "text-[#34A853]",
-    yellow: "text-[#F29900]",
-  };
-
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/8">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-        {label}
-      </div>
-      <div className={`mt-2 text-[24px] font-semibold tracking-[-0.04em] ${colors[tone]}`}>
-        {value}
-      </div>
+    <div className="sta-kpi">
+      <div className="sta-kpi-label">{label}</div>
+      <div className={`sta-kpi-value tone-${tone}`}>{value}</div>
     </div>
   );
 }
 
-function Pill({ children, color = "slate" }: { children: any; color?: string }) {
+function Pill({
+  children,
+  color = GOOGLE.blue,
+}: {
+  children: any;
+  color?: string;
+}) {
   return (
-    <span
-      className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:border-white/10 dark:bg-white/10 dark:text-white"
-      style={color !== "slate" ? { boxShadow: `inset 3px 0 0 ${color}` } : undefined}
-    >
+    <span className="sta-pill" style={{ boxShadow: `inset 3px 0 0 ${color}` }}>
       {children}
     </span>
   );
 }
 
-function RecommendationsTable({ rows }: { rows: AnyObj[] }) {
-  if (!rows.length) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white/70 p-8 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/8 dark:text-slate-400">
-        No high-confidence actions found for this section.
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div className="sta-empty">
+      <div className="sta-empty-icon">✓</div>
+      <div className="sta-empty-title">No {label.toLowerCase()} found</div>
+      <div className="sta-empty-copy">
+        The engine did not find high-confidence actions for this section using the current thresholds.
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+function RecommendationsTable({ rows, label }: { rows: AnyObj[]; label: string }) {
+  if (!rows.length) return <EmptyState label={label} />;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/80 shadow-sm dark:border-white/10 dark:bg-white/8">
-      <div className="max-h-[520px] overflow-auto">
-        <table className="w-full min-w-[980px] border-collapse text-sm">
-          <thead className="sticky top-0 z-10 bg-slate-50/95 text-left text-[10px] uppercase tracking-[0.16em] text-slate-400 backdrop-blur dark:bg-slate-950/95">
+    <div className="sta-table-wrap">
+      <div className="sta-table-scroll">
+        <table className="sta-table">
+          <thead>
             <tr>
-              <th className="px-4 py-3 font-semibold">Priority</th>
-              <th className="px-4 py-3 font-semibold">Type</th>
-              <th className="px-4 py-3 font-semibold">Match</th>
-              <th className="px-4 py-3 font-semibold">Keywords / Phrases</th>
-              <th className="px-4 py-3 text-right font-semibold">Impact</th>
-              <th className="px-4 py-3 font-semibold">Action</th>
-              <th className="px-4 py-3 font-semibold">Reason</th>
+              <th>Priority</th>
+              <th>Type</th>
+              <th>Match</th>
+              <th>Keywords / Phrases</th>
+              <th className="right">Impact</th>
+              <th>Action</th>
+              <th>Reason</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((rec, index) => {
               const terms = getTerms(rec);
+              const match = getMatchType(rec);
+              const priority = str(rec.priority, "Low");
+
               return (
-                <tr key={rec.id || index} className="border-t border-slate-100 align-top dark:border-white/10">
-                  <td className="px-4 py-4">
-                    <Pill color={str(rec.priority) === "Critical" ? GOOGLE.red : str(rec.priority) === "High" ? GOOGLE.yellow : GOOGLE.blue}>
-                      {str(rec.priority, "Low")}
+                <tr key={rec.id || `${rec.type}-${index}`}>
+                  <td>
+                    <Pill
+                      color={
+                        priority === "Critical"
+                          ? GOOGLE.red
+                          : priority === "High"
+                          ? GOOGLE.yellow
+                          : GOOGLE.blue
+                      }
+                    >
+                      {priority}
                     </Pill>
                   </td>
-                  <td className="px-4 py-4 font-medium text-slate-800 dark:text-white">
-                    {str(rec.type, "action")}
-                  </td>
-                  <td className="px-4 py-4">
-                    <Pill color={getMatchType(rec) === "EXACT" ? GOOGLE.blue : getMatchType(rec) === "PHRASE" ? GOOGLE.yellow : getMatchType(rec) === "BROAD" ? GOOGLE.red : GOOGLE.green}>
-                      {getMatchType(rec)}
+                  <td className="strong">{str(rec.type, "action")}</td>
+                  <td>
+                    <Pill
+                      color={
+                        match === "EXACT"
+                          ? GOOGLE.blue
+                          : match === "PHRASE"
+                          ? GOOGLE.yellow
+                          : match === "BROAD"
+                          ? GOOGLE.red
+                          : GOOGLE.green
+                      }
+                    >
+                      {match}
                     </Pill>
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="flex max-w-[340px] flex-wrap gap-1.5">
+                  <td>
+                    <div className="sta-term-list">
                       {terms.slice(0, 8).map((term, i) => (
-                        <span key={`${term}-${i}`} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700 dark:bg-white/10 dark:text-slate-200">
+                        <span key={`${term}-${i}`} className="sta-term-chip">
                           {term}
                         </span>
                       ))}
                       {terms.length > 8 ? (
-                        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-500 dark:bg-white/10">
-                          +{terms.length - 8}
-                        </span>
+                        <span className="sta-term-chip muted">+{terms.length - 8}</span>
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-right font-semibold text-slate-950 dark:text-white">
-                    {money(rec.impact)}
-                  </td>
-                  <td className="px-4 py-4 text-slate-600 dark:text-slate-300">
-                    {str(rec.recommended_action, "Review manually")}
-                  </td>
-                  <td className="px-4 py-4 text-slate-500 dark:text-slate-400">
-                    {str(rec.reason, str(rec.description)).slice(0, 180)}
-                  </td>
+                  <td className="right strong">{money(rec.impact)}</td>
+                  <td>{str(rec.recommended_action, "Review manually")}</td>
+                  <td>{str(rec.reason, str(rec.description)).slice(0, 170)}</td>
                 </tr>
               );
             })}
@@ -352,39 +344,33 @@ function RecommendationsTable({ rows }: { rows: AnyObj[] }) {
 }
 
 function NgramTable({ rows }: { rows: AnyObj[] }) {
-  if (!rows.length) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white/70 p-8 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/8">
-        No n-gram waste found.
-      </div>
-    );
-  }
+  if (!rows.length) return <EmptyState label="N-gram waste" />;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/80 shadow-sm dark:border-white/10 dark:bg-white/8">
-      <div className="max-h-[520px] overflow-auto">
-        <table className="w-full min-w-[860px] text-sm">
-          <thead className="sticky top-0 bg-slate-50/95 text-left text-[10px] uppercase tracking-[0.16em] text-slate-400 dark:bg-slate-950/95">
+    <div className="sta-table-wrap">
+      <div className="sta-table-scroll">
+        <table className="sta-table">
+          <thead>
             <tr>
-              <th className="px-4 py-3">N-gram</th>
-              <th className="px-4 py-3 text-right">Terms</th>
-              <th className="px-4 py-3 text-right">Spend</th>
-              <th className="px-4 py-3 text-right">Revenue</th>
-              <th className="px-4 py-3 text-right">ROAS</th>
-              <th className="px-4 py-3 text-right">Waste</th>
-              <th className="px-4 py-3">Action</th>
+              <th>N-gram</th>
+              <th className="right">Terms</th>
+              <th className="right">Spend</th>
+              <th className="right">Revenue</th>
+              <th className="right">ROAS</th>
+              <th className="right">Waste</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
-            {rows.slice(0, 120).map((row, index) => (
-              <tr key={`${row.ngram}-${index}`} className="border-t border-slate-100 dark:border-white/10">
-                <td className="px-4 py-3 font-medium text-slate-950 dark:text-white">{str(row.ngram)}</td>
-                <td className="px-4 py-3 text-right">{int(row.term_count)}</td>
-                <td className="px-4 py-3 text-right">{money(row.cost)}</td>
-                <td className="px-4 py-3 text-right">{money(row.revenue)}</td>
-                <td className="px-4 py-3 text-right">{x(row.roas)}</td>
-                <td className="px-4 py-3 text-right font-semibold">{money(row.aggregate_wasted_spend || row.waste_score)}</td>
-                <td className="px-4 py-3">
+            {rows.slice(0, 150).map((row, index) => (
+              <tr key={`${row.ngram}-${index}`}>
+                <td className="strong">{str(row.ngram)}</td>
+                <td className="right">{int(row.term_count)}</td>
+                <td className="right">{money(row.cost)}</td>
+                <td className="right">{money(row.revenue)}</td>
+                <td className="right">{x(row.roas)}</td>
+                <td className="right strong">{money(row.aggregate_wasted_spend || row.waste_score)}</td>
+                <td>
                   <Pill color={num(row.n) === 1 ? GOOGLE.red : GOOGLE.yellow}>
                     negative {num(row.n) === 1 ? "broad" : "phrase"}
                   </Pill>
@@ -399,48 +385,90 @@ function NgramTable({ rows }: { rows: AnyObj[] }) {
 }
 
 function TermsTable({ rows }: { rows: AnyObj[] }) {
-  if (!rows.length) {
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-white/70 p-8 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-white/8">
-        No search terms available.
-      </div>
-    );
-  }
+  if (!rows.length) return <EmptyState label="search terms" />;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white/80 shadow-sm dark:border-white/10 dark:bg-white/8">
-      <div className="max-h-[540px] overflow-auto">
-        <table className="w-full min-w-[980px] text-sm">
-          <thead className="sticky top-0 bg-slate-50/95 text-left text-[10px] uppercase tracking-[0.16em] text-slate-400 dark:bg-slate-950/95">
+    <div className="sta-table-wrap">
+      <div className="sta-table-scroll">
+        <table className="sta-table">
+          <thead>
             <tr>
-              <th className="px-4 py-3">Search term</th>
-              <th className="px-4 py-3">Tier</th>
-              <th className="px-4 py-3">Intent</th>
-              <th className="px-4 py-3">Segment</th>
-              <th className="px-4 py-3 text-right">Spend</th>
-              <th className="px-4 py-3 text-right">Revenue</th>
-              <th className="px-4 py-3 text-right">ROAS</th>
-              <th className="px-4 py-3 text-right">Conv.</th>
-              <th className="px-4 py-3 text-right">Clicks</th>
+              <th>Search term</th>
+              <th>Tier</th>
+              <th>Intent</th>
+              <th>Segment</th>
+              <th className="right">Spend</th>
+              <th className="right">Revenue</th>
+              <th className="right">ROAS</th>
+              <th className="right">Conv.</th>
+              <th className="right">Clicks</th>
             </tr>
           </thead>
           <tbody>
-            {rows.slice(0, 300).map((row, index) => (
-              <tr key={`${row.search_term}-${index}`} className="border-t border-slate-100 dark:border-white/10">
-                <td className="px-4 py-3 font-medium text-slate-950 dark:text-white">{str(row.search_term)}</td>
-                <td className="px-4 py-3"><Pill color={str(row.tier) === "Drain" ? GOOGLE.red : str(row.tier) === "Star" ? GOOGLE.green : GOOGLE.blue}>{str(row.tier, "Untested")}</Pill></td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{str(row.intent)}</td>
-                <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{str(row.segment, row.is_brand ? "Brand" : "Non-brand")}</td>
-                <td className="px-4 py-3 text-right">{money(row.cost)}</td>
-                <td className="px-4 py-3 text-right">{money(row.revenue ?? row.conv_value)}</td>
-                <td className="px-4 py-3 text-right">{x(row.roas)}</td>
-                <td className="px-4 py-3 text-right">{num(row.conversions).toFixed(2)}</td>
-                <td className="px-4 py-3 text-right">{int(row.clicks)}</td>
+            {rows.slice(0, 500).map((row, index) => (
+              <tr key={`${row.search_term}-${index}`}>
+                <td className="strong">{str(row.search_term)}</td>
+                <td>
+                  <Pill
+                    color={
+                      str(row.tier) === "Drain"
+                        ? GOOGLE.red
+                        : str(row.tier) === "Star"
+                        ? GOOGLE.green
+                        : GOOGLE.blue
+                    }
+                  >
+                    {str(row.tier, "Untested")}
+                  </Pill>
+                </td>
+                <td>{str(row.intent)}</td>
+                <td>{str(row.segment, row.is_brand ? "Brand" : "Non-brand")}</td>
+                <td className="right">{money(row.cost)}</td>
+                <td className="right">{money(row.revenue ?? row.conv_value)}</td>
+                <td className="right">{x(row.roas)}</td>
+                <td className="right">{num(row.conversions).toFixed(2)}</td>
+                <td className="right">{int(row.clicks)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function IntentPanel({
+  intentSummary,
+  rows,
+}: {
+  intentSummary: AnyObj[];
+  rows: AnyObj[];
+}) {
+  return (
+    <div className="sta-two-col">
+      <div className="sta-panel">
+        <div className="sta-section-kicker">Intent mix</div>
+        <div className="sta-intent-list">
+          {intentSummary.map((row, index) => (
+            <div key={index} className="sta-intent-row">
+              <div>
+                <div className="sta-intent-name">
+                  {str(pick(row, ["intent", "name", "label"], "Unknown"))}
+                </div>
+                <div className="sta-intent-meta">
+                  {money(pick(row, ["cost", "spend", "total_cost"], 0))} spend ·{" "}
+                  {money(pick(row, ["revenue", "conv_value", "total_revenue"], 0))} revenue
+                </div>
+              </div>
+              <div className="sta-intent-roas">
+                {x(pick(row, ["roas", "blended_roas"], 0))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <RecommendationsTable rows={rows} label="intent / brand actions" />
     </div>
   );
 }
@@ -466,7 +494,12 @@ export default function Page() {
 
   const categorySummary = useMemo(() => arr<AnyObj>(data?.category_summary || data?.categories), [data]);
   const intentSummary = useMemo(() => arr<AnyObj>(data?.intent_summary || data?.intents), [data]);
-  const terms = useMemo(() => arr<AnyObj>(data?.terms).slice().sort((a, b) => num(b.cost) - num(a.cost)), [data]);
+
+  const terms = useMemo(() => {
+    return arr<AnyObj>(data?.terms)
+      .slice()
+      .sort((a, b) => num(b.cost) - num(a.cost));
+  }, [data]);
 
   const ngramRows = useMemo<AnyObj[]>(() => {
     const ngrams = (data?.ngrams || {}) as AnyObj;
@@ -478,7 +511,7 @@ export default function Page() {
     ];
 
     return rows.sort(
-      (a: AnyObj, b: AnyObj) =>
+      (a, b) =>
         num(b.waste_score || b.aggregate_wasted_spend || b.cost) -
         num(a.waste_score || a.aggregate_wasted_spend || a.cost)
     );
@@ -491,6 +524,7 @@ export default function Page() {
 
   const chartData = useMemo(() => {
     const source = chartMode === "intent" ? intentSummary : categorySummary;
+
     return source.slice(0, 8).map((row) => ({
       name: str(pick(row, ["intent", "category", "name", "label"], "Unknown")),
       spend: num(pick(row, ["cost", "spend", "total_cost"], 0)),
@@ -513,11 +547,13 @@ export default function Page() {
 
   if (!result) {
     return (
-      <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
-        <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
+      <main className="sta-app-shell">
+        <style jsx global>{globalStyles}</style>
+
+        <header className="sta-home-header">
           <div>
-            <h1 className="text-[22px] font-semibold tracking-[-0.04em]">Search Term Analyzer</h1>
-            <p className="mt-1 text-sm text-slate-500">Upload a Google Shopping search-terms report for operator-grade actions.</p>
+            <h1>Search Term Analyzer</h1>
+            <p>Upload a Google Shopping search-terms report for operator-grade actions.</p>
           </div>
           <ThemeToggle />
         </header>
@@ -534,54 +570,70 @@ export default function Page() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_20%_0%,rgba(66,133,244,0.10),transparent_28%),radial-gradient(circle_at_80%_0%,rgba(52,168,83,0.08),transparent_26%)]" />
+    <main className="sta-app-shell">
+      <style jsx global>{globalStyles}</style>
 
-      <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-slate-50/88 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/85">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <div className="min-w-0">
-            <h1 className="text-[22px] font-semibold tracking-[-0.04em]">Search Term Analyzer</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-              <span>{fileName}</span>
-              <span>·</span>
-              <span>{int(summary.unique_terms || terms.length)} terms analyzed</span>
-              {summary.break_even_roas ? (
-                <>
-                  <span>·</span>
-                  <span>Break-even {x(summary.break_even_roas)}</span>
-                </>
-              ) : null}
-            </div>
+      <header className="sta-result-header">
+        <div className="sta-result-header-inner">
+          <div className="sta-result-title">
+            <h1>Search Term Analyzer</h1>
+            <p>
+              {fileName} · {int(summary.unique_terms || terms.length)} terms analyzed
+              {summary.break_even_roas ? ` · Break-even ${x(summary.break_even_roas)}` : ""}
+            </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="sta-header-actions">
             <button
               type="button"
+              className="sta-secondary-button"
               onClick={() => exportCsv("operator-action-sheet.csv", flattenRecommendations(recommendations))}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-white/10 dark:bg-white/10 dark:text-white"
             >
               Export actions
             </button>
+
             <button
               type="button"
+              className="sta-primary-button"
               onClick={() => {
                 setResult(null);
                 setFileName("");
               }}
-              className="rounded-xl bg-[#4285F4] px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#3367d6]"
             >
               New upload
             </button>
+
             <ThemeToggle />
           </div>
         </div>
+
+        <nav className="sta-tab-bar">
+          {TABS.map((tab) => {
+            const active = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={active ? "active" : ""}
+              >
+                <span>{tab.short}</span>
+                <em>{tabCounts[tab.key] || 0}</em>
+              </button>
+            );
+          })}
+        </nav>
       </header>
 
-      <div className="mx-auto max-w-7xl space-y-4 px-4 py-5 sm:px-6 lg:px-8">
-        <section className="grid gap-3 md:grid-cols-4 xl:grid-cols-8">
+      <div className="sta-result-body">
+        <section className="sta-kpi-grid">
           <KpiCard label="Spend" value={money(summary.total_cost)} />
           <KpiCard label="Revenue" value={money(summary.total_revenue)} tone="green" />
-          <KpiCard label="ROAS" value={x(summary.blended_roas)} tone={num(summary.blended_roas) >= num(summary.break_even_roas, 2.5) ? "green" : "red"} />
+          <KpiCard
+            label="ROAS"
+            value={x(summary.blended_roas)}
+            tone={num(summary.blended_roas) >= num(summary.break_even_roas, 2.5) ? "green" : "red"}
+          />
           <KpiCard label="CPA" value={money(summary.blended_cpa)} tone="yellow" />
           <KpiCard label="Clicks" value={int(summary.total_clicks)} tone="blue" />
           <KpiCard label="Conv." value={num(summary.total_conversions).toFixed(2)} />
@@ -589,30 +641,45 @@ export default function Page() {
           <KpiCard label="NB ROAS" value={x(summary.non_brand_roas || summary.true_acquisition_roas)} tone="blue" />
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/8">
-            <div className="mb-3 flex items-center justify-between gap-3">
+        <section className="sta-top-grid">
+          <div className="sta-panel">
+            <div className="sta-panel-head">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Dynamic view</p>
-                <h2 className="mt-1 text-[18px] font-semibold tracking-[-0.035em]">Spend vs revenue</h2>
+                <div className="sta-section-kicker">Dynamic view</div>
+                <h2>Spend vs revenue</h2>
               </div>
-              <select
-                value={chartMode}
-                onChange={(e) => setChartMode(e.target.value as "category" | "intent")}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none dark:border-white/10 dark:bg-white/10 dark:text-white"
-              >
+
+              <select value={chartMode} onChange={(e) => setChartMode(e.target.value as "category" | "intent")}>
                 <option value="intent">By intent</option>
                 <option value="category">By category</option>
               </select>
             </div>
 
-            <div className="h-[210px]">
+            <div className="sta-chart">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148,163,184,0.25)" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#94a3b8" }} interval={0} angle={-18} textAnchor="end" height={54} />
-                  <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickFormatter={(v) => `₹${Math.round(v / 1000)}k`} />
-                  <Tooltip formatter={(value: any) => money(value)} />
+                <BarChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--sta-chart-grid)" />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fill: "var(--sta-muted)" }}
+                    interval={0}
+                    angle={-18}
+                    textAnchor="end"
+                    height={54}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: "var(--sta-muted)" }}
+                    tickFormatter={(v) => `₹${Math.round(Number(v) / 1000)}k`}
+                  />
+                  <Tooltip
+                    formatter={(value: any) => money(value)}
+                    contentStyle={{
+                      background: "var(--sta-panel-2)",
+                      border: "1px solid var(--sta-border)",
+                      borderRadius: 14,
+                      color: "var(--sta-text)",
+                    }}
+                  />
                   <Bar dataKey="spend" fill={GOOGLE.blue} radius={[6, 6, 0, 0]} />
                   <Bar dataKey="revenue" fill={GOOGLE.green} radius={[6, 6, 0, 0]} />
                 </BarChart>
@@ -620,18 +687,14 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/8">
-            <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="sta-panel">
+            <div className="sta-panel-head">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Navigation</p>
-                <h2 className="mt-1 text-[18px] font-semibold tracking-[-0.035em]">Analytical tabs</h2>
+                <div className="sta-section-kicker">Selected analysis</div>
+                <h2>{TABS.find((tab) => tab.key === activeTab)?.label}</h2>
               </div>
 
-              <select
-                value={activeTab}
-                onChange={(e) => setActiveTab(e.target.value as TabKey)}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none dark:border-white/10 dark:bg-white/10 dark:text-white"
-              >
+              <select value={activeTab} onChange={(e) => setActiveTab(e.target.value as TabKey)}>
                 {TABS.map((tab) => (
                   <option key={tab.key} value={tab.key}>
                     {tab.label} ({tabCounts[tab.key] || 0})
@@ -640,105 +703,602 @@ export default function Page() {
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              {TABS.map((tab) => {
-                const active = activeTab === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                    className={[
-                      "rounded-2xl border px-3 py-3 text-left transition",
-                      active
-                        ? "border-[#4285F4]/40 bg-[#4285F4]/10 text-slate-950 dark:text-white"
-                        : "border-slate-200 bg-white/70 text-slate-600 hover:bg-white dark:border-white/10 dark:bg-white/8 dark:text-slate-300",
-                    ].join(" ")}
-                  >
-                    <div className="text-[12px] font-semibold tracking-[-0.02em]">{tab.label}</div>
-                    <div className="mt-1 text-[10px] text-slate-400">{tabCounts[tab.key] || 0} items</div>
-                  </button>
-                );
-              })}
+            <div className="sta-mini-brief">
+              <div>
+                <span>Current view</span>
+                <strong>{tabCounts[activeTab] || 0}</strong>
+              </div>
+              <div>
+                <span>Actions</span>
+                <strong>{recommendations.length}</strong>
+              </div>
+              <div>
+                <span>Terms</span>
+                <strong>{int(terms.length)}</strong>
+              </div>
             </div>
 
-            <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              {TABS.find((tab) => tab.key === activeTab)?.helper}
+            <p className="sta-panel-copy">
+              Use the header tabs to switch between operator decisions. Export actions when the current view is ready.
             </p>
           </div>
         </section>
 
-        <section>
-          {activeTab === "brief" ? (
-            <div className="grid gap-4 lg:grid-cols-[1fr_0.72fr]">
-              <RecommendationsTable rows={filteredRecommendations} />
+        <section className="sta-main-section">
+          {activeTab === "ngram_waste" ? (
+            <NgramTable rows={ngramRows} />
+          ) : activeTab === "raw_terms" ? (
+            <TermsTable rows={terms} />
+          ) : activeTab === "intent_brand" ? (
+            <IntentPanel intentSummary={intentSummary} rows={filteredRecommendations} />
+          ) : activeTab === "brief" ? (
+            <div className="sta-two-col">
+              <RecommendationsTable rows={filteredRecommendations} label="action brief" />
 
-              <div className="space-y-3">
-                <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-white/8">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Efficiency diagnosis</p>
-                  <div className="mt-3 space-y-2 text-sm">
-                    <div className="flex justify-between gap-4">
-                      <span className="text-slate-500">Break-even ROAS</span>
-                      <strong>{x(summary.break_even_roas || 2.5)}</strong>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-slate-500">Brand ROAS</span>
-                      <strong>{x(summary.brand_roas)}</strong>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-slate-500">Non-brand ROAS</span>
-                      <strong>{x(summary.non_brand_roas || summary.true_acquisition_roas)}</strong>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-slate-500">Wasted spend %</span>
-                      <strong>{pct(summary.wasted_spend_pct)}</strong>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-slate-500">Significant terms</span>
-                      <strong>{int(summary.significant_terms)}</strong>
-                    </div>
+              <div className="sta-side-stack">
+                <div className="sta-panel">
+                  <div className="sta-section-kicker">Efficiency diagnosis</div>
+                  <div className="sta-diagnosis">
+                    <div><span>Break-even ROAS</span><strong>{x(summary.break_even_roas || 2.5)}</strong></div>
+                    <div><span>Brand ROAS</span><strong>{x(summary.brand_roas)}</strong></div>
+                    <div><span>Non-brand ROAS</span><strong>{x(summary.non_brand_roas || summary.true_acquisition_roas)}</strong></div>
+                    <div><span>Wasted spend %</span><strong>{pct(summary.wasted_spend_pct)}</strong></div>
+                    <div><span>Significant terms</span><strong>{int(summary.significant_terms)}</strong></div>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => exportCsv("spend-wasters-and-negative-keywords.csv", flattenRecommendations(recommendations.filter((r) => recMatchesTab(r, "spend_wasters"))))}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 dark:border-white/10 dark:bg-white/10 dark:text-white"
+                  className="sta-wide-button"
+                  onClick={() =>
+                    exportCsv(
+                      "spend-wasters-and-negative-keywords.csv",
+                      flattenRecommendations(recommendations.filter((r) => recMatchesTab(r, "spend_wasters")))
+                    )
+                  }
                 >
                   Export spend wasters
                 </button>
               </div>
             </div>
-          ) : activeTab === "ngram_waste" ? (
-            <NgramTable rows={ngramRows} />
-          ) : activeTab === "raw_terms" ? (
-            <TermsTable rows={terms} />
-          ) : activeTab === "intent_brand" ? (
-            <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-white/8">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Intent mix</p>
-                <div className="mt-4 space-y-2">
-                  {intentSummary.map((row, index) => (
-                    <div key={index} className="rounded-xl border border-slate-200 bg-white/70 p-3 dark:border-white/10 dark:bg-white/8">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{str(pick(row, ["intent", "name", "label"], "Unknown"))}</span>
-                        <span className="font-semibold">{x(pick(row, ["roas", "blended_roas"], 0))}</span>
-                      </div>
-                      <div className="mt-1 flex justify-between text-xs text-slate-500">
-                        <span>{money(pick(row, ["cost", "spend", "total_cost"], 0))} spend</span>
-                        <span>{money(pick(row, ["revenue", "conv_value", "total_revenue"], 0))} revenue</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <RecommendationsTable rows={filteredRecommendations} />
-            </div>
           ) : (
-            <RecommendationsTable rows={filteredRecommendations} />
+            <RecommendationsTable rows={filteredRecommendations} label={TABS.find((tab) => tab.key === activeTab)?.label || "actions"} />
           )}
         </section>
       </div>
     </main>
   );
 }
+
+const globalStyles = `
+:root,
+html[data-theme="light"] {
+  --sta-bg: #f8fafc;
+  --sta-bg-2: #eef3f8;
+  --sta-panel: rgba(255, 255, 255, 0.82);
+  --sta-panel-2: #ffffff;
+  --sta-panel-3: #f8fafc;
+  --sta-text: #0f172a;
+  --sta-text-2: #334155;
+  --sta-text-3: #64748b;
+  --sta-muted: #94a3b8;
+  --sta-border: rgba(15, 23, 42, 0.1);
+  --sta-border-2: rgba(15, 23, 42, 0.16);
+  --sta-shadow: 0 14px 36px rgba(15, 23, 42, 0.07);
+  --sta-chart-grid: rgba(148, 163, 184, 0.22);
+}
+
+html[data-theme="dark"] {
+  --sta-bg: #050816;
+  --sta-bg-2: #07101f;
+  --sta-panel: rgba(15, 23, 42, 0.82);
+  --sta-panel-2: #111827;
+  --sta-panel-3: #0b1220;
+  --sta-text: #f8fafc;
+  --sta-text-2: #dbe4ef;
+  --sta-text-3: #a7b4c6;
+  --sta-muted: #7b8aa1;
+  --sta-border: rgba(148, 163, 184, 0.18);
+  --sta-border-2: rgba(226, 232, 240, 0.28);
+  --sta-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+  --sta-chart-grid: rgba(148, 163, 184, 0.18);
+}
+
+body {
+  background: var(--sta-bg) !important;
+  font-family: Helvetica, Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+.font-serif,
+.display {
+  font-family: Helvetica, Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+.sta-app-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(66, 133, 244, 0.10), transparent 28%),
+    radial-gradient(circle at 82% 0%, rgba(52, 168, 83, 0.08), transparent 26%),
+    var(--sta-bg);
+  color: var(--sta-text);
+}
+
+.sta-home-header {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 22px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sta-home-header h1,
+.sta-result-title h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  font-weight: 650;
+  color: var(--sta-text);
+}
+
+.sta-home-header p,
+.sta-result-title p {
+  margin: 7px 0 0;
+  color: var(--sta-text-3);
+  font-size: 13px;
+}
+
+.sta-result-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  border-bottom: 1px solid var(--sta-border);
+  background: color-mix(in srgb, var(--sta-bg) 88%, transparent);
+  backdrop-filter: blur(22px);
+}
+
+.sta-result-header-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 24px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sta-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sta-primary-button,
+.sta-secondary-button,
+.sta-wide-button {
+  border: 1px solid var(--sta-border);
+  border-radius: 13px;
+  padding: 9px 13px;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform 0.14s ease, background 0.14s ease, border-color 0.14s ease;
+}
+
+.sta-primary-button {
+  background: #4285f4;
+  color: white;
+  border-color: rgba(66, 133, 244, 0.55);
+}
+
+.sta-secondary-button,
+.sta-wide-button {
+  background: var(--sta-panel-2);
+  color: var(--sta-text);
+}
+
+.sta-primary-button:hover,
+.sta-secondary-button:hover,
+.sta-wide-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--sta-border-2);
+}
+
+.sta-tab-bar {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px 14px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow-x: auto;
+}
+
+.sta-tab-bar button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel);
+  color: var(--sta-text-2);
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sta-tab-bar button.active {
+  background: rgba(66, 133, 244, 0.12);
+  border-color: rgba(66, 133, 244, 0.42);
+  color: var(--sta-text);
+}
+
+.sta-tab-bar em {
+  font-style: normal;
+  color: var(--sta-muted);
+  font-size: 11px;
+}
+
+.sta-result-body {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 18px 24px 60px;
+}
+
+.sta-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sta-kpi {
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel);
+  color: var(--sta-text);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: var(--sta-shadow);
+}
+
+.sta-kpi-label {
+  color: var(--sta-muted);
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.17em;
+}
+
+.sta-kpi-value {
+  margin-top: 8px;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 650;
+  color: var(--sta-text);
+}
+
+.tone-blue { color: #4285F4; }
+.tone-red { color: #EA4335; }
+.tone-green { color: #34A853; }
+.tone-yellow { color: #F29900; }
+
+.sta-top-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  gap: 14px;
+}
+
+.sta-panel {
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel);
+  color: var(--sta-text);
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: var(--sta-shadow);
+}
+
+.sta-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.sta-section-kicker {
+  color: var(--sta-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.sta-panel h2 {
+  margin: 6px 0 0;
+  color: var(--sta-text);
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+
+.sta-panel select {
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel-2);
+  color: var(--sta-text);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font-size: 12px;
+  outline: none;
+}
+
+.sta-chart {
+  height: 210px;
+}
+
+.sta-mini-brief {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.sta-mini-brief div {
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel-2);
+  border-radius: 15px;
+  padding: 12px;
+}
+
+.sta-mini-brief span {
+  display: block;
+  color: var(--sta-muted);
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.sta-mini-brief strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--sta-text);
+  font-size: 22px;
+  letter-spacing: -0.04em;
+}
+
+.sta-panel-copy {
+  margin: 12px 0 0;
+  color: var(--sta-text-3);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.sta-main-section {
+  margin-top: 14px;
+}
+
+.sta-two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.75fr);
+  gap: 14px;
+}
+
+.sta-side-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sta-wide-button {
+  width: 100%;
+  padding: 13px 16px;
+}
+
+.sta-diagnosis {
+  margin-top: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.sta-diagnosis div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--sta-text-3);
+  font-size: 13px;
+}
+
+.sta-diagnosis strong {
+  color: var(--sta-text);
+}
+
+.sta-table-wrap {
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--sta-shadow);
+}
+
+.sta-table-scroll {
+  max-height: 560px;
+  overflow: auto;
+}
+
+.sta-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--sta-text-2);
+}
+
+.sta-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--sta-panel-2);
+}
+
+.sta-table th {
+  padding: 13px 14px;
+  text-align: left;
+  color: var(--sta-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--sta-border);
+}
+
+.sta-table td {
+  padding: 14px;
+  border-top: 1px solid var(--sta-border);
+  vertical-align: top;
+  color: var(--sta-text-2);
+}
+
+.sta-table .strong {
+  color: var(--sta-text);
+  font-weight: 600;
+}
+
+.sta-table .right {
+  text-align: right;
+}
+
+.sta-pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel-2);
+  color: var(--sta-text-2);
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sta-term-list {
+  display: flex;
+  max-width: 350px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sta-term-chip {
+  display: inline-flex;
+  background: var(--sta-panel-2);
+  border: 1px solid var(--sta-border);
+  color: var(--sta-text-2);
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+
+.sta-term-chip.muted {
+  color: var(--sta-muted);
+}
+
+.sta-empty {
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel);
+  border-radius: 20px;
+  padding: 42px 24px;
+  text-align: center;
+  color: var(--sta-text-3);
+  box-shadow: var(--sta-shadow);
+}
+
+.sta-empty-icon {
+  margin: 0 auto 12px;
+  display: grid;
+  place-items: center;
+  height: 38px;
+  width: 38px;
+  border-radius: 999px;
+  background: rgba(52, 168, 83, 0.12);
+  color: #34A853;
+}
+
+.sta-empty-title {
+  color: var(--sta-text);
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.sta-empty-copy {
+  margin: 8px auto 0;
+  max-width: 520px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.sta-intent-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.sta-intent-row {
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel-2);
+  border-radius: 15px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.sta-intent-name {
+  color: var(--sta-text);
+  font-weight: 650;
+}
+
+.sta-intent-meta {
+  margin-top: 4px;
+  color: var(--sta-text-3);
+  font-size: 12px;
+}
+
+.sta-intent-roas {
+  color: var(--sta-text);
+  font-weight: 700;
+}
+
+@media (max-width: 1180px) {
+  .sta-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .sta-top-grid,
+  .sta-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .sta-result-header-inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sta-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sta-top-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sta-mini-brief {
+    grid-template-columns: 1fr;
+  }
+}
+`;
