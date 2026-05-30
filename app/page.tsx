@@ -1419,39 +1419,39 @@ function ActionReportPanel({
           </div>
 
           <div className="wr-checklist-sections">
-            {grouped.map((section) => (
-              <div key={section.group} className="wr-checklist-section">
-                <h3>{section.group}</h3>
+            {grouped.length ? (
+              grouped.map((section) => (
+                <div key={section.group} className="wr-checklist-section">
+                  <h3>{section.group}</h3>
 
-                {section.items.slice(0, 40).map((item, index) => (
-                  <label key={item.id || `${section.group}-${index}`} className="wr-checklist-item">
-                    <input type="checkbox" />
+                  {section.items.slice(0, 40).map((item, index) => (
+                    <label key={item.id || `${section.group}-${index}`} className="wr-checklist-item">
+                      <input type="checkbox" />
 
-                    <div>
-                      <div className="wr-checklist-line">
-                        <strong>{str(item.instruction, str(item.title, "Review action"))}</strong>
-                        <em>{money(item.impact)}</em>
+                      <div>
+                        <div className="wr-checklist-line">
+                          <strong>{str(item.instruction, str(item.title, "Review action"))}</strong>
+                          <em>{money(item.impact)}</em>
+                        </div>
+
+                        <p>{str(item.reason, str(item.description))}</p>
+
+                        <div className="wr-checklist-meta">
+                          <span>{str(item.type, "action")}</span>
+                          <span>{str(item.match_type, "review")}</span>
+                          <span>{str(item.confidence, "Medium")} confidence</span>
+                        </div>
                       </div>
-
-                      <p>{str(item.reason, str(item.description))}</p>
-
-                      <div className="wr-checklist-meta">
-                        <span>{str(item.type, "action")}</span>
-                        <span>{str(item.match_type, "review")}</span>
-                        <span>{str(item.confidence, "Medium")} confidence</span>
-                      </div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            ))}
-
-            {!grouped.length ? (
+                    </label>
+                  ))}
+                </div>
+              ))
+            ) : (
               <div className="wr-empty">
                 <strong>No action checklist rows</strong>
                 <p>The backend did not return checklist items.</p>
               </div>
-            ) : null}
+            )}
           </div>
         </div>
 
@@ -1482,9 +1482,10 @@ function ActionReportPanel({
                     <th>Overlap</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {negatives.slice(0, 250).map((row, index) => (
-                    <tr key={`${row.syntax}-${index}`}>
+                    <tr key={`${row.syntax || row.term}-${index}`}>
                       <td>
                         <code>{str(row.syntax, str(row.term))}</code>
                       </td>
@@ -1513,7 +1514,6 @@ function ActionReportPanel({
                 <p>No overlap-checked negatives were returned by the backend.</p>
               </div>
             )}
-          </div>
           </div>
         </div>
       </div>
