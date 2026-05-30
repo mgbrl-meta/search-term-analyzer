@@ -130,7 +130,15 @@ function classifyTerm(termRaw: string, conversions = 0) {
 
   if (
     term.includes("diy") ||
-    INFO_WORDS.some((w) => term.includes(w))
+    term.includes("home remedy") ||
+    term.includes("remedy") ||
+    term.includes("how to") ||
+    term.includes("at home") ||
+    term.includes("naturally") ||
+    term.includes("why") ||
+    term.includes("what causes") ||
+    term.includes("benefits") ||
+    term.includes("cure")
   ) {
     return "DIY / Informational";
   }
@@ -143,18 +151,36 @@ function classifyTerm(termRaw: string, conversions = 0) {
     term.includes("therapy") ||
     term.includes("scalp") ||
     term.includes("anti dandruff") ||
-    term.includes("dandruff shampoo")
+    term.includes("dandruff shampoo") ||
+    term.includes("hair fall") ||
+    term.includes("hair growth")
   ) {
     return "Treatment";
   }
 
-  if (OFF_PRODUCT.some((w) => term.includes(w))) return "Off-product";
+  if (
+    term.includes("oil") ||
+    term.includes("serum") ||
+    term.includes("conditioner") ||
+    term.includes("lotion") ||
+    term.includes("cream") ||
+    term.includes("gel") ||
+    term.includes("soap") ||
+    term.includes("face wash") ||
+    term.includes("capsule") ||
+    term.includes("gummies") ||
+    term.includes("hair colour") ||
+    term.includes("hair color")
+  ) {
+    return "Off-product";
+  }
 
   if (
     term.includes("hair care") ||
     term.includes("hair products") ||
     term.includes("best hair") ||
-    term.includes("hair shampoo")
+    term.includes("hair shampoo") ||
+    term.includes("best shampoo")
   ) {
     return "Generic hair";
   }
@@ -609,6 +635,272 @@ function CategorySpendMixPanel({
 }
 
 
+
+function getCategoryCardRecommendation(category: string, metrics: AnyObj) {
+  const spend = num(metrics.spend);
+  const conversions = num(metrics.conversions);
+  const revenue = num(metrics.revenue);
+  const roas = spend > 0 ? revenue / spend : 0;
+
+  if (category === "Converters") {
+    return {
+      tone: "green",
+      title: "Protect and scale",
+      body: "These terms have generated purchases. Do not add negatives here. Use these terms for feed titles, PDP language, ad copy, and campaign isolation.",
+    };
+  }
+
+  if (category === "Competitor") {
+    return {
+      tone: "red",
+      title: "Add negatives aggressively",
+      body: "Competitor traffic is usually expensive and low-control. Start with exact negatives. Use phrase only when the competitor theme has no profitable overlap.",
+    };
+  }
+
+  if (category === "Marketplace") {
+    return {
+      tone: "red",
+      title: "Block marketplace leakage",
+      body: "Marketplace-intent users are looking for Amazon, Flipkart, Nykaa, Myntra, or similar platforms. If purchases are zero, add negatives.",
+    };
+  }
+
+  if (category === "DIY / Informational") {
+    return {
+      tone: "yellow",
+      title: "Reduce research-stage waste",
+      body: "DIY and informational queries are low buying intent. Keep only if they assist conversion. Otherwise add exact or phrase negatives like remedy, how to, at home.",
+    };
+  }
+
+  if (category === "Off-product") {
+    return {
+      tone: "red",
+      title: "Stop off-product spend",
+      body: "These terms are around product formats or needs that may not match the advertised SKU. Add exact negatives unless you sell that exact product type.",
+    };
+  }
+
+  if (category === "Generic hair") {
+    return {
+      tone: "yellow",
+      title: "Tighten broad generic spend",
+      body: "Generic hair-care traffic is broad. Review zero-purchase terms and add exact negatives first. Do not use broad negatives unless the theme is clearly irrelevant.",
+    };
+  }
+
+  if (category === "Treatment" && conversions === 0 && spend > 0) {
+    return {
+      tone: "yellow",
+      title: "Relevant but not converting",
+      body: "Treatment intent is relevant. If clicks are high but purchases are zero, check PDP claim, offer, pricing, reviews, delivery promise, and checkout before blocking broadly.",
+    };
+  }
+
+  if (category === "Core" && conversions === 0 && spend > 0) {
+    return {
+      tone: "yellow",
+      title: "Investigate before blocking",
+      body: "Core terms are relevant but not converting. Use exact negatives only for clear waste. Otherwise investigate PDP, offer, and feed relevance.",
+    };
+  }
+
+  if (roas > 0) {
+    return {
+      tone: "green",
+      title: "Monitor and refine",
+      body: "This category has some revenue signal. Avoid broad negatives. Prune only non-converting search terms with enough spend.",
+    };
+  }
+
+  return {
+    tone: "neutral",
+    title: "Collect more signal",
+    body: "Not enough signal for a strong decision. Continue collecting data or use exact negatives only for obvious irrelevant queries.",
+  };
+}
+
+function CategorySpendMixCardsPanel({
+  terms,
+  categoryRows,
+}: {
+  terms: AnyObj[];
+  categoryRows: AnyObj[];
+}) {
+  const [minSpend, setMinSpend] = useState(0);
+  const [matchType, setMatchType] = useState<"exact" | "phrase" | "broad">("exact");
+
+  const categoryColors: Record<string, string> = {
+    Core: GOOGLE.blue,
+    Treatment: GOOGLE.blue,
+    Converters: GOOGLE.green,
+    Competitor: "#9b8cff",
+    Marketplace: GOOGLE.red,
+    "DIY / Informational": GOOGLE.yellow,
+    "Off-product": GOOGLE.red,
+    "Generic hair": GOOGLE.yellow,
+  };
+
+  async function copyText(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      alert("Copied.");
+    } catch {
+      alert("Could not copy. Please copy manually.");
+    }
+  }
+
+  if (!categoryRows.length) {
+    return (
+      <section className="wr-category-page">
+        <div className="wr-panel">
+          <div className="wr-empty">
+            <strong>No categories found</strong>
+            <p>Upload data does not contain enough search-term rows to classify.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="wr-category-page">
+      <div className="wr-panel wr-category-control">
+        <div className="wr-panel-head">
+          <div>
+            <span>Category Spend Mix</span>
+            <h2>Keyword category classification with cumulative spend and negative actions</h2>
+          </div>
+
+          <div className="wr-controls">
+            <label>
+              Negative min spend
+              <input
+                type="number"
+                min={0}
+                step={50}
+                value={minSpend}
+                onChange={(e) => setMinSpend(Math.max(0, Number(e.target.value) || 0))}
+              />
+            </label>
+
+            <select value={matchType} onChange={(e) => setMatchType(e.target.value as "exact" | "phrase" | "broad")}>
+              <option value="exact">Exact negatives</option>
+              <option value="phrase">Phrase negatives</option>
+              <option value="broad">Broad negatives</option>
+            </select>
+          </div>
+        </div>
+
+        <p className="wr-category-help">
+          Each card below is dynamically created from the uploaded search-term data. It groups queries into Treatment, DIY / Informational,
+          Competitor, Marketplace, Off-product, Generic hair, Core, and Converters.
+        </p>
+      </div>
+
+      <div className="wr-category-card-grid">
+        {categoryRows.map((category) => {
+          const categoryName = str(category.category, "Unknown");
+          const categoryTerms = terms
+            .filter((row) => str(row.category) === categoryName)
+            .sort((a, b) => num(b.cost) - num(a.cost));
+
+          const negativeTerms = categoryTerms
+            .filter((row) => num(row.conversions) === 0 && num(row.cost) >= minSpend)
+            .sort((a, b) => num(b.cost) - num(a.cost));
+
+          const negativeLines = negativeTerms
+            .map((row) => syntax(str(row.search_term), matchType))
+            .filter(Boolean)
+            .join("\\n");
+
+          const recommendation = getCategoryCardRecommendation(categoryName, category);
+          const roas = num(category.spend) > 0 ? num(category.revenue) / num(category.spend) : 0;
+          const color = categoryColors[categoryName] || GOOGLE.blue;
+
+          return (
+            <div className="wr-category-card" key={categoryName}>
+              <div className="wr-category-card-head">
+                <div>
+                  <span className="wr-category-dot" style={{ backgroundColor: color }} />
+                  <h3>{categoryName}</h3>
+                </div>
+                <em className={`tone-${recommendation.tone}`}>{recommendation.title}</em>
+              </div>
+
+              <div className="wr-category-metrics">
+                <div>
+                  <span>Search terms</span>
+                  <strong>{int(category.terms)}</strong>
+                </div>
+                <div>
+                  <span>Spend</span>
+                  <strong>{money(category.spend)}</strong>
+                </div>
+                <div>
+                  <span>Clicks</span>
+                  <strong>{int(category.clicks)}</strong>
+                </div>
+                <div>
+                  <span>Purchases</span>
+                  <strong>{num(category.conversions).toFixed(2)}</strong>
+                </div>
+                <div>
+                  <span>Revenue</span>
+                  <strong>{money(category.revenue)}</strong>
+                </div>
+                <div>
+                  <span>ROAS</span>
+                  <strong>{x(roas)}</strong>
+                </div>
+              </div>
+
+              <p className="wr-category-reco">{recommendation.body}</p>
+
+              <div className="wr-category-keywords">
+                <div className="wr-category-subhead">
+                  <span>Top search terms in this category</span>
+                  <strong>{categoryTerms.length} terms</strong>
+                </div>
+
+                <div className="wr-category-term-list">
+                  {categoryTerms.slice(0, 12).map((row, index) => (
+                    <div key={`${row.search_term}-${index}`} className="wr-category-term-row">
+                      <span>{str(row.search_term)}</span>
+                      <em>{money(row.cost)} · {int(row.clicks)} clicks · {num(row.conversions).toFixed(2)} purch</em>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="wr-category-negative-head">
+                <div>
+                  <span>Copy-ready negatives</span>
+                  <strong>{negativeTerms.length} candidates</strong>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => copyText(negativeLines)}
+                  disabled={!negativeLines}
+                >
+                  Copy
+                </button>
+              </div>
+
+              <pre className="wr-category-copybox">
+                {negativeLines || "No negative keywords in this category at the selected spend threshold."}
+              </pre>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+
 function PageContent({
   result,
   fileName,
@@ -919,15 +1211,9 @@ function PageContent({
       ) : null}
 
       {activeTab === "spend_mix" ? (
-        <CategorySpendMixPanel
+        <CategorySpendMixCardsPanel
           terms={terms}
           categoryRows={spendMix}
-          matchType={categoryNegativeMatchType}
-          setMatchType={setCategoryNegativeMatchType}
-          minSpend={categoryNegativeMinSpend}
-          setMinSpend={setCategoryNegativeMinSpend}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
         />
       ) : null}
 
@@ -1848,6 +2134,202 @@ body {
 .wr-category-copybox.large {
   min-height: 330px;
   max-height: calc(100vh - 390px);
+}
+
+.tone-neutral { color: var(--wr-faint) !important; }
+
+
+
+.wr-category-page {
+  max-width: 1220px;
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+
+.wr-category-control {
+  max-width: none;
+}
+
+.wr-category-help {
+  margin: 8px 0 0;
+  color: var(--wr-dim);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.wr-category-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.wr-category-card {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: var(--wr-shadow);
+  min-width: 0;
+}
+
+.wr-category-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.wr-category-card-head > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.wr-category-card-head h3 {
+  margin: 0;
+  color: var(--wr-ink);
+  font-size: 18px;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+
+.wr-category-card-head em {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.wr-category-dot {
+  display: inline-block;
+  height: 9px;
+  width: 9px;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.wr-category-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.wr-category-metrics div {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  border-radius: 13px;
+  padding: 9px 10px;
+}
+
+.wr-category-metrics span {
+  display: block;
+  color: var(--wr-faint);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.wr-category-metrics strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--wr-ink);
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.wr-category-reco {
+  margin: 12px 0;
+  color: var(--wr-dim);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.wr-category-subhead,
+.wr-category-negative-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.wr-category-subhead span,
+.wr-category-negative-head span {
+  display: block;
+  color: var(--wr-faint);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.wr-category-subhead strong,
+.wr-category-negative-head strong {
+  display: block;
+  color: var(--wr-ink);
+  font-size: 12px;
+}
+
+.wr-category-term-list {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  max-height: 230px;
+  overflow: auto;
+}
+
+.wr-category-term-row {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  border-radius: 11px;
+  padding: 8px 9px;
+}
+
+.wr-category-term-row span {
+  display: block;
+  color: var(--wr-ink);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.wr-category-term-row em {
+  display: block;
+  margin-top: 3px;
+  color: var(--wr-faint);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.wr-category-negative-head button {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-ink);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wr-category-copybox {
+  margin: 0;
+  min-height: 120px;
+  max-height: 180px;
+  overflow: auto;
+  white-space: pre-wrap;
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-ink);
+  border-radius: 13px;
+  padding: 11px;
+  font-size: 12px;
+  line-height: 1.5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .tone-neutral { color: var(--wr-faint) !important; }
