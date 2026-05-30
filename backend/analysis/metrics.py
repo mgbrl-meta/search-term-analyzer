@@ -42,6 +42,10 @@ def compute_derived_metrics(df: pd.DataFrame) -> pd.DataFrame:
     df["cpa"] = _safe_div(df["cost"], df["conversions"])
     df["aov"] = _safe_div(df["conv_value"], df["conversions"])
 
+    # Compatibility alias.
+    # Canonical backend revenue field is conv_value, but recommendations/frontend may expect revenue.
+    df["revenue"] = df["conv_value"]
+
     total_revenue = df["conv_value"].sum()
     total_cost = df["cost"].sum()
     df["revenue_share"] = _safe_div(df["conv_value"], pd.Series([total_revenue] * len(df))) * 100

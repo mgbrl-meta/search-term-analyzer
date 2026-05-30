@@ -36,11 +36,22 @@ COLUMN_ALIASES: dict[str, str] = {
     "conv.": "conversions",
     "conv": "conversions",
     "all conv.": "conversions",
-    # Conversion value
+    # Conversion value / revenue
+    "conv value": "conv_value",
     "conv. value": "conv_value",
     "conversion value": "conv_value",
+    "conversions value": "conv_value",
+    "all conv value": "conv_value",
     "all conv. value": "conv_value",
+    "all conversion value": "conv_value",
+    "all conversions value": "conv_value",
+    "total conversion value": "conv_value",
+    "total conv. value": "conv_value",
+    "conv. value by conversion time": "conv_value",
+    "conversion value by conversion time": "conv_value",
+    "all conv. value by conversion time": "conv_value",
     "revenue": "conv_value",
+    "total revenue": "conv_value",
     # CTR
     "ctr": "ctr",
     "click through rate": "ctr",
@@ -67,11 +78,20 @@ REQUIRED_COLUMNS = {"search_term", "impressions", "clicks", "cost"}
 NUMERIC_COLUMNS = ["impressions", "clicks", "cost", "conversions", "conv_value", "avg_cpc"]
 
 
+def _header_key(raw_col: object) -> str:
+    """Normalize Google Ads headers for more reliable alias matching."""
+    key = str(raw_col).strip().lower()
+    key = key.replace("\ufeff", "")
+    key = key.replace("\n", " ")
+    key = " ".join(key.split())
+    return key
+
+
 def _normalise_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Rename raw column headers to canonical names."""
     rename_map: dict[str, str] = {}
     for raw_col in df.columns:
-        key = str(raw_col).strip().lower()
+        key = _header_key(raw_col)
         if key in COLUMN_ALIASES:
             rename_map[raw_col] = COLUMN_ALIASES[key]
     return df.rename(columns=rename_map)
@@ -87,7 +107,12 @@ def _coerce_numerics(df: pd.DataFrame) -> pd.DataFrame:
                 df[col]
                 .astype(str)
                 .str.replace(r"[₹$£€,%]", "", regex=True)
+                .str.replace(r"\bINR\b", "", regex=True, case=False)
+                .str.replace(r"\bRs\.?\b", "", regex=True, case=False)
                 .str.replace(",", "", regex=False)
+                .str.replace("--", "0", regex=False)
+                .str.replace("—", "0", regex=False)
+                .str.replace("-", "0", regex=False)
                 .str.strip()
             )
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
@@ -98,15 +123,23 @@ def _add_missing_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Add optional columns with sensible defaults if not present."""
     defaults: dict[str, float | str] = {
         "conversions": 0.0,
-        "conv_value": 0.0,
         "avg_cpc": 0.0,
         "match_type": "Unknown",
         "ad_group": "Unknown",
         "campaign": "Unknown",
     }
+
     for col, default in defaults.items():
         if col not in df.columns:
             df[col] = default
+
+    # Revenue/value is special. If missing, keep the app alive but mark it clearly.
+    if "conv_value" not in df.columns:
+        df["conv_value"] = 0.0
+        df.attrs["missing_conv_value"] = True
+    else:
+        df.attrs["missing_conv_value"] = False
+
     return df
 
 
