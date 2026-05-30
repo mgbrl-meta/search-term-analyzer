@@ -1248,6 +1248,56 @@ body {
   font-size: 12px;
 }
 
+/* Full-width Waste Spender layout alignment */
+.wr-stack {
+  width: 100%;
+  max-width: 1220px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.wr-stack > .wr-panel,
+.wr-stack > .wr-copy-card {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.wr-panel,
+.wr-copy-card {
+  width: 100%;
+}
+
+.wr-table-wrap {
+  width: 100%;
+}
+
+.wr-table {
+  width: 100%;
+  min-width: 100%;
+}
+
+.wr-copy-card {
+  padding: 14px;
+}
+
+.wr-copy-card pre {
+  width: 100%;
+  max-height: 180px;
+}
+
+.wr-panel-head,
+.wr-card-head {
+  width: 100%;
+}
+
+.wr-controls {
+  margin-left: auto;
+}
+
+
 @media(max-width: 980px) {
   .wr-kpis,
   .wr-mini-kpis {
