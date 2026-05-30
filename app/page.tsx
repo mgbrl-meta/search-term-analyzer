@@ -510,7 +510,7 @@ function WasteSpenderPanel({
   }
 
   return (
-    <div className="sta-waste-layout">
+    <div className="sta-waste-stack">
       <div className="sta-panel">
         <div className="sta-panel-head">
           <div>
@@ -588,7 +588,7 @@ function WasteSpenderPanel({
           <EmptyState label="waste spender terms" />
         ) : (
           <div className="sta-table-wrap">
-            <div className="sta-table-scroll">
+            <div className="sta-table-scroll compact">
               <table className="sta-table">
                 <thead>
                   <tr>
@@ -631,26 +631,30 @@ function WasteSpenderPanel({
         )}
       </div>
 
-      <div className="sta-panel">
-        <div className="sta-section-kicker">Copy-ready Google Ads negatives</div>
-        <h2>Negative keyword syntax</h2>
-        <p className="sta-panel-copy">
-          Copy this list and paste into Google Ads negatives. Exact match is safest by default.
-          Use phrase/broad only after checking overlap with profitable terms.
-        </p>
+      <div className="sta-panel sta-negative-panel">
+        <div className="sta-negative-head">
+          <div>
+            <div className="sta-section-kicker">Copy-ready Google Ads negatives</div>
+            <h2>Negative keyword syntax</h2>
+            <p className="sta-panel-copy">
+              Copy this list and paste into Google Ads negatives. Exact match is safest by default.
+              Use phrase/broad only after checking overlap with profitable terms.
+            </p>
+          </div>
 
-        <div className="sta-negative-box">
-          {negativeLines || "No zero-purchase terms above selected spend threshold."}
+          <button
+            type="button"
+            className="sta-wide-button compact"
+            onClick={copyNegatives}
+            disabled={!negativeLines}
+          >
+            Copy list
+          </button>
         </div>
 
-        <button
-          type="button"
-          className="sta-wide-button"
-          onClick={copyNegatives}
-          disabled={!negativeLines}
-        >
-          Copy negative keyword list
-        </button>
+        <div className="sta-negative-box horizontal">
+          {negativeLines || "No zero-purchase terms above selected spend threshold."}
+        </div>
       </div>
     </div>
   );
@@ -1622,6 +1626,34 @@ body {
   line-height: 1.6;
 }
 
+
+.sta-negative-panel {
+  padding: 12px;
+}
+
+.sta-negative-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.sta-wide-button.compact {
+  width: auto;
+  white-space: nowrap;
+  padding: 9px 12px;
+}
+
+.sta-table-scroll.compact {
+  max-height: calc(100vh - 520px);
+  min-height: 230px;
+}
+
+.sta-negative-box.horizontal {
+  min-height: 130px;
+  max-height: 190px;
+}
+
 .sta-copy-code {
   display: inline-flex;
   border: 1px solid var(--sta-border);
@@ -1648,6 +1680,17 @@ body {
 @media (max-width: 1180px) {
   .sta-waste-summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+
+@media (max-width: 900px) {
+  .sta-negative-head {
+    grid-template-columns: 1fr;
+  }
+
+  .sta-wide-button.compact {
+    width: 100%;
   }
 }
 
