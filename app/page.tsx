@@ -1316,11 +1316,11 @@ function ActionReportPanel({
 
   const hasReport = execSummary.length > 0 || checklist.length > 0 || negatives.length > 0;
 
-  const groupedActions = ["Cut Now", "Add Negatives", "Fix Don't Cut", "Scale", "Prove-Out", "Investigate"]
+  const groupedActions: AnyObj[] = ["Cut Now", "Add Negatives", "Fix Don't Cut", "Scale", "Prove-Out", "Investigate"]
     .flatMap((group) =>
       checklist
-        .filter((item) => str(item.group) === group)
-        .map((item) => ({ ...item, group }))
+        .filter((item) => str((item as AnyObj).group) === group)
+        .map((item): AnyObj => ({ ...(item as AnyObj), group }))
     );
 
   function handleExport() {
