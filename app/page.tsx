@@ -20,8 +20,8 @@ type TabKey =
 const TABS: { key: TabKey; label: string }[] = [
   { key: "waste_spender", label: "Waste Spender" },
   { key: "spend_mix", label: "Category Spend Mix" },
+  { key: "pattern_waste", label: "N-gram" },
   { key: "fragmentation", label: "Fragmentation" },
-  { key: "pattern_waste", label: "Pattern Waste" },
   { key: "kill_list", label: "Kill List" },
   { key: "watch_list", label: "Watch List" },
   { key: "winners", label: "Winners" },
@@ -111,6 +111,12 @@ function int(value: any) {
 function x(value: any) {
   return `${num(value).toFixed(2)}x`;
 }
+
+function ctrPct(value: any) {
+  const n = num(value);
+  return `${(n > 1 ? n : n * 100).toFixed(2)}%`;
+}
+
 
 function syntax(term: string, matchType: "exact" | "phrase" | "broad") {
   const clean = term.trim();
@@ -545,7 +551,7 @@ function CategorySpendMixPanel({
                 </div>
 
                 <div className="wr-category-summary-meta">
-                  {int(category.terms)} terms · {int(category.clicks)} clicks · {num(category.conversions).toFixed(2)} purch · {x(roas)}
+                  {int(category.terms)} terms · {int(category.clicks)} clicks · {ctrPct(category.ctr)} CTR · {num(category.conversions).toFixed(2)} purch · {x(roas)}
                 </div>
               </button>
             );
@@ -842,7 +848,7 @@ function CategorySpendMixCardsPanel({
                 </div>
 
                 <div className="wr-category-summary-meta">
-                  {int(category.terms)} terms · {int(category.clicks)} clicks · {num(category.conversions).toFixed(2)} purch · {x(roas)}
+                  {int(category.terms)} terms · {int(category.clicks)} clicks · {ctrPct(category.ctr)} CTR · {num(category.conversions).toFixed(2)} purch · {x(roas)}
                 </div>
               </button>
             );
@@ -886,14 +892,16 @@ function CategorySpendMixCardsPanel({
                   <span className="wr-category-dot" style={{ backgroundColor: color }} />
                   <div>
                     <h3>{categoryName}</h3>
-                    <p>{int(category.terms)} terms · {money(category.spend)} spend · {num(category.conversions).toFixed(2)} purchases · {x(roas)} ROAS</p>
+                    <p>{int(category.terms)} terms · {money(category.spend)} spend · {int(category.clicks)} clicks · {ctrPct(category.ctr)} CTR · {num(category.conversions).toFixed(2)} purchases · {x(roas)} ROAS</p>
                   </div>
                 </div>
 
                 <div className="wr-category-head-metrics">
                   <span>{spendShare.toFixed(1)}% spend share</span>
                   <strong className={`tone-${recommendation.tone}`}>{recommendation.title}</strong>
-                  <em>{isOpen ? "Collapse" : "Open"}</em>
+                  <em className="wr-arrow-button" aria-label={isOpen ? "Collapse category" : "Expand category"}>
+                    {isOpen ? "↑" : "↓"}
+                  </em>
                 </div>
               </button>
 
@@ -936,6 +944,10 @@ function CategorySpendMixCardsPanel({
                           <strong>{num(category.conversions).toFixed(2)}</strong>
                         </div>
                         <div>
+                          <span>CTR</span>
+                          <strong>{ctrPct(category.ctr)}</strong>
+                        </div>
+                        <div>
                           <span>Revenue</span>
                           <strong>{money(category.revenue)}</strong>
                         </div>
@@ -960,6 +972,7 @@ function CategorySpendMixCardsPanel({
                         { key: "search_term", label: "Search term" },
                         { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
                         { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
+                        { key: "ctr", label: "CTR", right: true, render: (row) => ctrPct(row.ctr) },
                         { key: "conversions", label: "Purch.", right: true, render: (row) => num(row.conversions).toFixed(2) },
                         { key: "revenue", label: "Revenue", right: true, render: (row) => money(row.revenue) },
                         { key: "roas", label: "ROAS", right: true, render: (row) => x(row.roas) },
@@ -977,6 +990,7 @@ function CategorySpendMixCardsPanel({
                             { key: "search_term", label: "Search term" },
                             { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
                             { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
+                            { key: "ctr", label: "CTR", right: true, render: (row) => ctrPct(row.ctr) },
                             { key: "syntax", label: "Syntax", render: (row) => <code>{syntax(str(row.search_term), matchType)}</code> },
                           ]}
                         />
@@ -1015,6 +1029,225 @@ function CategorySpendMixCardsPanel({
 }
 
 
+
+function NgramTabPanel({
+  ngramRows,
+}: {
+  ngramRows: AnyObj[];
+}) {
+  const [matchType, setMatchType] = useState<"exact" | "phrase" | "broad">("phrase");
+  const [minSpend, setMinSpend] = useState(100);
+  const [activeN, setActiveN] = useState<1 | 2 | 3>(1);
+
+  const grouped = [1, 2, 3].map((n) => {
+    const rows = ngramRows
+      .filter((row) => num(row.n) === n)
+      .sort((a, b) => num(b.cost) - num(a.cost));
+
+    const spend = rows.reduce((sum, row) => sum + num(row.cost), 0);
+    const clicks = rows.reduce((sum, row) => sum + num(row.clicks), 0);
+    const impressions = rows.reduce((sum, row) => sum + num(row.impressions), 0);
+    const purchases = rows.reduce((sum, row) => sum + num(row.conversions), 0);
+    const revenue = rows.reduce((sum, row) => sum + num(row.revenue), 0);
+    const ctr = impressions > 0 ? clicks / impressions : 0;
+    const roas = spend > 0 ? revenue / spend : 0;
+
+    return {
+      n,
+      label: `${n}-gram`,
+      rows,
+      spend,
+      clicks,
+      impressions,
+      ctr,
+      purchases,
+      revenue,
+      roas,
+    };
+  });
+
+  const activeGroup = grouped.find((group) => group.n === activeN) || grouped[0];
+
+  const negativeCandidates = ngramRows
+    .filter((row) => {
+      const n = num(row.n);
+      const spend = num(row.cost);
+      const purchases = num(row.conversions);
+      const roas = num(row.roas);
+      return spend >= minSpend && purchases === 0 && roas <= 0.1 && (n === 1 || n === 2 || n === 3);
+    })
+    .sort((a, b) => num(b.cost) - num(a.cost));
+
+  const negativeLines = negativeCandidates
+    .map((row) => syntax(str(row.ngram), matchType))
+    .filter(Boolean)
+    .join("\n");
+
+  async function copyNegatives() {
+    try {
+      await navigator.clipboard.writeText(negativeLines);
+      alert("N-gram negative list copied.");
+    } catch {
+      alert("Could not copy. Please copy manually.");
+    }
+  }
+
+  function recommendationForGroup(group: AnyObj) {
+    if (num(group.spend) <= 0) {
+      return "No material spend in this n-gram layer.";
+    }
+
+    if (num(group.purchases) === 0 && num(group.spend) >= minSpend) {
+      return "This n-gram layer has spend without purchases. Review repeated terms and add exact/phrase negatives carefully.";
+    }
+
+    if (num(group.roas) > 0 && num(group.roas) < 1) {
+      return "This n-gram layer has weak revenue efficiency. Prune non-converting repeated patterns first.";
+    }
+
+    if (num(group.purchases) > 0) {
+      return "This layer contains conversion signal. Do not broadly block all patterns; only negative specific zero-purchase groups.";
+    }
+
+    return "Review manually. Use exact negatives first unless the pattern is clearly irrelevant.";
+  }
+
+  return (
+    <section className="wr-ngram-page">
+      <div className="wr-panel wr-ngram-control">
+        <div className="wr-panel-head">
+          <div>
+            <span>N-gram Analysis</span>
+            <h2>Search-term word pattern analysis</h2>
+            <p className="wr-ngram-help">
+              This finds repeated 1-word, 2-word, and 3-word query patterns that consume spend across many search terms.
+              Use it to identify phrase-level waste, broad themes, and copy-ready negative keyword candidates.
+            </p>
+          </div>
+
+          <div className="wr-controls">
+            <label>
+              Negative min spend
+              <input
+                type="number"
+                min={0}
+                step={50}
+                value={minSpend}
+                onChange={(e) => setMinSpend(Math.max(0, Number(e.target.value) || 0))}
+              />
+            </label>
+
+            <select value={matchType} onChange={(e) => setMatchType(e.target.value as "exact" | "phrase" | "broad")}>
+              <option value="exact">Exact negatives</option>
+              <option value="phrase">Phrase negatives</option>
+              <option value="broad">Broad negatives</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div className="wr-ngram-card-grid">
+        {grouped.map((group) => (
+          <button
+            key={group.n}
+            type="button"
+            className={activeN === group.n ? "active" : ""}
+            onClick={() => setActiveN(group.n as 1 | 2 | 3)}
+          >
+            <div className="wr-ngram-card-head">
+              <span>{group.label}</span>
+              <strong>{int(group.rows.length)} groups</strong>
+            </div>
+
+            <div className="wr-ngram-metrics">
+              <div>
+                <span>Spend</span>
+                <strong>{money(group.spend)}</strong>
+              </div>
+              <div>
+                <span>Clicks</span>
+                <strong>{int(group.clicks)}</strong>
+              </div>
+              <div>
+                <span>CTR</span>
+                <strong>{ctrPct(group.ctr)}</strong>
+              </div>
+              <div>
+                <span>Purch.</span>
+                <strong>{num(group.purchases).toFixed(2)}</strong>
+              </div>
+              <div>
+                <span>Conv. value / cost</span>
+                <strong>{x(group.roas)}</strong>
+              </div>
+            </div>
+
+            <p>{recommendationForGroup(group)}</p>
+          </button>
+        ))}
+      </div>
+
+      <div className="wr-ngram-detail-grid">
+        <div className="wr-panel">
+          <div className="wr-panel-head">
+            <div>
+              <span>{activeGroup.label} details</span>
+              <h2>Groups by cumulative spend</h2>
+            </div>
+          </div>
+
+          <DataTable
+            rows={activeGroup.rows.slice(0, 150)}
+            empty={`No ${activeGroup.label} groups found.`}
+            columns={[
+              { key: "ngram", label: "N-gram group" },
+              { key: "term_count", label: "Terms", right: true, render: (row) => int(row.term_count) },
+              { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
+              { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
+              { key: "ctr", label: "CTR", right: true, render: (row) => ctrPct(row.ctr) },
+              { key: "conversions", label: "Purch.", right: true, render: (row) => num(row.conversions).toFixed(2) },
+              { key: "roas", label: "Conv. value / cost", right: true, render: (row) => x(row.roas) },
+              {
+                key: "action",
+                label: "Action",
+                render: (row) =>
+                  num(row.cost) >= minSpend && num(row.conversions) === 0 ? (
+                    <code>{syntax(str(row.ngram), matchType)}</code>
+                  ) : (
+                    "Review"
+                  ),
+              },
+            ]}
+          />
+        </div>
+
+        <div className="wr-panel wr-ngram-negative-panel">
+          <div className="wr-category-negative-head">
+            <div>
+              <span>Summary recommendation</span>
+              <strong>{negativeCandidates.length} negative candidates</strong>
+            </div>
+
+            <button type="button" onClick={copyNegatives} disabled={!negativeLines}>
+              Copy
+            </button>
+          </div>
+
+          <p className="wr-ngram-help">
+            These are repeated word patterns with spend above your threshold, zero purchases, and weak/no conversion value.
+            Use exact for specific queries, phrase for repeated 2–3 word patterns, and broad only when the single-word theme is fully irrelevant.
+          </p>
+
+          <pre className="wr-ngram-copybox">
+            {negativeLines || "No n-gram negative candidates at the selected threshold."}
+          </pre>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 function PageContent({
   result,
   fileName,
@@ -1041,11 +1274,17 @@ function PageContent({
         const searchTerm = str(row.search_term);
         const conversions = num(row.conversions);
         const category = classifyTerm(searchTerm, conversions);
+        const clicks = num(row.clicks);
+        const impressions = num(row.impressions);
+        const ctr = num(row.ctr) || (impressions > 0 ? clicks / impressions : 0);
+
         return {
           ...row,
           search_term: searchTerm,
           cost: num(row.cost),
-          clicks: num(row.clicks),
+          clicks,
+          impressions,
+          ctr,
           conversions,
           revenue: num(row.revenue ?? row.conv_value),
           roas: num(row.roas),
@@ -1065,15 +1304,26 @@ function PageContent({
       ...arr<AnyObj>(ngrams["2"]).map((r): AnyObj => ({ ...r, n: 2 })),
       ...arr<AnyObj>(ngrams["3"]).map((r): AnyObj => ({ ...r, n: 3 })),
     ]
-      .map((row) => ({
-        ...row,
-        cost: num(row.cost),
-        clicks: num(row.clicks),
-        conversions: num(row.conversions),
-        revenue: num(row.revenue ?? row.conv_value),
-        roas: num(row.roas),
-        waste: num(row.aggregate_wasted_spend || row.waste_score || row.cost),
-      }))
+      .map((row) => {
+        const clicks = num(row.clicks);
+        const impressions = num(row.impressions);
+        const cost = num(row.cost);
+        const revenue = num(row.revenue ?? row.conv_value);
+        const roas = num(row.roas) || (cost > 0 ? revenue / cost : 0);
+        const ctr = num(row.ctr) || (impressions > 0 ? clicks / impressions : 0);
+
+        return {
+          ...row,
+          cost,
+          clicks,
+          impressions,
+          ctr,
+          conversions: num(row.conversions),
+          revenue,
+          roas,
+          waste: num(row.aggregate_wasted_spend || row.waste_score || row.cost),
+        };
+      })
       .sort((a, b) => num(b.waste) - num(a.waste));
   }, [data]);
 
@@ -1097,6 +1347,7 @@ function PageContent({
         category,
         spend: 0,
         clicks: 0,
+        impressions: 0,
         terms: 0,
         conversions: 0,
         revenue: 0,
@@ -1104,13 +1355,19 @@ function PageContent({
 
       current.spend += num(row.cost);
       current.clicks += num(row.clicks);
+      current.impressions += num(row.impressions);
       current.terms += 1;
       current.conversions += num(row.conversions);
       current.revenue += num(row.revenue);
       map.set(category, current);
     });
 
-    return Array.from(map.values()).sort((a, b) => b.spend - a.spend);
+    return Array.from(map.values())
+      .map((row) => ({
+        ...row,
+        ctr: num(row.impressions) > 0 ? num(row.clicks) / num(row.impressions) : 0,
+      }))
+      .sort((a, b) => b.spend - a.spend);
   }, [terms]);
 
   const fragmentation = useMemo(() => {
@@ -1214,6 +1471,7 @@ function PageContent({
                   category: row.category,
                   cost: row.cost,
                   clicks: row.clicks,
+                  ctr: row.ctr,
                   conversions: row.conversions,
                   revenue: row.revenue,
                   roas: row.roas,
@@ -1299,6 +1557,7 @@ function PageContent({
               <Kpi label="Filter" value={`₹${threshold.toLocaleString("en-IN")}+`} />
               <Kpi label="Terms" value={int(wasteRows.length)} />
               <Kpi label="Spend at risk" value={money(wasteRows.reduce((s, r) => s + num(r.cost), 0))} tone="red" />
+              <Kpi label="CTR" value={ctrPct(averageCtr)} tone="blue" />
               <Kpi label="Purchases" value="0" />
             </div>
 
@@ -1314,6 +1573,7 @@ function PageContent({
                 },
                 { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
                 { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
+                { key: "ctr", label: "CTR", right: true, render: (row) => ctrPct(row.ctr) },
                 { key: "conversions", label: "Conv.", right: true, render: (row) => num(row.conversions).toFixed(2) },
                 { key: "category", label: "Category" },
               ]}
@@ -1356,27 +1616,7 @@ function PageContent({
       ) : null}
 
       {activeTab === "pattern_waste" ? (
-        <section className="wr-panel">
-          <div className="wr-panel-head">
-            <div>
-              <span>Pattern Waste</span>
-              <h2>Repeated query patterns creating waste</h2>
-            </div>
-          </div>
-
-          <div className="wr-bars">
-            {ngramRows.slice(0, 35).map((row, index) => (
-              <BarRow
-                key={`${row.ngram}-${index}`}
-                label={`${row.ngram} · ${row.n}-word pattern`}
-                value={num(row.cost)}
-                max={maxPattern}
-                color={num(row.conversions) > 0 ? GOOGLE.green : GOOGLE.red}
-                meta={`${int(row.term_count)} terms · ${int(row.clicks)} clicks · ${num(row.conversions).toFixed(2)} conv · ${x(row.roas)}`}
-              />
-            ))}
-          </div>
-        </section>
+        <NgramTabPanel ngramRows={ngramRows} />
       ) : null}
 
       {activeTab === "kill_list" ? (
@@ -1685,7 +1925,7 @@ body {
 
 .wr-mini-kpis {
   margin: 10px 0 12px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .wr-kpi {
@@ -2201,6 +2441,22 @@ body {
   white-space: nowrap;
 }
 
+
+.wr-arrow-button {
+  display: inline-grid !important;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-ink) !important;
+  border-radius: 999px !important;
+  padding: 0 !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  font-weight: 800 !important;
+}
+
 .wr-category-head-metrics em {
   border: 1px solid var(--wr-line);
   background: var(--wr-panel2);
@@ -2247,7 +2503,7 @@ body {
 
 .wr-category-metrics {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -2365,6 +2621,131 @@ body {
 .tone-neutral { color: var(--wr-faint) !important; }
 
 
+
+.wr-ngram-page {
+  max-width: 1220px;
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+
+.wr-ngram-control {
+  max-width: none;
+}
+
+.wr-ngram-help {
+  margin: 6px 0 0;
+  color: var(--wr-dim);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.wr-ngram-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.wr-ngram-card-grid > button {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
+  color: var(--wr-ink);
+  border-radius: 16px;
+  padding: 13px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--wr-shadow);
+}
+
+.wr-ngram-card-grid > button.active {
+  border-color: rgba(66,133,244,0.55);
+  background: rgba(66,133,244,0.12);
+}
+
+.wr-ngram-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.wr-ngram-card-head span {
+  color: var(--wr-ink);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.wr-ngram-card-head strong {
+  color: var(--wr-faint);
+  font-size: 12px;
+}
+
+.wr-ngram-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.wr-ngram-metrics div {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  border-radius: 12px;
+  padding: 8px 9px;
+}
+
+.wr-ngram-metrics span {
+  display: block;
+  color: var(--wr-faint);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.wr-ngram-metrics strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--wr-ink);
+  font-size: 15px;
+  letter-spacing: -0.03em;
+}
+
+.wr-ngram-card-grid p {
+  margin: 10px 0 0;
+  color: var(--wr-dim);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.wr-ngram-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.65fr);
+  gap: 12px;
+}
+
+.wr-ngram-negative-panel {
+  align-self: start;
+}
+
+.wr-ngram-copybox {
+  margin: 10px 0 0;
+  min-height: 340px;
+  max-height: calc(100vh - 410px);
+  overflow: auto;
+  white-space: pre-wrap;
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-ink);
+  border-radius: 13px;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+
 @media(max-width: 980px) {
   .wr-kpis,
   .wr-mini-kpis {
@@ -2383,6 +2764,12 @@ body {
     flex-direction: column;
     align-items: stretch;
   }
+
+  .wr-ngram-card-grid,
+  .wr-ngram-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
 
   .wr-category-summary-strip,
   .wr-category-summary-strip.compact {
