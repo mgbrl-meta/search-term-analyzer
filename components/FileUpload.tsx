@@ -20,19 +20,19 @@ const GOOGLE = {
 const cards = [
   {
     title: "Spend wasters",
-    body: "Significant terms and patterns spending below break-even.",
+    body: "Significant terms and query patterns spending below break-even.",
     tag: "Cut",
     color: GOOGLE.red,
   },
   {
     title: "Negative keywords",
-    body: "Exact, phrase, and broad suggestions with overlap protection.",
+    body: "Exact, phrase, and broad negative suggestions with overlap protection.",
     tag: "Block",
     color: GOOGLE.blue,
   },
   {
     title: "N-gram waste",
-    body: "Repeated phrases creating inefficient spend across many queries.",
+    body: "Repeated phrases creating inefficient spend across many terms.",
     tag: "Detect",
     color: GOOGLE.yellow,
   },
@@ -112,14 +112,6 @@ function UploadIcon({ loading }: { loading: boolean }) {
   );
 }
 
-function GoogleMark() {
-  return (
-    <div className="sta-google-mark" aria-hidden="true">
-      <span style={{ color: GOOGLE.blue }}>G</span>
-    </div>
-  );
-}
-
 export default function FileUpload({ onResult }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -173,42 +165,44 @@ export default function FileUpload({ onResult }: Props) {
   );
 
   return (
-    <div className="sta-home">
+    <div className="sta-home-final">
       <style jsx global>{`
         :root,
         html[data-theme="light"] {
-          --sta-bg: #f8fafc;
-          --sta-bg-soft: rgba(255, 255, 255, 0.78);
-          --sta-surface: rgba(255, 255, 255, 0.84);
-          --sta-surface-strong: #ffffff;
-          --sta-border: rgba(15, 23, 42, 0.1);
-          --sta-border-strong: rgba(15, 23, 42, 0.16);
+          --sta-page-bg: #f8fafc;
           --sta-text: #0f172a;
-          --sta-text-soft: #475569;
+          --sta-text-2: #334155;
+          --sta-text-3: #64748b;
           --sta-muted: #94a3b8;
-          --sta-grid: rgba(15, 23, 42, 0.045);
-          --sta-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);
-          --sta-card-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+          --sta-panel: rgba(255, 255, 255, 0.78);
+          --sta-panel-2: rgba(255, 255, 255, 0.92);
+          --sta-chip: #ffffff;
+          --sta-border: rgba(15, 23, 42, 0.11);
+          --sta-border-2: rgba(15, 23, 42, 0.18);
+          --sta-grid: rgba(15, 23, 42, 0.035);
+          --sta-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+          --sta-upload-bg: rgba(255, 255, 255, 0.86);
         }
 
         html[data-theme="dark"] {
-          --sta-bg: #050816;
-          --sta-bg-soft: rgba(15, 23, 42, 0.72);
-          --sta-surface: rgba(15, 23, 42, 0.78);
-          --sta-surface-strong: rgba(30, 41, 59, 0.9);
-          --sta-border: rgba(148, 163, 184, 0.18);
-          --sta-border-strong: rgba(226, 232, 240, 0.24);
+          --sta-page-bg: #050816;
           --sta-text: #f8fafc;
-          --sta-text-soft: #cbd5e1;
-          --sta-muted: #94a3b8;
-          --sta-grid: rgba(148, 163, 184, 0.075);
-          --sta-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
-          --sta-card-shadow: 0 16px 44px rgba(0, 0, 0, 0.24);
+          --sta-text-2: #dbe4ef;
+          --sta-text-3: #a7b4c6;
+          --sta-muted: #78869b;
+          --sta-panel: rgba(15, 23, 42, 0.72);
+          --sta-panel-2: rgba(17, 24, 39, 0.92);
+          --sta-chip: rgba(30, 41, 59, 0.9);
+          --sta-border: rgba(148, 163, 184, 0.18);
+          --sta-border-2: rgba(226, 232, 240, 0.28);
+          --sta-grid: rgba(148, 163, 184, 0.055);
+          --sta-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
+          --sta-upload-bg: rgba(15, 23, 42, 0.88);
         }
 
         body {
           font-family: Helvetica, Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-          background: var(--sta-bg);
+          background: var(--sta-page-bg) !important;
         }
 
         .font-serif,
@@ -216,51 +210,50 @@ export default function FileUpload({ onResult }: Props) {
           font-family: Helvetica, Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
         }
 
-        .sta-theme-toggle {
+        .theme-toggle-clean {
           display: inline-flex;
           height: 38px;
           width: 38px;
           align-items: center;
           justify-content: center;
-          border-radius: 14px;
+          border-radius: 13px;
           border: 1px solid var(--sta-border);
-          background: var(--sta-surface);
+          background: var(--sta-panel-2);
           color: var(--sta-text);
-          box-shadow: var(--sta-card-shadow);
+          box-shadow: var(--sta-shadow);
           backdrop-filter: blur(18px);
-          transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+          transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
         }
 
-        .sta-theme-toggle:hover {
+        .theme-toggle-clean:hover {
           transform: translateY(-1px);
-          border-color: var(--sta-border-strong);
-          background: var(--sta-surface-strong);
+          border-color: var(--sta-border-2);
+          background: var(--sta-chip);
         }
 
-        .sta-home {
+        .sta-home-final {
           position: relative;
           width: 100%;
           max-width: 1280px;
           margin: 0 auto;
-          padding: 32px 24px 48px;
+          padding: 34px 24px 56px;
           color: var(--sta-text);
           overflow: hidden;
         }
 
-        .sta-home::before {
+        .sta-home-final::before {
           content: "";
           position: absolute;
           inset: 0;
           z-index: -2;
           background:
-            radial-gradient(circle at 18% 12%, rgba(66, 133, 244, 0.14), transparent 30%),
-            radial-gradient(circle at 72% 16%, rgba(52, 168, 83, 0.12), transparent 28%),
-            radial-gradient(circle at 48% 72%, rgba(251, 188, 4, 0.1), transparent 26%),
-            radial-gradient(circle at 90% 62%, rgba(234, 67, 53, 0.09), transparent 25%);
-          filter: blur(10px);
+            radial-gradient(circle at 18% 16%, rgba(66, 133, 244, 0.14), transparent 30%),
+            radial-gradient(circle at 74% 18%, rgba(52, 168, 83, 0.11), transparent 28%),
+            radial-gradient(circle at 50% 72%, rgba(251, 188, 4, 0.10), transparent 26%),
+            radial-gradient(circle at 90% 62%, rgba(234, 67, 53, 0.08), transparent 25%);
         }
 
-        .sta-home::after {
+        .sta-home-final::after {
           content: "";
           position: absolute;
           inset: 0;
@@ -269,43 +262,43 @@ export default function FileUpload({ onResult }: Props) {
             linear-gradient(to right, var(--sta-grid) 1px, transparent 1px),
             linear-gradient(to bottom, var(--sta-grid) 1px, transparent 1px);
           background-size: 48px 48px;
-          mask-image: linear-gradient(to bottom, black, transparent 90%);
+          mask-image: linear-gradient(to bottom, black 10%, transparent 90%);
         }
 
-        .sta-hero {
+        .sta-hero-final {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) minmax(360px, 0.92fr);
-          gap: 48px;
+          grid-template-columns: minmax(0, 0.95fr) minmax(360px, 0.88fr);
+          gap: 52px;
           align-items: center;
-          padding: 48px 0 44px;
+          padding: 46px 0 42px;
         }
 
-        .sta-eyebrow {
+        .sta-eyebrow-final {
           display: inline-flex;
           align-items: center;
           gap: 8px;
           border: 1px solid var(--sta-border);
-          background: var(--sta-surface);
-          color: var(--sta-text-soft);
+          background: var(--sta-panel);
+          color: var(--sta-text-2);
           padding: 7px 12px;
           border-radius: 999px;
           font-size: 11px;
           font-weight: 600;
           letter-spacing: 0.18em;
           text-transform: uppercase;
-          box-shadow: var(--sta-card-shadow);
+          box-shadow: var(--sta-shadow);
           backdrop-filter: blur(18px);
         }
 
-        .sta-dot {
+        .sta-live-dot-final {
           height: 8px;
           width: 8px;
           border-radius: 999px;
           background: #34a853;
-          box-shadow: 0 0 14px rgba(52, 168, 83, 0.78);
+          box-shadow: 0 0 14px rgba(52, 168, 83, 0.8);
         }
 
-        .sta-os-row {
+        .sta-os-row-final {
           display: flex;
           align-items: center;
           gap: 12px;
@@ -317,48 +310,55 @@ export default function FileUpload({ onResult }: Props) {
           text-transform: uppercase;
         }
 
-        .sta-google-mark {
+        .sta-g-final {
           display: grid;
           place-items: center;
           height: 34px;
           width: 34px;
           border-radius: 13px;
           border: 1px solid var(--sta-border);
-          background: var(--sta-surface-strong);
-          box-shadow: var(--sta-card-shadow);
+          background: var(--sta-chip);
+          color: #4285f4;
           font-size: 17px;
           font-weight: 600;
+          box-shadow: var(--sta-shadow);
         }
 
-        .sta-title {
+        .sta-title-final {
           margin-top: 26px;
           max-width: 760px;
-          font-size: clamp(42px, 6vw, 66px);
-          line-height: 0.98;
-          letter-spacing: -0.058em;
-          font-weight: 600;
           color: var(--sta-text);
+          font-size: clamp(40px, 5vw, 58px);
+          line-height: 1.02;
+          letter-spacing: -0.052em;
+          font-weight: 560;
         }
 
-        .sta-title span {
+        .sta-title-final .line-one {
           display: block;
-          font-weight: 500;
-          background: linear-gradient(90deg, #4285f4, #34a853 48%, #fbbc04 78%, #ea4335);
+          color: var(--sta-text);
+          opacity: 1;
+        }
+
+        .sta-title-final .line-two {
+          display: block;
+          font-weight: 520;
+          background: linear-gradient(90deg, #4285f4 0%, #34a853 48%, #fbbc04 78%, #ea4335 100%);
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
         }
 
-        .sta-subtitle {
+        .sta-subtitle-final {
           margin-top: 22px;
           max-width: 650px;
-          color: var(--sta-text-soft);
+          color: var(--sta-text-2);
           font-size: 15px;
           line-height: 1.75;
           font-weight: 400;
         }
 
-        .sta-signal-grid {
+        .sta-signal-grid-final {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 10px;
@@ -366,24 +366,24 @@ export default function FileUpload({ onResult }: Props) {
           max-width: 650px;
         }
 
-        .sta-signal {
+        .sta-signal-final {
           border: 1px solid var(--sta-border);
-          background: var(--sta-surface);
+          background: var(--sta-panel);
           border-radius: 18px;
           padding: 13px 15px;
-          box-shadow: var(--sta-card-shadow);
+          box-shadow: var(--sta-shadow);
           backdrop-filter: blur(18px);
         }
 
-        .sta-signal strong {
+        .sta-signal-final strong {
           display: block;
           font-size: 14px;
           line-height: 1;
           letter-spacing: -0.02em;
-          font-weight: 600;
+          font-weight: 650;
         }
 
-        .sta-signal span {
+        .sta-signal-final span {
           display: block;
           margin-top: 7px;
           color: var(--sta-muted);
@@ -393,11 +393,11 @@ export default function FileUpload({ onResult }: Props) {
           text-transform: uppercase;
         }
 
-        .sta-upload-shell {
+        .sta-upload-shell-final {
           position: relative;
         }
 
-        .sta-upload-shell::before {
+        .sta-upload-shell-final::before {
           content: "";
           position: absolute;
           inset: -14px;
@@ -405,55 +405,55 @@ export default function FileUpload({ onResult }: Props) {
           border-radius: 34px;
           background: conic-gradient(
             from 180deg,
-            rgba(66, 133, 244, 0.2),
-            rgba(52, 168, 83, 0.17),
-            rgba(251, 188, 4, 0.16),
-            rgba(234, 67, 53, 0.14),
-            rgba(66, 133, 244, 0.2)
+            rgba(66, 133, 244, 0.18),
+            rgba(52, 168, 83, 0.14),
+            rgba(251, 188, 4, 0.12),
+            rgba(234, 67, 53, 0.12),
+            rgba(66, 133, 244, 0.18)
           );
           filter: blur(24px);
-          opacity: 0.9;
+          opacity: 0.75;
         }
 
-        .sta-upload-card {
+        .sta-upload-card-final {
           border: 1px solid var(--sta-border);
-          background: var(--sta-surface);
+          background: var(--sta-upload-bg);
           border-radius: 30px;
           padding: 12px;
           box-shadow: var(--sta-shadow);
           backdrop-filter: blur(24px);
         }
 
-        .sta-dropzone {
+        .sta-dropzone-final {
           position: relative;
           overflow: hidden;
           border: 1px solid var(--sta-border);
-          background: var(--sta-bg-soft);
+          background: var(--sta-panel-2);
           border-radius: 24px;
           padding: 26px;
           cursor: pointer;
-          transition: border-color 160ms ease, background 160ms ease, opacity 160ms ease;
+          transition: border-color 0.16s ease, background 0.16s ease, opacity 0.16s ease;
         }
 
-        .sta-dropzone:hover,
-        .sta-dropzone.dragging {
+        .sta-dropzone-final:hover,
+        .sta-dropzone-final.dragging {
           border-color: rgba(66, 133, 244, 0.58);
           background: rgba(66, 133, 244, 0.08);
         }
 
-        .sta-dropzone.loading {
+        .sta-dropzone-final.loading {
           cursor: progress;
           opacity: 0.78;
           pointer-events: none;
         }
 
-        .sta-upload-head {
+        .sta-upload-head-final {
           display: flex;
           align-items: flex-start;
           gap: 16px;
         }
 
-        .sta-upload-icon {
+        .sta-upload-icon-final {
           display: grid;
           place-items: center;
           flex: 0 0 auto;
@@ -461,43 +461,42 @@ export default function FileUpload({ onResult }: Props) {
           width: 50px;
           border-radius: 18px;
           border: 1px solid rgba(66, 133, 244, 0.24);
-          background: rgba(66, 133, 244, 0.1);
+          background: rgba(66, 133, 244, 0.10);
           color: #4285f4;
-          box-shadow: 0 12px 28px rgba(66, 133, 244, 0.15);
         }
 
-        .sta-upload-copy {
+        .sta-upload-copy-final {
           min-width: 0;
           flex: 1;
         }
 
-        .sta-upload-top {
+        .sta-upload-top-final {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
           gap: 16px;
         }
 
-        .sta-upload-title {
+        .sta-upload-title-final {
           color: var(--sta-text);
           font-size: 22px;
           line-height: 1.1;
           letter-spacing: -0.035em;
-          font-weight: 600;
+          font-weight: 620;
         }
 
-        .sta-upload-help {
+        .sta-upload-help-final {
           margin-top: 8px;
-          color: var(--sta-text-soft);
+          color: var(--sta-text-2);
           font-size: 14px;
           line-height: 1.55;
         }
 
-        .sta-file-type {
+        .sta-file-type-final {
           flex: 0 0 auto;
           border: 1px solid var(--sta-border);
-          background: var(--sta-surface-strong);
-          color: var(--sta-text-soft);
+          background: var(--sta-chip);
+          color: var(--sta-text-2);
           border-radius: 999px;
           padding: 6px 10px;
           font-size: 10px;
@@ -506,10 +505,10 @@ export default function FileUpload({ onResult }: Props) {
           text-transform: uppercase;
         }
 
-        .sta-file-status,
-        .sta-file-empty,
-        .sta-loading,
-        .sta-error {
+        .sta-file-empty-final,
+        .sta-file-status-final,
+        .sta-loading-final,
+        .sta-error-final {
           margin-top: 24px;
           border-radius: 18px;
           padding: 14px 16px;
@@ -517,40 +516,40 @@ export default function FileUpload({ onResult }: Props) {
           font-weight: 500;
         }
 
-        .sta-file-empty {
-          border: 1px dashed var(--sta-border-strong);
-          background: var(--sta-surface);
-          color: var(--sta-text-soft);
+        .sta-file-empty-final {
+          border: 1px dashed var(--sta-border-2);
+          background: var(--sta-panel);
+          color: var(--sta-text-2);
           text-align: center;
         }
 
-        .sta-file-status {
+        .sta-file-status-final {
           border: 1px solid rgba(52, 168, 83, 0.28);
-          background: rgba(52, 168, 83, 0.1);
+          background: rgba(52, 168, 83, 0.10);
           color: #34a853;
         }
 
-        .sta-loading {
+        .sta-loading-final {
           border: 1px solid rgba(66, 133, 244, 0.28);
-          background: rgba(66, 133, 244, 0.1);
+          background: rgba(66, 133, 244, 0.10);
           color: #4285f4;
         }
 
-        .sta-error {
+        .sta-error-final {
           border: 1px solid rgba(234, 67, 53, 0.28);
-          background: rgba(234, 67, 53, 0.1);
+          background: rgba(234, 67, 53, 0.10);
           color: #ea4335;
         }
 
-        .sta-required {
+        .sta-required-final {
           margin-top: 22px;
           border: 1px solid var(--sta-border);
-          background: var(--sta-surface);
+          background: var(--sta-panel);
           border-radius: 20px;
           padding: 16px;
         }
 
-        .sta-required-title {
+        .sta-required-title-final {
           color: var(--sta-muted);
           font-size: 10px;
           font-weight: 600;
@@ -558,46 +557,46 @@ export default function FileUpload({ onResult }: Props) {
           text-transform: uppercase;
         }
 
-        .sta-chip-row {
+        .sta-chip-row-final {
           display: flex;
           flex-wrap: wrap;
           gap: 8px;
           margin-top: 13px;
         }
 
-        .sta-chip {
+        .sta-chip-final {
           border: 1px solid var(--sta-border);
-          background: var(--sta-surface-strong);
-          color: var(--sta-text-soft);
+          background: var(--sta-chip);
+          color: var(--sta-text-2);
           border-radius: 999px;
           padding: 7px 11px;
           font-size: 12px;
           font-weight: 500;
         }
 
-        .sta-card-grid {
+        .sta-card-grid-final {
           display: grid;
           grid-template-columns: repeat(6, minmax(0, 1fr));
           gap: 12px;
         }
 
-        .sta-info-card {
+        .sta-info-card-final {
           border: 1px solid var(--sta-border);
-          background: var(--sta-surface);
+          background: var(--sta-panel);
           border-radius: 22px;
           padding: 18px;
-          box-shadow: var(--sta-card-shadow);
+          box-shadow: var(--sta-shadow);
           backdrop-filter: blur(20px);
-          transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+          transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
         }
 
-        .sta-info-card:hover {
+        .sta-info-card-final:hover {
           transform: translateY(-2px);
-          border-color: var(--sta-border-strong);
-          background: var(--sta-surface-strong);
+          border-color: var(--sta-border-2);
+          background: var(--sta-panel-2);
         }
 
-        .sta-info-top {
+        .sta-info-top-final {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -605,9 +604,9 @@ export default function FileUpload({ onResult }: Props) {
           margin-bottom: 20px;
         }
 
-        .sta-tag {
+        .sta-tag-final {
           border: 1px solid var(--sta-border);
-          background: var(--sta-surface-strong);
+          background: var(--sta-chip);
           border-radius: 999px;
           padding: 6px 9px;
           font-size: 10px;
@@ -616,35 +615,35 @@ export default function FileUpload({ onResult }: Props) {
           text-transform: uppercase;
         }
 
-        .sta-mini-dot {
+        .sta-mini-dot-final {
           width: 6px;
           height: 6px;
           border-radius: 999px;
         }
 
-        .sta-card-title {
+        .sta-card-title-final {
           color: var(--sta-text);
           font-size: 16px;
           line-height: 1.2;
           letter-spacing: -0.025em;
-          font-weight: 600;
+          font-weight: 620;
         }
 
-        .sta-card-body {
+        .sta-card-body-final {
           margin-top: 10px;
-          color: var(--sta-text-soft);
+          color: var(--sta-text-2);
           font-size: 14px;
           line-height: 1.5;
           font-weight: 400;
         }
 
-        .sta-pipeline {
+        .sta-pipeline-final {
           margin-top: 24px;
           border: 1px solid var(--sta-border);
-          background: var(--sta-surface);
+          background: var(--sta-panel);
           border-radius: 26px;
           padding: 20px;
-          box-shadow: var(--sta-card-shadow);
+          box-shadow: var(--sta-shadow);
           backdrop-filter: blur(20px);
           display: flex;
           align-items: center;
@@ -652,7 +651,7 @@ export default function FileUpload({ onResult }: Props) {
           gap: 24px;
         }
 
-        .sta-pipeline-label {
+        .sta-pipeline-label-final {
           color: #4285f4;
           font-size: 10px;
           font-weight: 600;
@@ -660,26 +659,26 @@ export default function FileUpload({ onResult }: Props) {
           text-transform: uppercase;
         }
 
-        .sta-pipeline-title {
+        .sta-pipeline-title-final {
           margin-top: 8px;
           color: var(--sta-text);
           font-size: 24px;
           line-height: 1.12;
           letter-spacing: -0.04em;
-          font-weight: 600;
+          font-weight: 620;
         }
 
-        .sta-pipeline-steps {
+        .sta-pipeline-steps-final {
           display: flex;
           flex-wrap: wrap;
           justify-content: flex-end;
           gap: 8px;
         }
 
-        .sta-step {
+        .sta-step-final {
           border: 1px solid var(--sta-border);
-          background: var(--sta-surface-strong);
-          color: var(--sta-text-soft);
+          background: var(--sta-chip);
+          color: var(--sta-text-2);
           border-radius: 999px;
           padding: 9px 12px;
           font-size: 12px;
@@ -697,83 +696,80 @@ export default function FileUpload({ onResult }: Props) {
         }
 
         @media (max-width: 1060px) {
-          .sta-hero {
+          .sta-hero-final {
             grid-template-columns: 1fr;
             padding-top: 24px;
           }
 
-          .sta-card-grid {
+          .sta-card-grid-final {
             grid-template-columns: repeat(3, minmax(0, 1fr));
           }
 
-          .sta-pipeline {
+          .sta-pipeline-final {
             align-items: flex-start;
             flex-direction: column;
           }
 
-          .sta-pipeline-steps {
+          .sta-pipeline-steps-final {
             justify-content: flex-start;
           }
         }
 
         @media (max-width: 720px) {
-          .sta-home {
+          .sta-home-final {
             padding: 20px 16px 36px;
           }
 
-          .sta-title {
+          .sta-title-final {
             font-size: 42px;
           }
 
-          .sta-signal-grid {
+          .sta-signal-grid-final {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
-          .sta-card-grid {
+          .sta-card-grid-final {
             grid-template-columns: 1fr;
           }
 
-          .sta-upload-head {
-            flex-direction: column;
-          }
-
-          .sta-upload-top {
+          .sta-upload-head-final,
+          .sta-upload-top-final {
             flex-direction: column;
           }
         }
       `}</style>
 
-      <section className="sta-hero">
+      <section className="sta-hero-final">
         <div>
-          <div className="sta-eyebrow">
-            <span className="sta-dot" />
+          <div className="sta-eyebrow-final">
+            <span className="sta-live-dot-final" />
             Google Ads intelligence engine
           </div>
 
-          <div className="sta-os-row">
-            <GoogleMark />
+          <div className="sta-os-row-final">
+            <div className="sta-g-final">G</div>
             <span>Search term operating system</span>
           </div>
 
-          <h1 className="sta-title">
-            Search Term
-            <span>Command Brain</span>
+          <h1 className="sta-title-final">
+            <span className="line-one">Search Term</span>
+            <span className="line-two">Command Brain</span>
           </h1>
 
-          <p className="sta-subtitle">
+          <p className="sta-subtitle-final">
             Upload a Google Ads search-term export. The engine turns raw queries into
             spend-waster cuts, negative keywords, n-gram waste, PDP issues, scale signals,
             and true non-brand ROAS actions.
           </p>
 
-          <div className="sta-signal-grid">
+          <div className="sta-signal-grid-final">
             {[
               ["ROAS", "mapped", GOOGLE.blue],
               ["0-spend", "ignored", GOOGLE.green],
               ["Overlap", "guard", GOOGLE.yellow],
               ["Actions", "exportable", GOOGLE.red],
             ].map(([top, bottom, color]) => (
-              <div className="sta-signal" key={top}>
+              <div className="sta-signal-final" key={top}>
                 <strong style={{ color }}>{top}</strong>
                 <span>{bottom}</span>
               </div>
@@ -781,8 +777,8 @@ export default function FileUpload({ onResult }: Props) {
           </div>
         </div>
 
-        <div className="sta-upload-shell">
-          <div className="sta-upload-card">
+        <div className="sta-upload-shell-final">
+          <div className="sta-upload-card-final">
             <div
               role="button"
               tabIndex={0}
@@ -802,7 +798,7 @@ export default function FileUpload({ onResult }: Props) {
               }}
               onDrop={onDrop}
               className={[
-                "sta-dropzone",
+                "sta-dropzone-final",
                 dragging ? "dragging" : "",
                 loading ? "loading" : "",
               ].join(" ")}
@@ -815,50 +811,50 @@ export default function FileUpload({ onResult }: Props) {
                 onChange={onChange}
               />
 
-              <div className="sta-upload-head">
-                <div className="sta-upload-icon">
+              <div className="sta-upload-head-final">
+                <div className="sta-upload-icon-final">
                   <UploadIcon loading={loading} />
                 </div>
 
-                <div className="sta-upload-copy">
-                  <div className="sta-upload-top">
+                <div className="sta-upload-copy-final">
+                  <div className="sta-upload-top-final">
                     <div>
-                      <h2 className="sta-upload-title">
+                      <h2 className="sta-upload-title-final">
                         {loading ? "Analyzing report" : "Upload report"}
                       </h2>
-                      <p className="sta-upload-help">
+                      <p className="sta-upload-help-final">
                         {loading
                           ? "Building action tabs and export-ready recommendations."
                           : "Drop your Google Ads report or click to browse."}
                       </p>
                     </div>
 
-                    <span className="sta-file-type">CSV / XLSX</span>
+                    <span className="sta-file-type-final">CSV / XLSX</span>
                   </div>
 
                   {selectedFile ? (
-                    <div className="sta-file-status">Selected: {selectedFile}</div>
+                    <div className="sta-file-status-final">Selected: {selectedFile}</div>
                   ) : (
-                    <div className="sta-file-empty">Drag file here to start analysis</div>
+                    <div className="sta-file-empty-final">Drag file here to start analysis</div>
                   )}
 
                   {loading ? (
-                    <div className="sta-loading">
+                    <div className="sta-loading-final">
                       Uploading and analyzing. Large exports may take a few seconds.
                     </div>
                   ) : null}
 
-                  {error ? <div className="sta-error">{error}</div> : null}
+                  {error ? <div className="sta-error-final">{error}</div> : null}
 
-                  <div className="sta-required">
-                    <div className="sta-required-title">Required signal columns</div>
-                    <div className="sta-chip-row">
+                  <div className="sta-required-final">
+                    <div className="sta-required-title-final">Required signal columns</div>
+                    <div className="sta-chip-row-final">
                       {requiredColumns.map((col, index) => {
                         const colors = [GOOGLE.blue, GOOGLE.red, GOOGLE.yellow, GOOGLE.green];
                         return (
                           <span
                             key={col}
-                            className="sta-chip"
+                            className="sta-chip-final"
                             style={{ boxShadow: `inset 3px 0 0 ${colors[index % colors.length]}` }}
                           >
                             {col}
@@ -874,36 +870,36 @@ export default function FileUpload({ onResult }: Props) {
         </div>
       </section>
 
-      <section className="sta-card-grid">
+      <section className="sta-card-grid-final">
         {cards.map((card) => (
-          <div className="sta-info-card" key={card.title}>
-            <div className="sta-info-top">
-              <span className="sta-tag" style={{ color: card.color }}>
+          <div className="sta-info-card-final" key={card.title}>
+            <div className="sta-info-top-final">
+              <span className="sta-tag-final" style={{ color: card.color }}>
                 {card.tag}
               </span>
-              <span className="sta-mini-dot" style={{ backgroundColor: card.color }} />
+              <span className="sta-mini-dot-final" style={{ backgroundColor: card.color }} />
             </div>
-            <h3 className="sta-card-title">{card.title}</h3>
-            <p className="sta-card-body">{card.body}</p>
+            <h3 className="sta-card-title-final">{card.title}</h3>
+            <p className="sta-card-body-final">{card.body}</p>
           </div>
         ))}
       </section>
 
-      <section className="sta-pipeline">
+      <section className="sta-pipeline-final">
         <div>
-          <div className="sta-pipeline-label">Analysis pipeline</div>
-          <h3 className="sta-pipeline-title">
+          <div className="sta-pipeline-label-final">Analysis pipeline</div>
+          <h3 className="sta-pipeline-title-final">
             Raw export → decision-ready action sheet
           </h3>
         </div>
 
-        <div className="sta-pipeline-steps">
+        <div className="sta-pipeline-steps-final">
           {pipeline.map((step, index) => {
             const colors = [GOOGLE.blue, GOOGLE.red, GOOGLE.yellow, GOOGLE.green];
             return (
               <span
                 key={step}
-                className="sta-step"
+                className="sta-step-final"
                 style={{ boxShadow: `inset 3px 0 0 ${colors[index % colors.length]}` }}
               >
                 {index + 1}. {step}
