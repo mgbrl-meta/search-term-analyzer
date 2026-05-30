@@ -21,6 +21,7 @@ from analysis.metrics import enrich_dataframe, aggregate_summary
 from analysis.categories import classify_dataframe, category_summary, intent_summary
 from analysis.ngrams import all_ngrams
 from analysis.recommendations import generate_recommendations
+from analysis.reporting import generate_elite_report
 from analysis.exports import export_csv, export_xlsx
 
 app = Flask(__name__)
@@ -139,12 +140,30 @@ def analyze():
     except Exception as exc:
         return jsonify({"error": f"generate_recommendations failed: {exc}"}), 500
 
+    try:
+        elite_report = generate_elite_report(df, ngrams_data, recs)
+    except Exception as exc:
+        elite_report = {
+            "error": f"generate_elite_report failed: {exc}",
+            "exec_summary": [],
+            "checklist": [],
+            "markdown": "",
+            "negative_keyword_sheet": [],
+            "waste_map": {"items": []},
+            "wins_scale": {"items": []},
+            "campaign_summary": [],
+            "campaigns": [],
+            "unavailable_analyses": [],
+            "summary_extensions": {},
+        }
+
     # Session store
     session_id: str = request.form.get("session_id") or uuid.uuid4().hex
     _SESSIONS[session_id] = {
         "df": df,
         "summary": summary,
         "recommendations": recs,
+        "elite_report": elite_report,
         "ngrams": ngrams_data,
         "filename": filename,
         "analyzed_at": datetime.utcnow().isoformat(),
@@ -158,6 +177,9 @@ def analyze():
     page_df = df.iloc[start: start + per_page]
     records = _df_to_records(page_df)
 
+    if isinstance(elite_report, dict) and isinstance(elite_report.get("summary_extensions"), dict):
+        summary = {**summary, **elite_report.get("summary_extensions", {})}
+
     response_payload = {
         "session_id": session_id,
         "summary": summary,
@@ -165,6 +187,17 @@ def analyze():
         "intent_summary": int_summary,
         "ngrams": ngrams_data,
         "recommendations": recs,
+        "action_report": {
+            "exec_summary": elite_report.get("exec_summary", []) if isinstance(elite_report, dict) else [],
+            "checklist": elite_report.get("checklist", []) if isinstance(elite_report, dict) else [],
+            "markdown": elite_report.get("markdown", "") if isinstance(elite_report, dict) else "",
+        },
+        "negative_keyword_sheet": elite_report.get("negative_keyword_sheet", []) if isinstance(elite_report, dict) else [],
+        "waste_map": elite_report.get("waste_map", {"items": []}) if isinstance(elite_report, dict) else {"items": []},
+        "wins_scale": elite_report.get("wins_scale", {"items": []}) if isinstance(elite_report, dict) else {"items": []},
+        "campaign_summary": elite_report.get("campaign_summary", []) if isinstance(elite_report, dict) else [],
+        "campaigns": elite_report.get("campaigns", []) if isinstance(elite_report, dict) else [],
+        "unavailable_analyses": elite_report.get("unavailable_analyses", []) if isinstance(elite_report, dict) else [],
         "terms": records,
         "pagination": {
             "page": page,
