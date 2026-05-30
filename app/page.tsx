@@ -519,16 +519,23 @@ function WasteSpenderPanel({
           </div>
 
           <div className="sta-waste-controls">
-            <select
-              value={threshold}
-              onChange={(e) => setThreshold(Number(e.target.value))}
-            >
-              {[100, 200, 500, 1000, 2000, 5000, 10000].map((value) => (
-                <option key={value} value={value}>
-                  Spend ≥ ₹{value}
-                </option>
-              ))}
-            </select>
+            <div className="sta-threshold-control">
+              <label>Minimum spend</label>
+              <div className="sta-threshold-input-wrap">
+                <span>₹</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={threshold}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    setThreshold(Number.isFinite(value) && value >= 0 ? value : 0);
+                  }}
+                  placeholder="Enter spend"
+                />
+              </div>
+            </div>
 
             <select
               value={matchType}
@@ -541,7 +548,24 @@ function WasteSpenderPanel({
           </div>
         </div>
 
+        <div className="sta-threshold-presets">
+          {[100, 200, 500, 1000, 2000, 5000, 10000].map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={threshold === value ? "active" : ""}
+              onClick={() => setThreshold(value)}
+            >
+              ₹{value.toLocaleString("en-IN")}+
+            </button>
+          ))}
+        </div>
+
         <div className="sta-waste-summary">
+          <div>
+            <span>Spend filter</span>
+            <strong>₹{threshold.toLocaleString("en-IN")}+</strong>
+          </div>
           <div>
             <span>Terms found</span>
             <strong>{int(rows.length)}</strong>
@@ -1475,7 +1499,7 @@ body {
 
 .sta-waste-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   margin: 14px 0;
 }
@@ -1502,6 +1526,84 @@ body {
   color: var(--sta-text);
   font-size: 22px;
   letter-spacing: -0.04em;
+}
+
+
+.sta-threshold-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sta-threshold-control label {
+  color: var(--sta-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sta-threshold-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel-2);
+  color: var(--sta-text);
+  border-radius: 12px;
+  padding: 0 10px;
+  min-width: 150px;
+}
+
+.sta-threshold-input-wrap span {
+  color: var(--sta-text-3);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.sta-threshold-input-wrap input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--sta-text);
+  padding: 9px 0;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.sta-threshold-input-wrap input::placeholder {
+  color: var(--sta-muted);
+}
+
+.sta-threshold-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+
+.sta-threshold-presets button {
+  border: 1px solid var(--sta-border);
+  background: var(--sta-panel-2);
+  color: var(--sta-text-2);
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease, transform 0.14s ease;
+}
+
+.sta-threshold-presets button:hover {
+  transform: translateY(-1px);
+  border-color: var(--sta-border-2);
+}
+
+.sta-threshold-presets button.active {
+  border-color: rgba(66, 133, 244, 0.48);
+  background: rgba(66, 133, 244, 0.14);
+  color: var(--sta-text);
 }
 
 .sta-negative-box {
@@ -1542,6 +1644,13 @@ body {
   }
 }
 
+
+@media (max-width: 1180px) {
+  .sta-waste-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 720px) {
   .sta-result-header-inner {
     align-items: flex-start;
@@ -1554,6 +1663,15 @@ body {
 
   .sta-top-grid {
     grid-template-columns: 1fr;
+  }
+
+  .sta-waste-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .sta-waste-controls {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .sta-mini-brief {
