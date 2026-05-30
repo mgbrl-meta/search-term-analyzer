@@ -295,6 +295,23 @@ def _add_missing_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _filter_spend_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Keep only search terms with actual spend.
+
+    Google Ads exports can include impression-only rows with Cost = 0.
+    For waste, ROAS, drain, n-gram, and prioritization analysis, these rows
+    create noise because they are not consuming budget.
+    """
+    if "cost" not in df.columns:
+        return df
+
+    before_count = len(df)
+    df = df[df["cost"] > 0].copy()
+    df.attrs["zero_spend_rows_removed"] = before_count - len(df)
+
+    return df
+
 def _validate(df: pd.DataFrame) -> None:
     missing = REQUIRED_COLUMNS - set(df.columns)
 
@@ -359,6 +376,7 @@ def parse_upload(file_bytes: bytes, filename: str) -> pd.DataFrame:
     _validate(df)
 
     df = _coerce_numerics(df)
+    df = _filter_spend_rows(df)
     df = _add_missing_columns(df)
 
     df["search_term"] = df["search_term"].astype(str).str.strip().str.lower()
