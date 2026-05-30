@@ -1363,11 +1363,17 @@ function PageContent({
     });
 
     return Array.from(map.values())
-      .map((row) => ({
+      .map((row): AnyObj => ({
         ...row,
+        spend: num(row.spend),
+        clicks: num(row.clicks),
+        impressions: num(row.impressions),
+        terms: num(row.terms),
+        conversions: num(row.conversions),
+        revenue: num(row.revenue),
         ctr: num(row.impressions) > 0 ? num(row.clicks) / num(row.impressions) : 0,
       }))
-      .sort((a, b) => b.spend - a.spend);
+      .sort((a: AnyObj, b: AnyObj) => num(b.spend) - num(a.spend));
   }, [terms]);
 
   const fragmentation = useMemo(() => {
