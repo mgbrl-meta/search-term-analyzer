@@ -17,7 +17,7 @@ const GOOGLE = {
   green: "#34A853",
 };
 
-const intelligenceCards = [
+const cards = [
   {
     title: "Spend wasters",
     body: "Significant terms and patterns spending below break-even.",
@@ -72,49 +72,51 @@ function isAccepted(name: string): boolean {
   return ACCEPTED.some((ext) => lower.endsWith(ext));
 }
 
-function GoogleMark() {
-  return (
-    <div className="grid h-8 w-8 place-items-center rounded-xl border border-slate-200 bg-white shadow-sm">
-      <span className="text-lg font-medium tracking-tight">
-        <span style={{ color: GOOGLE.blue }}>G</span>
-      </span>
-    </div>
-  );
-}
-
 function UploadIcon({ loading }: { loading: boolean }) {
   if (loading) {
     return (
-      <svg
-        className="animate-spin"
-        width="22"
-        height="22"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      >
-        <path d="M21 12a9 9 0 1 1-6.2-8.6" />
+      <svg className="sta-spin" width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M21 12a9 9 0 1 1-6.2-8.6"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
       </svg>
     );
   }
 
   return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.9"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <path d="M17 8 12 3 7 8" />
-      <path d="M12 3v12" />
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M17 8 12 3 7 8"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 3v12"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
     </svg>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <div className="sta-google-mark" aria-hidden="true">
+      <span style={{ color: GOOGLE.blue }}>G</span>
+    </div>
   );
 }
 
@@ -171,76 +173,616 @@ export default function FileUpload({ onResult }: Props) {
   );
 
   return (
-    <div className="relative mx-auto w-full max-w-7xl px-4 pb-10 pt-8 font-sans sm:px-6 lg:px-8">
+    <div className="sta-home">
       <style jsx global>{`
+        :root,
+        html[data-theme="light"] {
+          --sta-bg: #f8fafc;
+          --sta-bg-soft: rgba(255, 255, 255, 0.78);
+          --sta-surface: rgba(255, 255, 255, 0.84);
+          --sta-surface-strong: #ffffff;
+          --sta-border: rgba(15, 23, 42, 0.1);
+          --sta-border-strong: rgba(15, 23, 42, 0.16);
+          --sta-text: #0f172a;
+          --sta-text-soft: #475569;
+          --sta-muted: #94a3b8;
+          --sta-grid: rgba(15, 23, 42, 0.045);
+          --sta-shadow: 0 22px 60px rgba(15, 23, 42, 0.08);
+          --sta-card-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        }
+
+        html[data-theme="dark"] {
+          --sta-bg: #050816;
+          --sta-bg-soft: rgba(15, 23, 42, 0.72);
+          --sta-surface: rgba(15, 23, 42, 0.78);
+          --sta-surface-strong: rgba(30, 41, 59, 0.9);
+          --sta-border: rgba(148, 163, 184, 0.18);
+          --sta-border-strong: rgba(226, 232, 240, 0.24);
+          --sta-text: #f8fafc;
+          --sta-text-soft: #cbd5e1;
+          --sta-muted: #94a3b8;
+          --sta-grid: rgba(148, 163, 184, 0.075);
+          --sta-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
+          --sta-card-shadow: 0 16px 44px rgba(0, 0, 0, 0.24);
+        }
+
         body {
           font-family: Helvetica, Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+          background: var(--sta-bg);
         }
 
         .font-serif,
         .display {
           font-family: Helvetica, Arial, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
         }
+
+        .sta-theme-toggle {
+          display: inline-flex;
+          height: 38px;
+          width: 38px;
+          align-items: center;
+          justify-content: center;
+          border-radius: 14px;
+          border: 1px solid var(--sta-border);
+          background: var(--sta-surface);
+          color: var(--sta-text);
+          box-shadow: var(--sta-card-shadow);
+          backdrop-filter: blur(18px);
+          transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+        }
+
+        .sta-theme-toggle:hover {
+          transform: translateY(-1px);
+          border-color: var(--sta-border-strong);
+          background: var(--sta-surface-strong);
+        }
+
+        .sta-home {
+          position: relative;
+          width: 100%;
+          max-width: 1280px;
+          margin: 0 auto;
+          padding: 32px 24px 48px;
+          color: var(--sta-text);
+          overflow: hidden;
+        }
+
+        .sta-home::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          z-index: -2;
+          background:
+            radial-gradient(circle at 18% 12%, rgba(66, 133, 244, 0.14), transparent 30%),
+            radial-gradient(circle at 72% 16%, rgba(52, 168, 83, 0.12), transparent 28%),
+            radial-gradient(circle at 48% 72%, rgba(251, 188, 4, 0.1), transparent 26%),
+            radial-gradient(circle at 90% 62%, rgba(234, 67, 53, 0.09), transparent 25%);
+          filter: blur(10px);
+        }
+
+        .sta-home::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          z-index: -1;
+          background:
+            linear-gradient(to right, var(--sta-grid) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--sta-grid) 1px, transparent 1px);
+          background-size: 48px 48px;
+          mask-image: linear-gradient(to bottom, black, transparent 90%);
+        }
+
+        .sta-hero {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(360px, 0.92fr);
+          gap: 48px;
+          align-items: center;
+          padding: 48px 0 44px;
+        }
+
+        .sta-eyebrow {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          border: 1px solid var(--sta-border);
+          background: var(--sta-surface);
+          color: var(--sta-text-soft);
+          padding: 7px 12px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          box-shadow: var(--sta-card-shadow);
+          backdrop-filter: blur(18px);
+        }
+
+        .sta-dot {
+          height: 8px;
+          width: 8px;
+          border-radius: 999px;
+          background: #34a853;
+          box-shadow: 0 0 14px rgba(52, 168, 83, 0.78);
+        }
+
+        .sta-os-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-top: 28px;
+          color: var(--sta-muted);
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+        }
+
+        .sta-google-mark {
+          display: grid;
+          place-items: center;
+          height: 34px;
+          width: 34px;
+          border-radius: 13px;
+          border: 1px solid var(--sta-border);
+          background: var(--sta-surface-strong);
+          box-shadow: var(--sta-card-shadow);
+          font-size: 17px;
+          font-weight: 600;
+        }
+
+        .sta-title {
+          margin-top: 26px;
+          max-width: 760px;
+          font-size: clamp(42px, 6vw, 66px);
+          line-height: 0.98;
+          letter-spacing: -0.058em;
+          font-weight: 600;
+          color: var(--sta-text);
+        }
+
+        .sta-title span {
+          display: block;
+          font-weight: 500;
+          background: linear-gradient(90deg, #4285f4, #34a853 48%, #fbbc04 78%, #ea4335);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+
+        .sta-subtitle {
+          margin-top: 22px;
+          max-width: 650px;
+          color: var(--sta-text-soft);
+          font-size: 15px;
+          line-height: 1.75;
+          font-weight: 400;
+        }
+
+        .sta-signal-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 10px;
+          margin-top: 28px;
+          max-width: 650px;
+        }
+
+        .sta-signal {
+          border: 1px solid var(--sta-border);
+          background: var(--sta-surface);
+          border-radius: 18px;
+          padding: 13px 15px;
+          box-shadow: var(--sta-card-shadow);
+          backdrop-filter: blur(18px);
+        }
+
+        .sta-signal strong {
+          display: block;
+          font-size: 14px;
+          line-height: 1;
+          letter-spacing: -0.02em;
+          font-weight: 600;
+        }
+
+        .sta-signal span {
+          display: block;
+          margin-top: 7px;
+          color: var(--sta-muted);
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
+        }
+
+        .sta-upload-shell {
+          position: relative;
+        }
+
+        .sta-upload-shell::before {
+          content: "";
+          position: absolute;
+          inset: -14px;
+          z-index: -1;
+          border-radius: 34px;
+          background: conic-gradient(
+            from 180deg,
+            rgba(66, 133, 244, 0.2),
+            rgba(52, 168, 83, 0.17),
+            rgba(251, 188, 4, 0.16),
+            rgba(234, 67, 53, 0.14),
+            rgba(66, 133, 244, 0.2)
+          );
+          filter: blur(24px);
+          opacity: 0.9;
+        }
+
+        .sta-upload-card {
+          border: 1px solid var(--sta-border);
+          background: var(--sta-surface);
+          border-radius: 30px;
+          padding: 12px;
+          box-shadow: var(--sta-shadow);
+          backdrop-filter: blur(24px);
+        }
+
+        .sta-dropzone {
+          position: relative;
+          overflow: hidden;
+          border: 1px solid var(--sta-border);
+          background: var(--sta-bg-soft);
+          border-radius: 24px;
+          padding: 26px;
+          cursor: pointer;
+          transition: border-color 160ms ease, background 160ms ease, opacity 160ms ease;
+        }
+
+        .sta-dropzone:hover,
+        .sta-dropzone.dragging {
+          border-color: rgba(66, 133, 244, 0.58);
+          background: rgba(66, 133, 244, 0.08);
+        }
+
+        .sta-dropzone.loading {
+          cursor: progress;
+          opacity: 0.78;
+          pointer-events: none;
+        }
+
+        .sta-upload-head {
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
+        }
+
+        .sta-upload-icon {
+          display: grid;
+          place-items: center;
+          flex: 0 0 auto;
+          height: 50px;
+          width: 50px;
+          border-radius: 18px;
+          border: 1px solid rgba(66, 133, 244, 0.24);
+          background: rgba(66, 133, 244, 0.1);
+          color: #4285f4;
+          box-shadow: 0 12px 28px rgba(66, 133, 244, 0.15);
+        }
+
+        .sta-upload-copy {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .sta-upload-top {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+        }
+
+        .sta-upload-title {
+          color: var(--sta-text);
+          font-size: 22px;
+          line-height: 1.1;
+          letter-spacing: -0.035em;
+          font-weight: 600;
+        }
+
+        .sta-upload-help {
+          margin-top: 8px;
+          color: var(--sta-text-soft);
+          font-size: 14px;
+          line-height: 1.55;
+        }
+
+        .sta-file-type {
+          flex: 0 0 auto;
+          border: 1px solid var(--sta-border);
+          background: var(--sta-surface-strong);
+          color: var(--sta-text-soft);
+          border-radius: 999px;
+          padding: 6px 10px;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+        }
+
+        .sta-file-status,
+        .sta-file-empty,
+        .sta-loading,
+        .sta-error {
+          margin-top: 24px;
+          border-radius: 18px;
+          padding: 14px 16px;
+          font-size: 14px;
+          font-weight: 500;
+        }
+
+        .sta-file-empty {
+          border: 1px dashed var(--sta-border-strong);
+          background: var(--sta-surface);
+          color: var(--sta-text-soft);
+          text-align: center;
+        }
+
+        .sta-file-status {
+          border: 1px solid rgba(52, 168, 83, 0.28);
+          background: rgba(52, 168, 83, 0.1);
+          color: #34a853;
+        }
+
+        .sta-loading {
+          border: 1px solid rgba(66, 133, 244, 0.28);
+          background: rgba(66, 133, 244, 0.1);
+          color: #4285f4;
+        }
+
+        .sta-error {
+          border: 1px solid rgba(234, 67, 53, 0.28);
+          background: rgba(234, 67, 53, 0.1);
+          color: #ea4335;
+        }
+
+        .sta-required {
+          margin-top: 22px;
+          border: 1px solid var(--sta-border);
+          background: var(--sta-surface);
+          border-radius: 20px;
+          padding: 16px;
+        }
+
+        .sta-required-title {
+          color: var(--sta-muted);
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+        }
+
+        .sta-chip-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 13px;
+        }
+
+        .sta-chip {
+          border: 1px solid var(--sta-border);
+          background: var(--sta-surface-strong);
+          color: var(--sta-text-soft);
+          border-radius: 999px;
+          padding: 7px 11px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+
+        .sta-card-grid {
+          display: grid;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .sta-info-card {
+          border: 1px solid var(--sta-border);
+          background: var(--sta-surface);
+          border-radius: 22px;
+          padding: 18px;
+          box-shadow: var(--sta-card-shadow);
+          backdrop-filter: blur(20px);
+          transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+        }
+
+        .sta-info-card:hover {
+          transform: translateY(-2px);
+          border-color: var(--sta-border-strong);
+          background: var(--sta-surface-strong);
+        }
+
+        .sta-info-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+
+        .sta-tag {
+          border: 1px solid var(--sta-border);
+          background: var(--sta-surface-strong);
+          border-radius: 999px;
+          padding: 6px 9px;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+        }
+
+        .sta-mini-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 999px;
+        }
+
+        .sta-card-title {
+          color: var(--sta-text);
+          font-size: 16px;
+          line-height: 1.2;
+          letter-spacing: -0.025em;
+          font-weight: 600;
+        }
+
+        .sta-card-body {
+          margin-top: 10px;
+          color: var(--sta-text-soft);
+          font-size: 14px;
+          line-height: 1.5;
+          font-weight: 400;
+        }
+
+        .sta-pipeline {
+          margin-top: 24px;
+          border: 1px solid var(--sta-border);
+          background: var(--sta-surface);
+          border-radius: 26px;
+          padding: 20px;
+          box-shadow: var(--sta-card-shadow);
+          backdrop-filter: blur(20px);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 24px;
+        }
+
+        .sta-pipeline-label {
+          color: #4285f4;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+        }
+
+        .sta-pipeline-title {
+          margin-top: 8px;
+          color: var(--sta-text);
+          font-size: 24px;
+          line-height: 1.12;
+          letter-spacing: -0.04em;
+          font-weight: 600;
+        }
+
+        .sta-pipeline-steps {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 8px;
+        }
+
+        .sta-step {
+          border: 1px solid var(--sta-border);
+          background: var(--sta-surface-strong);
+          color: var(--sta-text-soft);
+          border-radius: 999px;
+          padding: 9px 12px;
+          font-size: 12px;
+          font-weight: 500;
+        }
+
+        .sta-spin {
+          animation: sta-spin 0.8s linear infinite;
+        }
+
+        @keyframes sta-spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @media (max-width: 1060px) {
+          .sta-hero {
+            grid-template-columns: 1fr;
+            padding-top: 24px;
+          }
+
+          .sta-card-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+
+          .sta-pipeline {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+
+          .sta-pipeline-steps {
+            justify-content: flex-start;
+          }
+        }
+
+        @media (max-width: 720px) {
+          .sta-home {
+            padding: 20px 16px 36px;
+          }
+
+          .sta-title {
+            font-size: 42px;
+          }
+
+          .sta-signal-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .sta-card-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .sta-upload-head {
+            flex-direction: column;
+          }
+
+          .sta-upload-top {
+            flex-direction: column;
+          }
+        }
       `}</style>
 
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute inset-x-0 top-0 mx-auto h-[520px] max-w-6xl rounded-full bg-[radial-gradient(circle_at_20%_20%,rgba(66,133,244,0.10),transparent_28%),radial-gradient(circle_at_70%_25%,rgba(52,168,83,0.10),transparent_28%),radial-gradient(circle_at_50%_70%,rgba(251,188,4,0.10),transparent_26%),radial-gradient(circle_at_90%_60%,rgba(234,67,53,0.08),transparent_25%)] blur-2xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(15,23,42,0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.035)_1px,transparent_1px)] bg-[size:48px_48px]" />
-      </div>
-
-      <section className="grid items-center gap-8 py-6 lg:grid-cols-[1fr_0.92fr] lg:py-12">
-        <div className="max-w-3xl">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/75 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 shadow-sm backdrop-blur">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: GOOGLE.green }} />
+      <section className="sta-hero">
+        <div>
+          <div className="sta-eyebrow">
+            <span className="sta-dot" />
             Google Ads intelligence engine
           </div>
 
-          <div className="mb-5 flex items-center gap-3">
+          <div className="sta-os-row">
             <GoogleMark />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-              Search term operating system
-            </span>
+            <span>Search term operating system</span>
           </div>
 
-          <h1 className="max-w-3xl text-[44px] font-semibold leading-[0.98] tracking-[-0.055em] text-slate-950 sm:text-[58px] lg:text-[64px]">
+          <h1 className="sta-title">
             Search Term
-            <span className="block font-medium">
-              Command Brain
-            </span>
+            <span>Command Brain</span>
           </h1>
 
-          <p className="mt-5 max-w-2xl text-[15px] font-normal leading-7 text-slate-600">
+          <p className="sta-subtitle">
             Upload a Google Ads search-term export. The engine turns raw queries into
             spend-waster cuts, negative keywords, n-gram waste, PDP issues, scale signals,
             and true non-brand ROAS actions.
           </p>
 
-          <div className="mt-7 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="sta-signal-grid">
             {[
               ["ROAS", "mapped", GOOGLE.blue],
               ["0-spend", "ignored", GOOGLE.green],
               ["Overlap", "guard", GOOGLE.yellow],
               ["Actions", "exportable", GOOGLE.red],
             ].map(([top, bottom, color]) => (
-              <div
-                key={top}
-                className="rounded-2xl border border-slate-200/80 bg-white/75 px-4 py-3 shadow-sm backdrop-blur"
-              >
-                <div className="text-[14px] font-semibold tracking-[-0.02em]" style={{ color }}>
-                  {top}
-                </div>
-                <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  {bottom}
-                </div>
+              <div className="sta-signal" key={top}>
+                <strong style={{ color }}>{top}</strong>
+                <span>{bottom}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="relative">
-          <div className="absolute -inset-3 rounded-[2rem] bg-[conic-gradient(from_180deg,rgba(66,133,244,0.18),rgba(52,168,83,0.16),rgba(251,188,4,0.16),rgba(234,67,53,0.14),rgba(66,133,244,0.18))] blur-2xl" />
-
-          <div className="relative rounded-[1.75rem] border border-slate-200 bg-white/80 p-3 shadow-xl shadow-slate-950/5 backdrop-blur-xl">
+        <div className="sta-upload-shell">
+          <div className="sta-upload-card">
             <div
               role="button"
               tabIndex={0}
@@ -260,105 +802,63 @@ export default function FileUpload({ onResult }: Props) {
               }}
               onDrop={onDrop}
               className={[
-                "relative overflow-hidden rounded-[1.45rem] border p-6 transition",
-                dragging
-                  ? "border-[#4285F4] bg-[#4285F4]/8"
-                  : "border-slate-200 bg-slate-50/80 hover:border-slate-300 hover:bg-white",
-                loading ? "pointer-events-none opacity-75" : "cursor-pointer",
+                "sta-dropzone",
+                dragging ? "dragging" : "",
+                loading ? "loading" : "",
               ].join(" ")}
             >
               <input
                 ref={inputRef}
                 type="file"
                 accept=".csv,.xlsx,.xls"
-                className="hidden"
+                hidden
                 onChange={onChange}
               />
 
-              <div className="flex items-start gap-4">
-                <div
-                  className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border bg-white shadow-sm"
-                  style={{
-                    borderColor: "rgba(66,133,244,0.22)",
-                    color: GOOGLE.blue,
-                  }}
-                >
+              <div className="sta-upload-head">
+                <div className="sta-upload-icon">
                   <UploadIcon loading={loading} />
                 </div>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-4">
+                <div className="sta-upload-copy">
+                  <div className="sta-upload-top">
                     <div>
-                      <h2 className="text-[22px] font-semibold tracking-[-0.035em] text-slate-950">
+                      <h2 className="sta-upload-title">
                         {loading ? "Analyzing report" : "Upload report"}
                       </h2>
-                      <p className="mt-1 text-sm leading-6 text-slate-500">
+                      <p className="sta-upload-help">
                         {loading
                           ? "Building action tabs and export-ready recommendations."
                           : "Drop your Google Ads report or click to browse."}
                       </p>
                     </div>
 
-                    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      CSV / XLSX
-                    </span>
+                    <span className="sta-file-type">CSV / XLSX</span>
                   </div>
 
-                  <div className="mt-6">
-                    {selectedFile ? (
-                      <div className="rounded-2xl border px-4 py-3 text-sm font-medium"
-                        style={{
-                          borderColor: "rgba(52,168,83,0.22)",
-                          backgroundColor: "rgba(52,168,83,0.08)",
-                          color: "#137333",
-                        }}
-                      >
-                        Selected: {selectedFile}
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-4 py-5 text-center text-sm font-medium text-slate-500">
-                        Drag file here to start analysis
-                      </div>
-                    )}
+                  {selectedFile ? (
+                    <div className="sta-file-status">Selected: {selectedFile}</div>
+                  ) : (
+                    <div className="sta-file-empty">Drag file here to start analysis</div>
+                  )}
 
-                    {loading ? (
-                      <div
-                        className="mt-3 rounded-2xl border px-4 py-3 text-sm font-medium"
-                        style={{
-                          borderColor: "rgba(66,133,244,0.22)",
-                          backgroundColor: "rgba(66,133,244,0.08)",
-                          color: "#1967D2",
-                        }}
-                      >
-                        Uploading and analyzing. Large exports may take a few seconds.
-                      </div>
-                    ) : null}
-
-                    {error ? (
-                      <div
-                        className="mt-3 rounded-2xl border px-4 py-3 text-sm font-medium"
-                        style={{
-                          borderColor: "rgba(234,67,53,0.25)",
-                          backgroundColor: "rgba(234,67,53,0.08)",
-                          color: "#C5221F",
-                        }}
-                      >
-                        {error}
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-6 rounded-2xl border border-slate-200 bg-white/70 p-4">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                      Required signal columns
+                  {loading ? (
+                    <div className="sta-loading">
+                      Uploading and analyzing. Large exports may take a few seconds.
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
+                  ) : null}
+
+                  {error ? <div className="sta-error">{error}</div> : null}
+
+                  <div className="sta-required">
+                    <div className="sta-required-title">Required signal columns</div>
+                    <div className="sta-chip-row">
                       {requiredColumns.map((col, index) => {
                         const colors = [GOOGLE.blue, GOOGLE.red, GOOGLE.yellow, GOOGLE.green];
                         return (
                           <span
                             key={col}
-                            className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700"
+                            className="sta-chip"
                             style={{ boxShadow: `inset 3px 0 0 ${colors[index % colors.length]}` }}
                           >
                             {col}
@@ -374,57 +874,42 @@ export default function FileUpload({ onResult }: Props) {
         </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-        {intelligenceCards.map((card) => (
-          <div
-            key={card.title}
-            className="group rounded-3xl border border-slate-200/80 bg-white/70 p-4 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:bg-white hover:shadow-lg hover:shadow-slate-950/5"
-          >
-            <div className="mb-5 flex items-center justify-between">
-              <span
-                className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]"
-                style={{ color: card.color }}
-              >
+      <section className="sta-card-grid">
+        {cards.map((card) => (
+          <div className="sta-info-card" key={card.title}>
+            <div className="sta-info-top">
+              <span className="sta-tag" style={{ color: card.color }}>
                 {card.tag}
               </span>
-              <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: card.color }} />
+              <span className="sta-mini-dot" style={{ backgroundColor: card.color }} />
             </div>
-
-            <h3 className="text-[16px] font-semibold leading-tight tracking-[-0.025em] text-slate-950">
-              {card.title}
-            </h3>
-            <p className="mt-2 text-sm font-normal leading-5 text-slate-500">
-              {card.body}
-            </p>
+            <h3 className="sta-card-title">{card.title}</h3>
+            <p className="sta-card-body">{card.body}</p>
           </div>
         ))}
       </section>
 
-      <section className="mt-6 rounded-[1.75rem] border border-slate-200/80 bg-white/70 p-5 shadow-sm backdrop-blur">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em]" style={{ color: GOOGLE.blue }}>
-              Analysis pipeline
-            </p>
-            <h3 className="mt-1 text-[24px] font-semibold tracking-[-0.04em] text-slate-950">
-              Raw export → decision-ready action sheet
-            </h3>
-          </div>
+      <section className="sta-pipeline">
+        <div>
+          <div className="sta-pipeline-label">Analysis pipeline</div>
+          <h3 className="sta-pipeline-title">
+            Raw export → decision-ready action sheet
+          </h3>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {pipeline.map((step, index) => {
-              const colors = [GOOGLE.blue, GOOGLE.red, GOOGLE.yellow, GOOGLE.green];
-              return (
-                <span
-                  key={step}
-                  className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700"
-                  style={{ boxShadow: `inset 3px 0 0 ${colors[index % colors.length]}` }}
-                >
-                  {index + 1}. {step}
-                </span>
-              );
-            })}
-          </div>
+        <div className="sta-pipeline-steps">
+          {pipeline.map((step, index) => {
+            const colors = [GOOGLE.blue, GOOGLE.red, GOOGLE.yellow, GOOGLE.green];
+            return (
+              <span
+                key={step}
+                className="sta-step"
+                style={{ boxShadow: `inset 3px 0 0 ${colors[index % colors.length]}` }}
+              >
+                {index + 1}. {step}
+              </span>
+            );
+          })}
         </div>
       </section>
     </div>
