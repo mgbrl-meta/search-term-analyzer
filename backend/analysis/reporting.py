@@ -156,21 +156,62 @@ def _overlap_guard(candidate: str, match_type: str, df: pd.DataFrame) -> tuple[b
     return len(blocked) == 0, blocked[:10]
 
 
-def _negative_row(term: str, match_type: str, reason: str, wasted: float, df: pd.DataFrame, source: str) -> dict[str, Any]:
+def _negative_row(
+    term: str,
+    match_type: str,
+    reason: str,
+    wasted: float,
+    df: pd.DataFrame,
+    source: str,
+    row_data: Any | None = None,
+) -> dict[str, Any]:
+    """
+    Build an operator-ready negative keyword row.
+
+    Every negative recommendation carries the metrics a performance marketer
+    needs before adding it to Google Ads: spend, clicks, CTR, conversions,
+    revenue, ROAS, campaign, ad group, reason, and overlap safety.
+    """
     safe, blocked = _overlap_guard(term, match_type, df)
     final_match = match_type if safe else "exact"
+
+    metrics = {}
+    if row_data is not None:
+        try:
+            metrics = row_data.to_dict() if hasattr(row_data, "to_dict") else dict(row_data)
+        except Exception:
+            metrics = {}
+
+    spend = _num(metrics.get("cost", metrics.get("spend", wasted)))
+    clicks = _num(metrics.get("clicks", 0))
+    impressions = _num(metrics.get("impressions", 0))
+    ctr = _num(metrics.get("ctr", clicks / impressions if impressions > 0 else 0))
+    conversions = _num(metrics.get("conversions", 0))
+    revenue = _num(metrics.get("revenue", metrics.get("conv_value", 0)))
+    roas = _num(metrics.get("roas", revenue / spend if spend > 0 else 0))
+
     return {
         "term": term,
+        "search_term": term,
         "syntax": _syntax(term, final_match),
         "match_type": final_match,
         "reason": reason if safe else f"{reason}. Downgraded to exact due to winner overlap.",
         "wasted_spend": round(float(wasted), 2),
+        "spend": round(float(spend), 2),
+        "clicks": round(float(clicks), 2),
+        "impressions": round(float(impressions), 2),
+        "ctr": round(float(ctr), 6),
+        "conversions": round(float(conversions), 4),
+        "revenue": round(float(revenue), 2),
+        "conv_value": round(float(revenue), 2),
+        "roas": round(float(roas), 4),
+        "campaign": str(metrics.get("campaign", "")),
+        "ad_group": str(metrics.get("ad_group", "")),
         "overlap_safe": "Y" if safe else "N",
         "blocked_winner_terms": blocked,
         "source": source,
         "confidence": "High" if safe and wasted > 0 else "Medium",
     }
-
 
 def _build_waste(df: pd.DataFrame, thresholds: dict[str, Any], ngrams: dict[str, Any]) -> tuple[list[dict], list[dict]]:
     be = thresholds["break_even_roas"]
@@ -197,7 +238,7 @@ def _build_waste(df: pd.DataFrame, thresholds: dict[str, Any], ngrams: dict[str,
                 "impact": round(float(row["cost"]), 2),
                 "confidence": "High" if bool(row["is_significant"]) else "Low",
             })
-            negatives.append(_negative_row(row["search_term"], "exact", reason, row["cost"], df, "zero_conversion_spend"))
+            negatives.append(_negative_row(row["search_term"], "exact", reason, row["cost"], df, "zero_conversion_spend", row))
 
     low = df[(df["is_significant"]) & (df["cost"] > 0) & (df["conversions"] > 0) & (df["roas"] < be)].copy()
     if not low.empty:
@@ -237,7 +278,7 @@ def _build_waste(df: pd.DataFrame, thresholds: dict[str, Any], ngrams: dict[str,
                 "impact": round(float(row["cost"]), 2),
                 "confidence": "High" if bool(row["is_significant"]) else "Medium",
             })
-            negatives.append(_negative_row(row["search_term"], match_type, reason, row["cost"], df, label))
+            negatives.append(_negative_row(row["search_term"], match_type, reason, row["cost"], df, label, row))
 
     for n_key in ["1", "2", "3"]:
         rows = ngrams.get(n_key, []) if isinstance(ngrams, dict) else []
@@ -265,7 +306,7 @@ def _build_waste(df: pd.DataFrame, thresholds: dict[str, Any], ngrams: dict[str,
                 "impact": round(float(wasted), 2),
                 "confidence": "High",
             })
-            negatives.append(_negative_row(ngram, match_type, reason, wasted, df, "ngram_waste"))
+            negatives.append(_negative_row(ngram, match_type, reason, wasted, df, "ngram_waste", row))
 
     long_tail = df[(df["cost"] > 0) & (df["cost"] < thresholds["long_tail_term_cost_threshold"]) & (df["conversions"] <= 0)]
     aggregate_floor = thresholds["long_tail_aggregate_cpa_multiple"] * target_cpa
@@ -402,15 +443,22 @@ def _markdown(exec_lines: list[str], checklist: list[dict], negatives: list[dict
             )
 
     lines += ["", "## 3. Negative keyword sheet"]
-    lines += ["| term/phrase | match type | reason | ₹ wasted | overlap-safe |", "|---|---:|---|---:|---:|"]
-    for row in negatives[:80]:
+    lines += [
+        "| negative keyword | match type | spend | clicks | CTR | conversions | conv. value | ROAS | reason | overlap-safe |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---|---:|",
+    ]
+    for row in negatives[:120]:
+        ctr = _num(row.get("ctr", 0)) * 100
         lines.append(
-            f"| {row.get('syntax','')} | {row.get('match_type','')} | {row.get('reason','')} | "
-            f"{_money(row.get('wasted_spend',0))} | {row.get('overlap_safe','')} |"
+            f"| {row.get('syntax','')} | {row.get('match_type','')} | "
+            f"{_money(row.get('spend', row.get('wasted_spend',0)))} | "
+            f"{_num(row.get('clicks',0)):.0f} | {ctr:.2f}% | "
+            f"{_num(row.get('conversions',0)):.2f} | "
+            f"{_money(row.get('revenue',0))} | {_num(row.get('roas',0)):.2f}x | "
+            f"{row.get('reason','')} | {row.get('overlap_safe','')} |"
         )
 
     return "\n".join(lines)
-
 
 def generate_elite_report(
     df: pd.DataFrame,

@@ -112,6 +112,11 @@ function x(value: any) {
   return `${num(value).toFixed(2)}x`;
 }
 
+function reportPct(value: any) {
+  const n = num(value);
+  return `${(n > 1 ? n : n * 100).toFixed(2)}%`;
+}
+
 function ctrPct(value: any) {
   const n = num(value);
   return `${(n > 1 ? n : n * 100).toFixed(2)}%`;
@@ -1458,28 +1463,57 @@ function ActionReportPanel({
             </div>
           </div>
 
-          <div className="wr-negative-sheet">
-            {negatives.slice(0, 120).map((row, index) => (
-              <div key={`${row.syntax}-${index}`} className="wr-negative-row">
-                <div>
-                  <strong>{str(row.syntax, str(row.term))}</strong>
-                  <p>{str(row.reason)}</p>
-                </div>
-
-                <div>
-                  <span>{str(row.match_type, "exact")}</span>
-                  <em>{money(row.wasted_spend)}</em>
-                  <b>{str(row.overlap_safe, "Y") === "Y" ? "Safe" : "Overlap"}</b>
-                </div>
-              </div>
-            ))}
-
-            {!negatives.length ? (
+          <div className="wr-negative-sheet-table-wrap">
+            {negatives.length ? (
+              <table className="wr-negative-sheet-table">
+                <thead>
+                  <tr>
+                    <th>Negative keyword</th>
+                    <th>Match</th>
+                    <th className="right">Spend</th>
+                    <th className="right">Clicks</th>
+                    <th className="right">CTR</th>
+                    <th className="right">Conv.</th>
+                    <th className="right">Conv. value</th>
+                    <th className="right">ROAS</th>
+                    <th>Campaign</th>
+                    <th>Ad group</th>
+                    <th>Reason</th>
+                    <th>Overlap</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {negatives.slice(0, 250).map((row, index) => (
+                    <tr key={`${row.syntax}-${index}`}>
+                      <td>
+                        <code>{str(row.syntax, str(row.term))}</code>
+                      </td>
+                      <td>{str(row.match_type, "exact")}</td>
+                      <td className="right strong">{money(row.spend ?? row.wasted_spend)}</td>
+                      <td className="right">{int(row.clicks)}</td>
+                      <td className="right">{reportPct(row.ctr)}</td>
+                      <td className="right">{num(row.conversions).toFixed(2)}</td>
+                      <td className="right">{money(row.revenue ?? row.conv_value)}</td>
+                      <td className="right">{x(row.roas)}</td>
+                      <td>{str(row.campaign, "-")}</td>
+                      <td>{str(row.ad_group, "-")}</td>
+                      <td>{str(row.reason)}</td>
+                      <td>
+                        <span className={str(row.overlap_safe, "Y") === "Y" ? "safe" : "warn"}>
+                          {str(row.overlap_safe, "Y") === "Y" ? "Safe" : "Overlap"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
               <div className="wr-empty">
                 <strong>No negative sheet rows</strong>
                 <p>No overlap-checked negatives were returned by the backend.</p>
               </div>
-            ) : null}
+            )}
+          </div>
           </div>
         </div>
       </div>
@@ -3187,6 +3221,84 @@ body {
   border-radius: 8px;
   padding: 2px 5px;
   background: var(--wr-panel2);
+}
+
+
+
+.wr-negative-sheet-table-wrap {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  border-radius: 14px;
+  overflow: auto;
+  max-height: calc(100vh - 340px);
+}
+
+.wr-negative-sheet-table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.wr-negative-sheet-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--wr-panel2);
+  color: var(--wr-faint);
+  text-align: left;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--wr-line);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.wr-negative-sheet-table td {
+  padding: 9px 10px;
+  border-top: 1px solid var(--wr-grid);
+  color: var(--wr-dim);
+  vertical-align: top;
+}
+
+.wr-negative-sheet-table .right {
+  text-align: right;
+}
+
+.wr-negative-sheet-table .strong {
+  color: var(--wr-ink);
+  font-weight: 800;
+}
+
+.wr-negative-sheet-table code {
+  display: inline-block;
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
+  color: var(--wr-ink);
+  border-radius: 8px;
+  padding: 5px 7px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.wr-negative-sheet-table span.safe,
+.wr-negative-sheet-table span.warn {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.wr-negative-sheet-table span.safe {
+  background: rgba(52,168,83,0.12);
+  color: #34A853;
+}
+
+.wr-negative-sheet-table span.warn {
+  background: rgba(251,188,4,0.14);
+  color: #FBBC04;
 }
 
 
