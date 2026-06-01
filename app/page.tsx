@@ -1725,6 +1725,207 @@ function CategoryKeywordCards({
 }
 
 
+
+function KeywordCategoryCards({
+  terms,
+  matchType,
+}: {
+  terms: AnyObj[];
+  matchType: "exact" | "phrase" | "broad";
+}) {
+  const [openCategory, setOpenCategory] = useState<string>("");
+  const [minSpend, setMinSpend] = useState(0);
+
+  const cards = useMemo(() => {
+    const grouped = new Map<string, AnyObj[]>();
+
+    terms.forEach((row) => {
+      const searchTerm = str((row as AnyObj).search_term ?? (row as AnyObj).term).trim();
+      const spend = num((row as AnyObj).cost);
+
+      if (!searchTerm || spend < minSpend) return;
+
+      const category = typeof getKeywordCategory === "function"
+        ? getKeywordCategory(row as AnyObj)
+        : str((row as AnyObj).category, "Unclassified / Review");
+
+      const clicks = num((row as AnyObj).clicks);
+      const impressions = num((row as AnyObj).impressions);
+      const conversions = num((row as AnyObj).conversions);
+      const revenue = num((row as AnyObj).revenue ?? (row as AnyObj).conv_value);
+      const roas = spend > 0 ? revenue / spend : 0;
+      const ctr = impressions > 0 ? clicks / impressions : num((row as AnyObj).ctr);
+
+      const item = {
+        ...(row as AnyObj),
+        search_term: searchTerm,
+        category,
+        campaign: str((row as AnyObj).campaign ?? (row as AnyObj).campaign_name ?? "-"),
+        ad_group: str((row as AnyObj).ad_group ?? (row as AnyObj).ad_group_name ?? (row as AnyObj).ag ?? "-"),
+        cost: spend,
+        clicks,
+        impressions,
+        ctr,
+        conversions,
+        revenue,
+        roas,
+        action: typeof getKeywordAction === "function" ? getKeywordAction(row as AnyObj, category) : "REVIEW",
+      };
+
+      if (!grouped.has(category)) grouped.set(category, []);
+      grouped.get(category)!.push(item);
+    });
+
+    return Array.from(grouped.entries())
+      .map(([category, rows]) => {
+        const spend = rows.reduce((sum, row) => sum + num(row.cost), 0);
+        const clicks = rows.reduce((sum, row) => sum + num(row.clicks), 0);
+        const impressions = rows.reduce((sum, row) => sum + num(row.impressions), 0);
+        const conversions = rows.reduce((sum, row) => sum + num(row.conversions), 0);
+        const revenue = rows.reduce((sum, row) => sum + num(row.revenue), 0);
+        const roas = spend > 0 ? revenue / spend : 0;
+        const ctr = impressions > 0 ? clicks / impressions : 0;
+
+        return {
+          category,
+          rows: rows.sort((a, b) => num(b.cost) - num(a.cost)),
+          spend,
+          clicks,
+          impressions,
+          conversions,
+          revenue,
+          roas,
+          ctr,
+        };
+      })
+      .sort((a, b) => b.spend - a.spend);
+  }, [terms, minSpend]);
+
+  function exportCategory(card: AnyObj) {
+    exportRowsCsv(
+      `${str(card.category).toLowerCase().replaceAll(" ", "-").replaceAll("/", "-")}.csv`,
+      arr<AnyObj>(card.rows).map((row) => ({
+        Category: str(card.category),
+        Campaign: str(row.campaign, "-"),
+        "Ad group": str(row.ad_group, "-"),
+        "Search term": str(row.search_term),
+        "Negative keyword": syntax(str(row.search_term), matchType),
+        "Match type": matchType,
+        Spend: Math.round(num(row.cost)),
+        Clicks: Math.round(num(row.clicks)),
+        Impressions: Math.round(num(row.impressions)),
+        CTR: `${(num(row.ctr) * 100).toFixed(2)}%`,
+        Conversions: num(row.conversions).toFixed(2),
+        "Conv. value": Math.round(num(row.revenue)),
+        ROAS: num(row.roas).toFixed(2),
+        Action: str(row.action),
+      }))
+    );
+  }
+
+  return (
+    <section className="kc-wrap">
+      <div className="kc-head">
+        <div>
+          <span>Keyword Category Cards</span>
+          <h2>Category-level keyword diagnosis</h2>
+          <p>Dynamic category cards from uploaded search terms. Open a category to inspect terms and export rows.</p>
+        </div>
+
+        <label className="kc-filter">
+          Minimum spend
+          <input
+            type="number"
+            min="0"
+            value={minSpend}
+            onChange={(e) => setMinSpend(Number(e.target.value || 0))}
+          />
+        </label>
+      </div>
+
+      <div className="kc-grid">
+        {cards.map((card) => {
+          const isOpen = openCategory === card.category;
+
+          return (
+            <article key={card.category} className="kc-card">
+              <button
+                type="button"
+                className="kc-card-top"
+                onClick={() => setOpenCategory(isOpen ? "" : card.category)}
+              >
+                <div>
+                  <h3>{str(card.category)}</h3>
+                  <p>{int(card.rows.length)} terms · {money(card.spend)} spend · {x(card.roas)} ROAS</p>
+                </div>
+                <strong>{isOpen ? "▲" : "▼"}</strong>
+              </button>
+
+              <div className="kc-stats">
+                <Kpi label="Terms" value={int(card.rows.length)} />
+                <Kpi label="Spend" value={money(card.spend)} tone="red" />
+                <Kpi label="Clicks" value={int(card.clicks)} />
+                <Kpi label="CTR" value={ctrPct(card.ctr)} tone="blue" />
+                <Kpi label="Purchases" value={num(card.conversions).toFixed(2)} />
+                <Kpi label="Revenue" value={money(card.revenue)} tone={card.revenue > 0 ? "green" : "neutral"} />
+                <Kpi label="ROAS" value={x(card.roas)} tone={card.roas >= 2.5 ? "green" : "red"} />
+              </div>
+
+              {isOpen ? (
+                <div className="kc-panel">
+                  <div className="kc-actions">
+                    <button type="button" onClick={() => exportCategory(card)}>
+                      Export category CSV
+                    </button>
+                  </div>
+
+                  <div className="kc-table-wrap">
+                    <table className="kc-table">
+                      <thead>
+                        <tr>
+                          <th className="left">Search term</th>
+                          <th className="left">Campaign</th>
+                          <th className="left">Ad group</th>
+                          <th>Spend</th>
+                          <th>Clicks</th>
+                          <th>Impr.</th>
+                          <th>CTR</th>
+                          <th>Conv.</th>
+                          <th>Conv. value</th>
+                          <th>ROAS</th>
+                          <th className="left">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {arr<AnyObj>(card.rows).slice(0, 300).map((row, index) => (
+                          <tr key={`${row.search_term}-${index}`}>
+                            <td className="left kw">{str(row.search_term)}</td>
+                            <td className="left">{str(row.campaign, "-")}</td>
+                            <td className="left">{str(row.ad_group, "-")}</td>
+                            <td>{money(row.cost)}</td>
+                            <td>{int(row.clicks)}</td>
+                            <td>{int(row.impressions)}</td>
+                            <td>{ctrPct(row.ctr)}</td>
+                            <td>{num(row.conversions).toFixed(2)}</td>
+                            <td>{money(row.revenue)}</td>
+                            <td>{x(row.roas)}</td>
+                            <td className="left">{str(row.action)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+
 function ActionReportPanel({
   execSummary,
   checklist,
