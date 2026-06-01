@@ -1,19 +1,21 @@
 import type { AnalyzeResponse, SearchTermModel, SearchTermRow } from "./types";
 import { num, str } from "./format";
 import { loadAiBrain } from "./aiBrain";
-import { applyCategories, buildCategoryCards, fallbackCategory, fallbackAction } from "./categories";
+import { applyCategories, buildCategoryCards, fallbackAction, fallbackCategory } from "./categories";
 
 function arr<T = Record<string, unknown>>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : [];
 }
 
 function readRows(data: AnalyzeResponse): Record<string, unknown>[] {
-  return (
-    arr(data.terms) ||
-    arr(data.search_terms) ||
-    arr(data.rows) ||
-    arr(data.table)
-  );
+  const candidates = [
+    arr<Record<string, unknown>>(data.terms),
+    arr<Record<string, unknown>>(data.search_terms),
+    arr<Record<string, unknown>>(data.rows),
+    arr<Record<string, unknown>>(data.table),
+  ];
+
+  return candidates.find((rows) => rows.length > 0) || [];
 }
 
 export function normalizeAnalyzeResponse(data: AnalyzeResponse): SearchTermModel {
@@ -21,12 +23,7 @@ export function normalizeAnalyzeResponse(data: AnalyzeResponse): SearchTermModel
 
   let terms: SearchTermRow[] = rawRows
     .map((row) => {
-      const searchTerm = str(
-        row.search_term ??
-          row.searchTerm ??
-          row.term ??
-          row["Search term"]
-      );
+      const searchTerm = str(row.search_term ?? row.searchTerm ?? row.term ?? row["Search term"]);
 
       const spend = num(row.cost ?? row.spend ?? row.Cost);
       const clicks = num(row.clicks ?? row.Clicks);
@@ -88,8 +85,8 @@ export function normalizeAnalyzeResponse(data: AnalyzeResponse): SearchTermModel
   return {
     terms,
     categories: buildCategoryCards(terms),
-    ngrams: arr(data.ngrams),
-    recommendations: arr(data.recommendations),
+    ngrams: arr<Record<string, unknown>>(data.ngrams),
+    recommendations: arr<Record<string, unknown>>(data.recommendations),
     aiBrain,
     summary: {
       spend,

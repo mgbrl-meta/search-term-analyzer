@@ -2,8 +2,7 @@ export function num(value: unknown, fallback = 0): number {
   if (value === null || value === undefined || value === "") return fallback;
 
   if (typeof value === "number") {
-    if (Number.isFinite(value)) return value;
-    return fallback;
+    return Number.isFinite(value) ? value : fallback;
   }
 
   const cleaned = String(value)
@@ -30,8 +29,7 @@ export function money(value: unknown): string {
 }
 
 export function pct(value: unknown): string {
-  const n = num(value);
-  return `${(n * 100).toFixed(2)}%`;
+  return `${(num(value) * 100).toFixed(2)}%`;
 }
 
 export function x(value: unknown): string {

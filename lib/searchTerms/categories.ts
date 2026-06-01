@@ -1,5 +1,5 @@
 import type { AiBrainResponse, CategoryCard, SearchTermRow } from "./types";
-import { normalizeTerm, num, str } from "./format";
+import { normalizeTerm, num } from "./format";
 
 function sum(rows: SearchTermRow[], key: keyof SearchTermRow): number {
   return rows.reduce((total, row) => total + num(row[key]), 0);
@@ -45,7 +45,6 @@ export function fallbackAction(row: SearchTermRow): string {
   if (category.includes("marketplace")) return "NEGATIVE / REVIEW";
   if (category.includes("off-product")) return "NEGATIVE";
   if (category.includes("diy") || category.includes("informational")) return "CONTENT_SEO / NEGATIVE";
-
   if (row.clicks >= 30 && row.conversions === 0) return "PDP_ISSUE / WATCH";
 
   return "MONITOR";
@@ -67,18 +66,14 @@ export function isNegativeCandidate(row: SearchTermRow): boolean {
   );
 }
 
-export function applyCategories(
-  rows: SearchTermRow[],
-  aiBrain: AiBrainResponse | null
-): SearchTermRow[] {
+export function applyCategories(rows: SearchTermRow[], aiBrain: AiBrainResponse | null): SearchTermRow[] {
   const aiMap = buildAiClassificationMap(aiBrain);
 
   return rows.map((row) => {
     const ai = aiMap.get(normalizeTerm(row.searchTerm));
-
     const category = ai?.category || row.category || fallbackCategory(row.searchTerm);
 
-    const output: SearchTermRow = {
+    return {
       ...row,
       category,
       action: ai?.suggested_action || row.action || fallbackAction({ ...row, category }),
@@ -89,8 +84,6 @@ export function applyCategories(
       aiNegativeMatchType: ai?.negative_match_type,
       aiApplied: Boolean(ai),
     };
-
-    return output;
   });
 }
 

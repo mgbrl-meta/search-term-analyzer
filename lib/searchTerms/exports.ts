@@ -10,8 +10,7 @@ export function exportRowsCsv(filename: string, rows: Record<string, unknown>[])
 
   const escape = (value: unknown) => {
     const raw = value === null || value === undefined ? "" : String(value);
-    const escaped = raw.replace(/"/g, '""');
-    return `"${escaped}"`;
+    return `"${raw.replace(/"/g, '""')}"`;
   };
 
   const csv = [

@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { AiBrainResponse, SearchTermModel } from "@/lib/searchTerms/types";
-import { buildAiBrainPrompt } from "@/lib/searchTerms/prompt";
-import { parseAiBrainResponse, saveAiBrain, clearAiBrain } from "@/lib/searchTerms/aiBrain";
-import { copyText, exportRowsCsv } from "@/lib/searchTerms/exports";
-import { int } from "@/lib/searchTerms/format";
+import type { AiBrainResponse, SearchTermModel } from "../../../lib/searchTerms/types";
+import { buildAiBrainPrompt } from "../../../lib/searchTerms/prompt";
+import { clearAiBrain, parseAiBrainResponse, saveAiBrain } from "../../../lib/searchTerms/aiBrain";
+import { copyText, exportRowsCsv } from "../../../lib/searchTerms/exports";
+import { int } from "../../../lib/searchTerms/format";
 import { Kpi } from "../shared/Kpi";
 import { DataTable } from "../shared/DataTable";
 

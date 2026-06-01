@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { MatchType, SearchTermModel } from "@/lib/searchTerms/types";
-import { loadAiBrain } from "@/lib/searchTerms/aiBrain";
-import { applyCategories, buildCategoryCards } from "@/lib/searchTerms/categories";
-import { exportRowsCsv } from "@/lib/searchTerms/exports";
-import { int, money, negativeSyntax, pct, x } from "@/lib/searchTerms/format";
+import type { MatchType, SearchTermModel } from "../../../lib/searchTerms/types";
+import { loadAiBrain } from "../../../lib/searchTerms/aiBrain";
+import { applyCategories, buildCategoryCards } from "../../../lib/searchTerms/categories";
+import { exportRowsCsv } from "../../../lib/searchTerms/exports";
+import { int, money, negativeSyntax, pct, x } from "../../../lib/searchTerms/format";
 import { Kpi } from "../shared/Kpi";
 import { DataTable } from "../shared/DataTable";
 
@@ -76,7 +76,10 @@ export function KeywordCategoryCardsTab({
       card.negativeCandidates.map((row) => ({
         Campaign: row.campaign,
         "Ad group": row.adGroup,
-        Keyword: negativeSyntax(row.searchTerm, row.aiNegativeMatchType && row.aiNegativeMatchType !== "none" ? row.aiNegativeMatchType : matchType),
+        Keyword: negativeSyntax(
+          row.searchTerm,
+          row.aiNegativeMatchType && row.aiNegativeMatchType !== "none" ? row.aiNegativeMatchType : matchType
+        ),
         "Match type": row.aiNegativeMatchType && row.aiNegativeMatchType !== "none" ? row.aiNegativeMatchType : matchType,
         Reason: row.aiReason || row.action,
         Spend: Math.round(row.spend),

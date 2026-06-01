@@ -18,6 +18,7 @@ function termPayload(row: SearchTermRow) {
 export function buildAiBrainPrompt(model: SearchTermModel) {
   const payload = {
     account_summary: model.summary,
+
     top_spend_terms: model.terms
       .slice()
       .sort((a, b) => b.spend - a.spend)
