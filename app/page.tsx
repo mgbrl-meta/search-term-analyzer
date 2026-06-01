@@ -9,24 +9,16 @@ type AnyObj = Record<string, any>;
 
 type TabKey =
   | "waste_spender"
-  | "spend_mix"
-  | "fragmentation"
+  | "keyword_category_cards"
+  | "ai_brain"
   | "pattern_waste"
-  | "kill_list"
-  | "watch_list"
-  | "winners"
-  | "action_plan" | "keyword_category_cards" | "ai_brain";
+  | "action_plan";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "waste_spender", label: "Waste Spender" },
-  { key: "spend_mix", label: "Category Spend Mix" },
-    { key: "keyword_category_cards", label: "Keyword Category Cards" },
+  { key: "keyword_category_cards", label: "Keyword Category Cards" },
   { key: "ai_brain", label: "AI Brain" },
   { key: "pattern_waste", label: "N-gram" },
-  { key: "fragmentation", label: "Fragmentation" },
-  { key: "kill_list", label: "Kill List" },
-  { key: "watch_list", label: "Watch List" },
-  { key: "winners", label: "Winners" },
   { key: "action_plan", label: "Action Report" },
 ];
 
@@ -2640,15 +2632,10 @@ function PageContent({
 
   const tabCounts: Record<TabKey, number> = {
     waste_spender: wasteRows.length,
-    spend_mix: spendMix.length,
     keyword_category_cards: terms.length,
     ai_brain: terms.length,
-    fragmentation: fragmentation.length,
     pattern_waste: ngramRows.length,
-    kill_list: killRows.length,
-    watch_list: watchRows.length,
-    winners: winnerRows.length,
-    action_plan: recommendations.length || 6,
+    action_plan: recommendations.length,
   };
 
   return (
@@ -2808,130 +2795,8 @@ function PageContent({
         </section>
       ) : null}
 
-      {activeTab === "spend_mix" ? (
-        <CategorySpendMixCardsPanel
-          terms={terms}
-          categoryRows={spendMix}
-        />
-      ) : null}
-
-      {activeTab === "fragmentation" ? (
-        <section className="wr-panel">
-          <div className="wr-panel-head">
-            <div>
-              <span>Fragmentation</span>
-              <h2>How spend is scattered by click depth</h2>
-            </div>
-          </div>
-
-          <div className="wr-bars">
-            {fragmentation.map((row) => (
-              <BarRow
-                key={row.label}
-                label={row.label}
-                value={row.spend}
-                max={maxFrag}
-                color={row.label === "Converting terms" ? GOOGLE.green : GOOGLE.red}
-                meta={`${row.terms} terms · ${int(row.clicks)} clicks`}
-              />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       {activeTab === "pattern_waste" ? (
         <NgramTabPanel ngramRows={ngramRows} />
-      ) : null}
-
-      {activeTab === "kill_list" ? (
-        <section className="wr-stack">
-          <div className="wr-panel">
-            <div className="wr-panel-head">
-              <div>
-                <span>Kill List</span>
-                <h2>Competitor, off-product, marketplace, informational drains</h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  exportCsv(
-                    "kill-list-negatives.csv",
-                    killRows.map((row) => ({
-                      search_term: row.search_term,
-                      exact_negative: `[${row.search_term}]`,
-                      phrase_negative: `"${row.search_term}"`,
-                      category: row.category,
-                      cost: row.cost,
-                      clicks: row.clicks,
-                    }))
-                  )
-                }
-              >
-                Export kill list
-              </button>
-            </div>
-
-            <DataTable
-              rows={killRows}
-              empty="No kill-list terms found."
-              columns={[
-                { key: "search_term", label: "Search term" },
-                { key: "category", label: "Category" },
-                { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
-                { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
-                { key: "syntax", label: "Exact negative", render: (row) => <code>[{row.search_term}]</code> },
-              ]}
-            />
-          </div>
-        </section>
-      ) : null}
-
-      {activeTab === "watch_list" ? (
-        <section className="wr-panel">
-          <div className="wr-panel-head">
-            <div>
-              <span>Watch List</span>
-              <h2>Relevant search terms with clicks but no purchases</h2>
-            </div>
-          </div>
-
-          <DataTable
-            rows={watchRows}
-            empty="No core watchlist terms found."
-            columns={[
-              { key: "search_term", label: "Search term" },
-              { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
-              { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
-              { key: "conversions", label: "Conv.", right: true, render: (row) => num(row.conversions).toFixed(2) },
-              { key: "action", label: "Action", render: () => "Fix PDP / offer before negative" },
-            ]}
-          />
-        </section>
-      ) : null}
-
-      {activeTab === "winners" ? (
-        <section className="wr-panel">
-          <div className="wr-panel-head">
-            <div>
-              <span>Winners</span>
-              <h2>Terms with purchases / revenue</h2>
-            </div>
-          </div>
-
-          <DataTable
-            rows={winnerRows}
-            empty="No winner terms found."
-            columns={[
-              { key: "search_term", label: "Search term" },
-              { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
-              { key: "conversions", label: "Conv.", right: true, render: (row) => num(row.conversions).toFixed(2) },
-              { key: "revenue", label: "Revenue", right: true, render: (row) => money(row.revenue) },
-              { key: "roas", label: "ROAS", right: true, render: (row) => x(row.roas) },
-              { key: "action", label: "Action", render: () => "Protect / isolate / scale" },
-            ]}
-          />
-        </section>
       ) : null}
 
       {activeTab === "ai_brain" ? (
