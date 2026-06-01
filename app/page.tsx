@@ -1294,6 +1294,437 @@ async function copyToClipboard(value: string, successMessage = "Copied.") {
   }
 }
 
+
+type CategoryCardSort = {
+  key: string;
+  direction: "asc" | "desc";
+};
+
+function getKeywordCategory(row: AnyObj) {
+  const existing = str(
+    row.category ??
+      row.keyword_category ??
+      row.intent_category ??
+      row.bucket ??
+      row.b,
+    ""
+  );
+
+  if (existing && existing !== "-") return existing;
+
+  const term = str(row.search_term ?? row.term ?? row.t).toLowerCase();
+
+  const competitorWords = [
+    "olaplex", "traya", "vedix", "minimalist", "loreal", "l oreal", "matrix",
+    "biolage", "selsun", "nizoral", "ketomac", "scalpe", "mamaearth",
+    "wow", "pilgrim", "foxtale", "bare anatomy", "wella", "kerastase",
+    "schwarzkopf", "indulekha", "himalaya", "ogx", "pantene", "dove",
+    "cetaphil", "sebamed", "reequil", "re equil", "ybera", "anomaly",
+    "richfeel", "amway", "nykaa", "myntra", "amazon", "flipkart"
+  ];
+
+  const diyWords = [
+    "home remedy", "at home", "kaise", "ghar", "natural remedy", "diy",
+    "homemade", "oil for", "coconut", "lemon", "curd", "aloe", "vinegar",
+    "remedy", "how to", "tips", "solution at home"
+  ];
+
+  const treatmentWords = [
+    "treatment", "kit", "serum", "lotion", "cream", "scrub", "ampoule",
+    "tonic", "control", "solution", "therapy", "shampoo", "conditioner",
+    "scalp"
+  ];
+
+  const offProductWords = [
+    "body wash", "hand cream", "sunscreen", "skin", "face", "beard",
+    "perfume", "soap", "makeup", "powder", "hair color", "hair dye"
+  ];
+
+  const genericWords = [
+    "hair care", "hair products", "beauty", "personal care", "best hair",
+    "hair kit", "hair routine", "hair product", "hair treatment products"
+  ];
+
+  if (competitorWords.some((word) => term.includes(word))) return "Competitor / Other Brand";
+  if (offProductWords.some((word) => term.includes(word))) return "Off-product / Wrong Category";
+  if (diyWords.some((word) => term.includes(word))) return "DIY / Informational";
+  if (term.includes("dandruff") || term.includes("anti dandruff") || term.includes("anti-dandruff")) return "Core Problem Intent";
+  if (treatmentWords.some((word) => term.includes(word))) return "Treatment / Product Intent";
+  if (genericWords.some((word) => term.includes(word))) return "Generic Hair / Broad Intent";
+
+  return "Unclassified / Review";
+}
+
+function getKeywordAction(row: AnyObj, category: string) {
+  const conversions = num(row.conversions ?? row.cv);
+  const spend = num(row.cost ?? row.co);
+  const revenue = num(row.revenue ?? row.conv_value ?? row.vl);
+  const roas = num(row.roas) || (spend > 0 ? revenue / spend : 0);
+
+  if (conversions > 0 && roas >= 2.5) return "SCALE";
+  if (conversions > 0) return "KEEP / WATCH";
+
+  const c = category.toLowerCase();
+
+  if (c.includes("competitor")) return "NEGATIVE unless conquesting";
+  if (c.includes("off-product")) return "NEGATIVE";
+  if (c.includes("diy") || c.includes("informational")) return "NEGATIVE / CONTENT";
+  if (spend >= 100 && conversions === 0) return "WATCH / BID DOWN";
+  if (spend > 0 && conversions === 0) return "MONITOR";
+
+  return "REVIEW";
+}
+
+function getCategoryVerdict(category: string, spend: number, conversions: number, roas: number) {
+  const c = category.toLowerCase();
+
+  if (conversions > 0 && roas >= 2.5) return "Profitable cluster — protect and scale carefully.";
+  if (c.includes("competitor")) return "Competitor leakage — add negatives unless conquesting intentionally.";
+  if (c.includes("off-product")) return "Wrong-category spend — strongest negative candidate.";
+  if (c.includes("diy") || c.includes("informational")) return "Research traffic — block or move to SEO/content.";
+  if (c.includes("core") && conversions === 0 && spend > 0) return "Relevant but not converting — check PDP, price, offer, reviews.";
+  if (c.includes("treatment") && conversions === 0 && spend > 0) return "Product intent but weak conversion — investigate before blocking.";
+  return "Review cluster manually before action.";
+}
+
+function getCategoryTone(category: string, conversions: number, roas: number) {
+  const c = category.toLowerCase();
+
+  if (conversions > 0 && roas >= 2.5) return "green";
+  if (c.includes("competitor")) return "red";
+  if (c.includes("off-product")) return "red";
+  if (c.includes("diy") || c.includes("informational")) return "amber";
+  if (c.includes("core")) return "blue";
+  return "neutral";
+}
+
+function CategoryKeywordCards({
+  terms,
+  matchType,
+}: {
+  terms: AnyObj[];
+  matchType: "exact" | "phrase" | "broad";
+}) {
+  const [openCategory, setOpenCategory] = useState<string>("");
+  const [sort, setSort] = useState<CategoryCardSort>({ key: "cost", direction: "desc" });
+  const [minSpend, setMinSpend] = useState(0);
+
+  const categoryCards = useMemo(() => {
+    const grouped = new Map<string, AnyObj[]>();
+
+    terms.forEach((raw) => {
+      const searchTerm = str(raw.search_term ?? raw.term ?? raw.t).trim();
+      if (!searchTerm) return;
+
+      const cost = num(raw.cost ?? raw.co);
+      if (cost < minSpend) return;
+
+      const clicks = num(raw.clicks ?? raw.cl);
+      const impressions = num(raw.impressions ?? raw.im);
+      const conversions = num(raw.conversions ?? raw.cv);
+      const revenue = num(raw.revenue ?? raw.conv_value ?? raw.vl);
+      const roas = num(raw.roas) || (cost > 0 ? revenue / cost : 0);
+      const ctr = num(raw.ctr) || (impressions > 0 ? clicks / impressions : 0);
+      const avgCpc = num(raw.avg_cpc ?? raw.cpc) || (clicks > 0 ? cost / clicks : 0);
+      const campaign = str(
+        raw.campaign ??
+          raw.campaign_name ??
+          raw.Campaign ??
+          raw["Campaign"] ??
+          "-",
+        "-"
+      );
+      const adGroup = str(
+        raw.ad_group ??
+          raw.ad_group_name ??
+          raw.adgroup ??
+          raw["Ad group"] ??
+          raw["Ad group name"] ??
+          raw.ag ??
+          "-",
+        "-"
+      );
+
+      const category = getKeywordCategory(raw);
+      const action = getKeywordAction(
+        { ...raw, cost, clicks, impressions, conversions, revenue, roas, ctr },
+        category
+      );
+
+      const row = {
+        ...raw,
+        search_term: searchTerm,
+        campaign,
+        ad_group: adGroup,
+        category,
+        action,
+        cost,
+        clicks,
+        impressions,
+        ctr,
+        avg_cpc: avgCpc,
+        conversions,
+        revenue,
+        conv_value: revenue,
+        roas,
+      };
+
+      if (!grouped.has(category)) grouped.set(category, []);
+      grouped.get(category)!.push(row);
+    });
+
+    return Array.from(grouped.entries())
+      .map(([category, rows]) => {
+        const spend = rows.reduce((sum, row) => sum + num(row.cost), 0);
+        const clicks = rows.reduce((sum, row) => sum + num(row.clicks), 0);
+        const impressions = rows.reduce((sum, row) => sum + num(row.impressions), 0);
+        const conversions = rows.reduce((sum, row) => sum + num(row.conversions), 0);
+        const revenue = rows.reduce((sum, row) => sum + num(row.revenue), 0);
+        const roas = spend > 0 ? revenue / spend : 0;
+        const ctr = impressions > 0 ? clicks / impressions : 0;
+        const avgCpc = clicks > 0 ? spend / clicks : 0;
+        const tone = getCategoryTone(category, conversions, roas);
+        const verdict = getCategoryVerdict(category, spend, conversions, roas);
+
+        return {
+          category,
+          rows,
+          terms: rows.length,
+          spend,
+          clicks,
+          impressions,
+          ctr,
+          avgCpc,
+          conversions,
+          revenue,
+          roas,
+          tone,
+          verdict,
+        };
+      })
+      .sort((a, b) => b.spend - a.spend);
+  }, [terms, minSpend]);
+
+  const sortedRows = (rows: AnyObj[]) => {
+    return [...rows].sort((a, b) => {
+      const left = a[sort.key];
+      const right = b[sort.key];
+
+      const leftNum = num(left);
+      const rightNum = num(right);
+
+      if (!Number.isNaN(leftNum) && !Number.isNaN(rightNum) && (leftNum || rightNum)) {
+        return sort.direction === "desc" ? rightNum - leftNum : leftNum - rightNum;
+      }
+
+      return sort.direction === "desc"
+        ? str(right).localeCompare(str(left))
+        : str(left).localeCompare(str(right));
+    });
+  };
+
+  function toggleSort(key: string) {
+    setSort((current) => ({
+      key,
+      direction: current.key === key && current.direction === "desc" ? "asc" : "desc",
+    }));
+  }
+
+  function negativeRows(rows: AnyObj[]) {
+    return rows.filter((row) => {
+      const action = str(row.action).toLowerCase();
+      return (
+        num(row.cost) > 0 &&
+        num(row.conversions) === 0 &&
+        (action.includes("negative") ||
+          str(row.category).toLowerCase().includes("competitor") ||
+          str(row.category).toLowerCase().includes("off-product") ||
+          str(row.category).toLowerCase().includes("informational"))
+      );
+    });
+  }
+
+  function exportCategoryRows(category: string, rows: AnyObj[]) {
+    const exportRows = rows.map((row) => ({
+      Category: category,
+      Campaign: str(row.campaign, "-"),
+      "Ad group": str(row.ad_group, "-"),
+      "Search term": str(row.search_term),
+      "Negative keyword": syntax(str(row.search_term), matchType),
+      "Match type": matchType,
+      Action: str(row.action),
+      Spend: Math.round(num(row.cost)),
+      Clicks: Math.round(num(row.clicks)),
+      Impressions: Math.round(num(row.impressions)),
+      CTR: `${(num(row.ctr) * 100).toFixed(2)}%`,
+      "Avg CPC": num(row.avg_cpc).toFixed(2),
+      Conversions: num(row.conversions).toFixed(2),
+      "Conv. value": Math.round(num(row.revenue)),
+      ROAS: num(row.roas).toFixed(2),
+    }));
+
+    exportRowsCsv(`${category.toLowerCase().replaceAll(" ", "-").replaceAll("/", "-")}-keywords.csv`, exportRows);
+  }
+
+  function exportCategoryNegatives(category: string, rows: AnyObj[]) {
+    const candidates = negativeRows(rows);
+
+    const exportRows = candidates.map((row) => ({
+      Campaign: str(row.campaign, ""),
+      "Ad group": str(row.ad_group, ""),
+      Keyword: syntax(str(row.search_term), matchType),
+      "Match type": matchType,
+      Reason: str(row.action),
+      Spend: Math.round(num(row.cost)),
+      Clicks: Math.round(num(row.clicks)),
+      CTR: `${(num(row.ctr) * 100).toFixed(2)}%`,
+      Conversions: num(row.conversions).toFixed(2),
+      "Conv. value": Math.round(num(row.revenue)),
+      ROAS: num(row.roas).toFixed(2),
+    }));
+
+    exportRowsCsv(`${category.toLowerCase().replaceAll(" ", "-").replaceAll("/", "-")}-negative-keywords.csv`, exportRows);
+  }
+
+  function copyCategoryNegatives(rows: AnyObj[]) {
+    const lines = negativeRows(rows)
+      .map((row) => syntax(str(row.search_term), matchType))
+      .join("\n");
+
+    copyToClipboard(lines, "Category negative keyword list copied.");
+  }
+
+  return (
+    <section className="kc-wrap">
+      <div className="kc-head">
+        <div>
+          <span>Keyword Category Cards</span>
+          <h2>Category-level keyword diagnosis</h2>
+          <p>
+            Dynamic category cards from uploaded search terms. Open a card to inspect keywords, sort columns, export category rows, or copy negatives.
+          </p>
+        </div>
+
+        <label className="kc-filter">
+          Minimum spend
+          <input
+            type="number"
+            min="0"
+            value={minSpend}
+            onChange={(e) => setMinSpend(Number(e.target.value || 0))}
+          />
+        </label>
+      </div>
+
+      <div className="kc-grid">
+        {categoryCards.map((card) => {
+          const isOpen = openCategory === card.category;
+          const negatives = negativeRows(card.rows);
+
+          return (
+            <article key={card.category} className={`kc-card ${isOpen ? "open" : ""} ${card.tone}`}>
+              <div className="kc-bar" />
+
+              <button
+                type="button"
+                className="kc-card-top"
+                onClick={() => setOpenCategory(isOpen ? "" : card.category)}
+              >
+                <div>
+                  <h3>
+                    <i />
+                    {card.category}
+                  </h3>
+                  <p>{card.verdict}</p>
+                </div>
+
+                <strong>{isOpen ? "▲" : "▼"}</strong>
+              </button>
+
+              <div className="kc-stats">
+                <Kpi label="Terms" value={int(card.terms)} />
+                <Kpi label="Spend" value={money(card.spend)} tone={card.spend > 0 ? "red" : "neutral"} />
+                <Kpi label="Clicks" value={int(card.clicks)} />
+                <Kpi label="CTR" value={ctrPct(card.ctr)} tone="blue" />
+                <Kpi label="Purchases" value={num(card.conversions).toFixed(2)} />
+                <Kpi label="Revenue" value={money(card.revenue)} tone={card.revenue > 0 ? "green" : "neutral"} />
+                <Kpi label="ROAS" value={x(card.roas)} tone={card.roas >= 2.5 ? "green" : card.roas > 0 ? "amber" : "red"} />
+                <Kpi label="Negatives" value={int(negatives.length)} tone={negatives.length ? "red" : "green"} />
+              </div>
+
+              {isOpen ? (
+                <div className="kc-panel">
+                  <div className="kc-actions">
+                    <button type="button" onClick={() => exportCategoryRows(card.category, card.rows)}>
+                      Export category CSV
+                    </button>
+                    <button type="button" onClick={() => exportCategoryNegatives(card.category, card.rows)} disabled={!negatives.length}>
+                      Export negatives CSV
+                    </button>
+                    <button type="button" onClick={() => copyCategoryNegatives(card.rows)} disabled={!negatives.length}>
+                      Copy negatives
+                    </button>
+                  </div>
+
+                  <div className="kc-table-wrap">
+                    <table className="kc-table">
+                      <thead>
+                        <tr>
+                          <th className="left" onClick={() => toggleSort("search_term")}>Search term</th>
+                          <th className="left" onClick={() => toggleSort("campaign")}>Campaign</th>
+                          <th className="left" onClick={() => toggleSort("ad_group")}>Ad group</th>
+                          <th onClick={() => toggleSort("cost")}>Spend</th>
+                          <th onClick={() => toggleSort("clicks")}>Clicks</th>
+                          <th onClick={() => toggleSort("impressions")}>Impr.</th>
+                          <th onClick={() => toggleSort("ctr")}>CTR</th>
+                          <th onClick={() => toggleSort("conversions")}>Purch.</th>
+                          <th onClick={() => toggleSort("revenue")}>Conv. value</th>
+                          <th onClick={() => toggleSort("roas")}>ROAS</th>
+                          <th className="left" onClick={() => toggleSort("action")}>Action</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {sortedRows(card.rows).slice(0, 300).map((row, index) => (
+                          <tr key={`${row.search_term}-${index}`}>
+                            <td className="left kw">{str(row.search_term)}</td>
+                            <td className="left">{str(row.campaign, "-")}</td>
+                            <td className="left">{str(row.ad_group, "-")}</td>
+                            <td>{money(row.cost)}</td>
+                            <td>{int(row.clicks)}</td>
+                            <td>{int(row.impressions)}</td>
+                            <td>{ctrPct(row.ctr)}</td>
+                            <td>{num(row.conversions).toFixed(2)}</td>
+                            <td>{money(row.revenue)}</td>
+                            <td>{x(row.roas)}</td>
+                            <td className="left">
+                              <span className={`kc-tag ${str(row.action).toLowerCase().includes("negative") ? "neg" : str(row.action).toLowerCase().includes("scale") ? "scale" : str(row.action).toLowerCase().includes("watch") ? "watch" : "keep"}`}>
+                                {str(row.action)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
+            </article>
+          );
+        })}
+
+        {!categoryCards.length ? (
+          <div className="wr-empty">
+            <strong>No keyword categories found</strong>
+            <p>Upload a search-term file with spend-bearing rows.</p>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+
 function ActionReportPanel({
   execSummary,
   checklist,
@@ -2167,6 +2598,10 @@ function PageContent({
             ]}
           />
         </section>
+      ) : null}
+
+      {activeTab === "keyword_category_cards" ? (
+        <KeywordCategoryCards terms={terms} matchType={matchType} />
       ) : null}
 
       {activeTab === "action_plan" ? (
@@ -3681,6 +4116,257 @@ body {
 }
 
 
+
+.kc-wrap {
+  max-width: 1220px;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+}
+
+.kc-head {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.kc-head span {
+  color: var(--wr-faint);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.kc-head h2 {
+  margin: 5px 0 0;
+  color: var(--wr-ink);
+  font-size: 21px;
+  letter-spacing: -0.04em;
+}
+
+.kc-head p {
+  margin: 6px 0 0;
+  color: var(--wr-dim);
+  font-size: 13px;
+  line-height: 1.45;
+  max-width: 760px;
+}
+
+.kc-filter {
+  color: var(--wr-faint);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: grid;
+  gap: 6px;
+}
+
+.kc-filter input {
+  width: 150px;
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-ink);
+  border-radius: 11px;
+  padding: 9px 10px;
+  font-size: 13px;
+}
+
+.kc-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.kc-card {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: var(--wr-shadow);
+}
+
+.kc-card .kc-bar {
+  height: 4px;
+  background: var(--wr-line);
+}
+
+.kc-card.green .kc-bar { background: #34A853; }
+.kc-card.red .kc-bar { background: #EA4335; }
+.kc-card.amber .kc-bar { background: #FBBC04; }
+.kc-card.blue .kc-bar { background: #4285F4; }
+
+.kc-card-top {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 15px 16px 8px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  text-align: left;
+  cursor: pointer;
+}
+
+.kc-card-top h3 {
+  margin: 0;
+  color: var(--wr-ink);
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.kc-card-top h3 i {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--wr-line);
+}
+
+.kc-card.green .kc-card-top h3 i { background: #34A853; }
+.kc-card.red .kc-card-top h3 i { background: #EA4335; }
+.kc-card.amber .kc-card-top h3 i { background: #FBBC04; }
+.kc-card.blue .kc-card-top h3 i { background: #4285F4; }
+
+.kc-card-top p {
+  margin: 6px 0 0;
+  color: var(--wr-dim);
+  font-size: 13px;
+}
+
+.kc-card-top strong {
+  color: var(--wr-faint);
+  font-size: 13px;
+}
+
+.kc-stats {
+  padding: 8px 16px 15px;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.kc-panel {
+  border-top: 1px solid var(--wr-line);
+  padding: 12px 16px 16px;
+}
+
+.kc-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.kc-actions button {
+  border: 1px solid var(--wr-line);
+  background: var(--wr-panel2);
+  color: var(--wr-ink);
+  border-radius: 11px;
+  padding: 8px 11px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.kc-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.kc-table-wrap {
+  border: 1px solid var(--wr-line);
+  border-radius: 14px;
+  overflow: auto;
+  max-height: 480px;
+  background: var(--wr-panel2);
+}
+
+.kc-table {
+  width: 100%;
+  min-width: 1220px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.kc-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--wr-panel2);
+  color: var(--wr-faint);
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--wr-line);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: right;
+  cursor: pointer;
+  user-select: none;
+}
+
+.kc-table th.left {
+  text-align: left;
+}
+
+.kc-table td {
+  padding: 8px 10px;
+  border-top: 1px solid var(--wr-grid);
+  color: var(--wr-dim);
+  text-align: right;
+  vertical-align: top;
+}
+
+.kc-table td.left {
+  text-align: left;
+}
+
+.kc-table td.kw {
+  color: var(--wr-ink);
+  font-weight: 700;
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kc-tag {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 800;
+  border: 1px solid var(--wr-line);
+  color: var(--wr-faint);
+}
+
+.kc-tag.neg {
+  background: rgba(234,67,53,0.12);
+  color: #EA4335;
+}
+
+.kc-tag.scale {
+  background: rgba(52,168,83,0.12);
+  color: #34A853;
+}
+
+.kc-tag.watch {
+  background: rgba(251,188,4,0.14);
+  color: #FBBC04;
+}
+
+.kc-tag.keep {
+  background: rgba(66,133,244,0.12);
+  color: #4285F4;
+}
+
+
 @media(max-width: 980px) {
   .wr-kpis,
   .wr-mini-kpis {
@@ -3699,6 +4385,22 @@ body {
     flex-direction: column;
     align-items: stretch;
   }
+
+
+  .kc-head,
+  .kc-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kc-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kc-filter input {
+    width: 100%;
+  }
+
 
   .wr-report-top,
   .wr-report-controls {
