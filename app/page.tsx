@@ -15,7 +15,7 @@ type TabKey =
   | "kill_list"
   | "watch_list"
   | "winners"
-  | "action_plan" | "keyword_category_cards";
+  | "action_plan" | "keyword_category_cards" | "ai_brain";
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: "waste_spender", label: "Waste Spender" },
