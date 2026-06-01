@@ -1,6 +1,7 @@
 "use client";
 
 import { AiBrainTab } from "@/components/searchTerms/tabs/AiBrainTab";
+import { KeywordCategoryCardsTab } from "@/components/searchTerms/tabs/KeywordCategoryCardsTab";
 import { normalizeAnalyzeResponse } from "@/lib/searchTerms/normalize";
 
 import { useMemo, useState } from "react";
@@ -2814,9 +2815,8 @@ function PageContent({
           }}
         />
       ) : null}
-
-      {activeTab === "keyword_category_cards" ? (
-        <KeywordCategoryCards terms={terms} matchType={matchType} />
+      {activeTab === "keyword_category_cards" && modularSearchTermModel ? (
+        <KeywordCategoryCardsTab model={modularSearchTermModel} matchType={matchType} />
       ) : null}
 
       {activeTab === "action_plan" ? (
