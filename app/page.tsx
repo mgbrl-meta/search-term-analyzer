@@ -2309,6 +2309,8 @@ function PageContent({
   const tabCounts: Record<TabKey, number> = {
     waste_spender: wasteRows.length,
     spend_mix: spendMix.length,
+    keyword_category_cards: terms.length,
+    ai_brain: terms.length,
     fragmentation: fragmentation.length,
     pattern_waste: ngramRows.length,
     kill_list: killRows.length,
