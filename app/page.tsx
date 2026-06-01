@@ -21,6 +21,7 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: "waste_spender", label: "Waste Spender" },
   { key: "spend_mix", label: "Category Spend Mix" },
     { key: "keyword_category_cards", label: "Keyword Category Cards" },
+  { key: "ai_brain", label: "AI Brain" },
   { key: "pattern_waste", label: "N-gram" },
   { key: "fragmentation", label: "Fragmentation" },
   { key: "kill_list", label: "Kill List" },
@@ -1927,6 +1928,134 @@ function KeywordCategoryCards({
 }
 
 
+
+function ManualAiBrainPanel({ terms, ngramRows }: { terms: AnyObj[]; ngramRows: AnyObj[] }) {
+  const [aiText, setAiText] = useState("");
+  const [parsed, setParsed] = useState<AnyObj | null>(null);
+  const [error, setError] = useState("");
+
+  const prompt = useMemo(() => {
+    const topSpend = [...terms].sort((a, b) => num(b.cost) - num(a.cost)).slice(0, 250);
+    const zeroPurchase = topSpend.filter((row) => num(row.conversions) === 0).slice(0, 150);
+    const converters = [...terms].filter((row) => num(row.conversions) > 0).slice(0, 100);
+
+    const payload = {
+      total_terms: terms.length,
+      top_spend_terms: topSpend.map((row) => ({
+        search_term: str(row.search_term),
+        campaign: str((row as AnyObj).campaign, ""),
+        ad_group: str((row as AnyObj).ad_group, ""),
+        spend: Math.round(num(row.cost)),
+        clicks: Math.round(num(row.clicks)),
+        impressions: Math.round(num(row.impressions)),
+        ctr: num(row.ctr),
+        conversions: num(row.conversions),
+        conv_value: Math.round(num(row.revenue ?? row.conv_value)),
+        roas: num(row.roas),
+      })),
+      zero_purchase_terms: zeroPurchase.map((row) => str(row.search_term)),
+      converting_terms: converters.map((row) => str(row.search_term)),
+      top_ngrams: ngramRows.slice(0, 100),
+    };
+
+    return `You are a top 0.001% Google Shopping performance marketing operator.
+
+Analyze this Google Ads search-term dataset. Create a dynamic category taxonomy based on the uploaded keywords. Do not use fixed dandruff-only logic.
+
+Return ONLY valid JSON with this schema:
+{
+  "detected_theme": "string",
+  "strategic_summary": ["max 8 lines"],
+  "categories": [
+    {
+      "name": "string",
+      "definition": "string",
+      "default_action": "string",
+      "negative_aggressiveness": "low|medium|high"
+    }
+  ],
+  "negative_candidates": [
+    {
+      "search_term": "string",
+      "match_type": "exact|phrase|broad",
+      "reason": "string",
+      "confidence": 0.0
+    }
+  ],
+  "watchouts": ["string"]
+}
+
+Dataset:
+${JSON.stringify(payload, null, 2)}`;
+  }, [terms, ngramRows]);
+
+  function applyResponse() {
+    try {
+      const cleaned = aiText.trim().replace(/^```json/i, "").replace(/^```/i, "").replace(/```$/i, "").trim();
+      const obj = JSON.parse(cleaned);
+      setParsed(obj);
+      setError("");
+      localStorage.setItem("manual_ai_brain_response", JSON.stringify(obj));
+    } catch {
+      setParsed(null);
+      setError("Invalid JSON. Ask ChatGPT/Claude to return JSON only.");
+    }
+  }
+
+  const categories = arr<AnyObj>(parsed?.categories);
+  const negatives = arr<AnyObj>(parsed?.negative_candidates);
+
+  return (
+    <section className="wr-panel" style={{ maxWidth: 1220, margin: "0 auto" }}>
+      <div className="wr-panel-head">
+        <div>
+          <span>Manual AI Brain</span>
+          <h2>ChatGPT / Claude workflow without API cost</h2>
+          <p className="wr-category-help">
+            Copy the prompt, paste into ChatGPT or Claude, then paste the JSON response back here.
+          </p>
+        </div>
+
+        <div className="wr-controls">
+          <button type="button" onClick={() => copyToClipboard(prompt, "AI prompt copied.")}>Copy prompt</button>
+          <button type="button" onClick={() => window.open("https://chatgpt.com", "_blank")}>Open ChatGPT</button>
+          <button type="button" onClick={() => window.open("https://claude.ai", "_blank")}>Open Claude</button>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <textarea readOnly value={prompt} style={{ minHeight: 420, borderRadius: 14, padding: 12, background: "var(--wr-panel2)", color: "var(--wr-dim)", border: "1px solid var(--wr-line)", fontSize: 11 }} />
+        <div>
+          <textarea value={aiText} onChange={(e) => setAiText(e.target.value)} placeholder="Paste JSON response here..." style={{ width: "100%", minHeight: 360, borderRadius: 14, padding: 12, background: "var(--wr-panel2)", color: "var(--wr-ink)", border: "1px solid var(--wr-line)", fontSize: 11 }} />
+          <button type="button" onClick={applyResponse} style={{ marginTop: 10 }}>Apply / Validate</button>
+          {error ? <p style={{ color: "#EA4335" }}>{error}</p> : null}
+        </div>
+      </div>
+
+      {parsed ? (
+        <div style={{ marginTop: 14 }}>
+          <h3>{str(parsed.detected_theme, "Detected theme")}</h3>
+          <div className="wr-metric-grid">
+            <Kpi label="Categories" value={int(categories.length)} />
+            <Kpi label="Negative candidates" value={int(negatives.length)} tone={negatives.length ? "red" : "green"} />
+            <Kpi label="Uploaded terms" value={int(terms.length)} />
+          </div>
+          <DataTable
+            rows={categories}
+            columns={[
+              { key: "name", label: "Category" },
+              { key: "definition", label: "Definition" },
+              { key: "default_action", label: "Default action" },
+              { key: "negative_aggressiveness", label: "Negative aggression" },
+            ]}
+          />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+
 function ActionReportPanel({
   execSummary,
   checklist,
@@ -2802,6 +2931,10 @@ function PageContent({
             ]}
           />
         </section>
+      ) : null}
+
+      {activeTab === "ai_brain" ? (
+        <ManualAiBrainPanel terms={terms} ngramRows={ngramRows} />
       ) : null}
 
       {activeTab === "keyword_category_cards" ? (
