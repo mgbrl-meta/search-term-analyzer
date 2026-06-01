@@ -20,6 +20,7 @@ type TabKey =
 const TABS: { key: TabKey; label: string }[] = [
   { key: "waste_spender", label: "Waste Spender" },
   { key: "spend_mix", label: "Category Spend Mix" },
+    { key: "keyword_category_cards", label: "Keyword Category Cards" },
   { key: "pattern_waste", label: "N-gram" },
   { key: "fragmentation", label: "Fragmentation" },
   { key: "kill_list", label: "Kill List" },
