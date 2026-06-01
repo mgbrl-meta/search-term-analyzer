@@ -2048,6 +2048,7 @@ ${JSON.stringify(payload, null, 2)}`;
               { key: "default_action", label: "Default action" },
               { key: "negative_aggressiveness", label: "Negative aggression" },
             ]}
+            empty="No AI categories found."
           />
         </div>
       ) : null}
