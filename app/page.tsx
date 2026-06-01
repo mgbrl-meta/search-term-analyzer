@@ -1,5 +1,8 @@
 "use client";
 
+import { AiBrainTab } from "@/components/searchTerms/tabs/AiBrainTab";
+import { normalizeAnalyzeResponse } from "@/lib/searchTerms/normalize";
+
 import { useMemo, useState } from "react";
 import FileUpload from "@/components/FileUpload";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -2630,6 +2633,11 @@ function PageContent({
   const maxFrag = Math.max(...fragmentation.map((row) => row.spend), 1);
   const maxPattern = Math.max(...ngramRows.slice(0, 20).map((row) => num(row.cost)), 1);
 
+  const modularSearchTermModel = useMemo(() => {
+    if (!data) return null;
+    return normalizeAnalyzeResponse(data as Record<string, unknown>);
+  }, [data]);
+
   const tabCounts: Record<TabKey, number> = {
     waste_spender: wasteRows.length,
     keyword_category_cards: terms.length,
@@ -2798,9 +2806,13 @@ function PageContent({
       {activeTab === "pattern_waste" ? (
         <NgramTabPanel ngramRows={ngramRows} />
       ) : null}
-
-      {activeTab === "ai_brain" ? (
-        <ManualAiBrainPanel terms={terms} ngramRows={ngramRows} />
+      {activeTab === "ai_brain" && modularSearchTermModel ? (
+        <AiBrainTab
+          model={modularSearchTermModel}
+          onApplied={() => {
+            window.dispatchEvent(new Event("search-term-os-ai-brain-updated"));
+          }}
+        />
       ) : null}
 
       {activeTab === "keyword_category_cards" ? (
