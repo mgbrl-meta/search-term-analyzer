@@ -13,7 +13,7 @@ import { AiBrainTab } from "@/components/searchTerms/tabs/AiBrainTab";
 import { KeywordCategoryCardsTab } from "@/components/searchTerms/tabs/KeywordCategoryCardsTab";
 import { normalizeAnalyzeResponse } from "@/lib/searchTerms/normalize";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FileUpload from "@/components/FileUpload";
 import ThemeToggle from "@/components/ThemeToggle";
 import type { AnalyzeResponse } from "@/types/api";
