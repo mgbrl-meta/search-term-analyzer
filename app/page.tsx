@@ -1,5 +1,14 @@
 "use client";
 
+import { CommandCenterTab } from "@/components/googleOs/tabs/CommandCenterTab";
+import { CampaignsTab } from "@/components/googleOs/tabs/CampaignsTab";
+import { AdGroupsTab } from "@/components/googleOs/tabs/AdGroupsTab";
+import { AiOperatorReportTab } from "@/components/googleOs/tabs/AiOperatorReportTab";
+import { SettingsTab } from "@/components/googleOs/tabs/SettingsTab";
+import { parseCsv } from "@/lib/googleOs/csv";
+import { buildGoogleOsModel } from "@/lib/googleOs/normalize";
+import type { GoogleOsModel } from "@/lib/googleOs/types";
+
 import { AiBrainTab } from "@/components/searchTerms/tabs/AiBrainTab";
 import { KeywordCategoryCardsTab } from "@/components/searchTerms/tabs/KeywordCategoryCardsTab";
 import { normalizeAnalyzeResponse } from "@/lib/searchTerms/normalize";
@@ -12,6 +21,13 @@ import type { AnalyzeResponse } from "@/types/api";
 type AnyObj = Record<string, any>;
 
 type TabKey =
+  | "command_center"
+  | "campaigns"
+  | "ad_groups"
+  | "search_terms"
+  | "ai_operator_report"
+  | "actions"
+  | "settings"
   | "waste_spender"
   | "keyword_category_cards"
   | "ai_brain"
@@ -19,11 +35,13 @@ type TabKey =
   | "action_plan";
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: "waste_spender", label: "Waste Spender" },
-  { key: "keyword_category_cards", label: "Keyword Category Cards" },
-  { key: "ai_brain", label: "AI Brain" },
-  { key: "pattern_waste", label: "N-gram" },
-  { key: "action_plan", label: "Action Report" },
+  { key: "command_center", label: "Command Center" },
+  { key: "campaigns", label: "Campaigns" },
+  { key: "ad_groups", label: "Ad Groups" },
+  { key: "search_terms", label: "Search Terms" },
+  { key: "ai_operator_report", label: "AI Operator Report" },
+  { key: "actions", label: "Actions" },
+  { key: "settings", label: "Settings" },
 ];
 
 const GOOGLE = {
@@ -2299,7 +2317,34 @@ function PageContent({
   fileName: string;
   onNewUpload: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<TabKey>("waste_spender");
+  const [activeTab, setActiveTab] = useState<TabKey>("command_center");
+  const [googleOsModel, setGoogleOsModel] = useState<GoogleOsModel | null>(null);
+  const [googleOsUploadName, setGoogleOsUploadName] = useState("");
+  const [googleOsUploadError, setGoogleOsUploadError] = useState("");
+
+  async function handleGoogleOsCsvUpload(file: File | null) {
+    if (!file) return;
+
+    setGoogleOsUploadName(file.name);
+    setGoogleOsUploadError("");
+
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+      const model = buildGoogleOsModel(rows);
+
+      if (!model.rows.length) {
+        throw new Error("No valid Google Ads rows found. Export the raw data tab as CSV and upload again.");
+      }
+
+      setGoogleOsModel(model);
+      setActiveTab("command_center");
+    } catch (error) {
+      setGoogleOsModel(null);
+      setGoogleOsUploadError(error instanceof Error ? error.message : "Could not parse Google Ads CSV.");
+    }
+  }
+
   const [threshold, setThreshold] = useState(100);
   const [matchType, setMatchType] = useState<"exact" | "phrase" | "broad">("exact");
   const [categoryNegativeMatchType, setCategoryNegativeMatchType] = useState<"exact" | "phrase" | "broad">("exact");
@@ -2639,7 +2684,17 @@ function PageContent({
     return normalizeAnalyzeResponse(data as Record<string, unknown>);
   }, [data]);
 
-  const tabCounts: Record<TabKey, number> = {
+  const tabCounts: Partial<Record<TabKey, number>> = {
+    command_center: googleOsModel?.rows.length || 0,
+    campaigns: googleOsModel?.campaigns.length || 0,
+    ad_groups: googleOsModel?.adGroups.length || 0,
+    search_terms: terms.length,
+    ai_operator_report: googleOsModel ? 1 : 0,
+    actions: googleOsModel?.adGroups.filter((row) =>
+      ["PAUSE", "REDUCE", "SCALE"].includes(row.status)
+    ).length || 0,
+    settings: 0,
+
     waste_spender: wasteRows.length,
     keyword_category_cards: terms.length,
     ai_brain: terms.length,
@@ -2653,7 +2708,7 @@ function PageContent({
 
       <header className="wr-header">
         <div>
-          <h1>Search Term Analyzer</h1>
+          <h1>Google OS</h1>
           <p>{fileName} · {int(terms.length)} spend-bearing terms analyzed</p>
         </div>
 
@@ -2707,6 +2762,143 @@ function PageContent({
         <Kpi label="Kill-list spend" value={money(killSpend)} tone="green" />
         <Kpi label="Clicks" value={int(summary.total_clicks)} tone="blue" />
       </section>
+
+      <section className="gos-upload-shell">
+        <div className="gos-upload-card">
+          <div>
+            <span>Google OS Data</span>
+            <h2>Upload Google Ads DoD CSV</h2>
+            <p>
+              Export the team-filled Google Ads sheet raw data tab as CSV. This powers Command Center, Campaigns, Ad Groups, and Operator Report.
+            </p>
+            {googleOsUploadName ? (
+              <small>Loaded file: {googleOsUploadName}</small>
+            ) : null}
+            {googleOsUploadError ? (
+              <small className="error">{googleOsUploadError}</small>
+            ) : null}
+          </div>
+
+          <label className="gos-upload-button">
+            Upload CSV
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(event) => handleGoogleOsCsvUpload(event.target.files?.[0] || null)}
+            />
+          </label>
+        </div>
+      </section>
+
+      {activeTab === "command_center" ? (
+        googleOsModel ? (
+          <CommandCenterTab model={googleOsModel} />
+        ) : (
+          <section className="gos-page">
+            <div className="gos-panel">
+              <div className="gos-panel-head">
+                <div>
+                  <span>Command Center</span>
+                  <h2>Upload Google Ads DoD CSV to start</h2>
+                  <p>
+                    Use the raw data export with Day, Campaign, Ad group, Cost, Impr., Clicks, Conversions, and Conv. value.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )
+      ) : null}
+
+      {activeTab === "campaigns" ? (
+        googleOsModel ? (
+          <CampaignsTab model={googleOsModel} />
+        ) : (
+          <section className="gos-page">
+            <div className="gos-panel">
+              <div className="gos-panel-head">
+                <div>
+                  <span>Campaigns</span>
+                  <h2>No Google Ads data uploaded yet</h2>
+                  <p>Upload the DoD CSV first.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )
+      ) : null}
+
+      {activeTab === "ad_groups" ? (
+        googleOsModel ? (
+          <AdGroupsTab model={googleOsModel} />
+        ) : (
+          <section className="gos-page">
+            <div className="gos-panel">
+              <div className="gos-panel-head">
+                <div>
+                  <span>Ad Groups</span>
+                  <h2>No Google Ads data uploaded yet</h2>
+                  <p>Upload the DoD CSV first.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )
+      ) : null}
+
+      {activeTab === "ai_operator_report" ? (
+        googleOsModel ? (
+          <AiOperatorReportTab model={googleOsModel} />
+        ) : (
+          <section className="gos-page">
+            <div className="gos-panel">
+              <div className="gos-panel-head">
+                <div>
+                  <span>AI Operator Report</span>
+                  <h2>No Google Ads data uploaded yet</h2>
+                  <p>Upload the DoD CSV first.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        )
+      ) : null}
+
+      {activeTab === "settings" ? <SettingsTab /> : null}
+
+      {activeTab === "actions" ? (
+        <section className="gos-page">
+          <div className="gos-panel">
+            <div className="gos-panel-head">
+              <div>
+                <span>Actions</span>
+                <h2>Execution center</h2>
+                <p>
+                  Next phase: export bid actions, negative keyword actions, pause/reduce/scale list, and 30-minute checklist.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {activeTab === "search_terms" && modularSearchTermModel ? (
+        <section className="gos-page">
+          <div className="gos-panel">
+            <div className="gos-panel-head">
+              <div>
+                <span>Search Terms</span>
+                <h2>Manual search term audit</h2>
+                <p>
+                  This keeps the current manual search-term engine. AI category cards and search-term action report will be upgraded in the next phase.
+                </p>
+              </div>
+            </div>
+            <KeywordCategoryCardsTab model={modularSearchTermModel} matchType={matchType} />
+          </div>
+        </section>
+      ) : null}
+
 
       {activeTab === "waste_spender" ? (
         <section className="wr-stack">
@@ -2845,7 +3037,7 @@ export default function Page() {
 
         <header className="wr-header">
           <div>
-            <h1>Search Term Analyzer</h1>
+            <h1>Google OS</h1>
             <p>Upload a Google Shopping search-terms report for operator-grade actions.</p>
           </div>
           <ThemeToggle />
