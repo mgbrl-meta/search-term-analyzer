@@ -2321,6 +2321,58 @@ function PageContent({
   const [googleOsModel, setGoogleOsModel] = useState<GoogleOsModel | null>(null);
   const [googleOsUploadName, setGoogleOsUploadName] = useState("");
   const [googleOsUploadError, setGoogleOsUploadError] = useState("");
+  const [googleOsSheetUrl, setGoogleOsSheetUrl] = useState("");
+  const [googleOsLoading, setGoogleOsLoading] = useState(false);
+
+  async function loadGoogleOsSheetUrl(urlInput?: string) {
+    const url = (urlInput || googleOsSheetUrl).trim();
+
+    if (!url) {
+      setGoogleOsUploadError("Paste your published Google Sheet CSV URL first.");
+      return;
+    }
+
+    setGoogleOsLoading(true);
+    setGoogleOsUploadError("");
+
+    try {
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Could not fetch Google Sheet CSV. Status ${response.status}`);
+      }
+
+      const csvText = await response.text();
+      const rows = parseCsv(csvText);
+      const model = buildGoogleOsModel(rows);
+
+      if (!model.rows.length) {
+        throw new Error("No valid Google Ads rows found in the connected sheet.");
+      }
+
+      setGoogleOsModel(model);
+      setGoogleOsUploadName("Connected Google Sheet");
+      localStorage.setItem("google_os_sheet_csv_url", url);
+      setActiveTab("command_center");
+    } catch (error) {
+      setGoogleOsModel(null);
+      setGoogleOsUploadError(error instanceof Error ? error.message : "Could not load Google Sheet CSV.");
+    } finally {
+      setGoogleOsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    const savedUrl = localStorage.getItem("google_os_sheet_csv_url") || "";
+    if (!savedUrl) return;
+
+    setGoogleOsSheetUrl(savedUrl);
+
+    // Auto-load saved Google Sheet after first render.
+    setTimeout(() => {
+      loadGoogleOsSheetUrl(savedUrl);
+    }, 50);
+  }, []);
 
   async function handleGoogleOsCsvUpload(file: File | null) {
     if (!file) return;
@@ -2766,21 +2818,37 @@ function PageContent({
       <section className="gos-upload-shell">
         <div className="gos-upload-card">
           <div>
-            <span>Google OS Data</span>
-            <h2>Upload Google Ads DoD CSV</h2>
+            <span>Google OS Data Source</span>
+            <h2>Connected Google Sheet + manual search term upload</h2>
             <p>
-              Export the team-filled Google Ads sheet raw data tab as CSV. This powers Command Center, Campaigns, Ad Groups, and Operator Report.
+              Paste the published CSV URL of the team-filled Google Ads DoD sheet. Search terms will still be uploaded manually in the Search Terms tab.
             </p>
-            {googleOsUploadName ? (
-              <small>Loaded file: {googleOsUploadName}</small>
-            ) : null}
-            {googleOsUploadError ? (
-              <small className="error">{googleOsUploadError}</small>
-            ) : null}
+
+            <div className="gos-sheet-connect">
+              <input
+                value={googleOsSheetUrl}
+                onChange={(event) => setGoogleOsSheetUrl(event.target.value)}
+                placeholder="Paste published Google Sheet CSV URL..."
+              />
+
+              <button
+                type="button"
+                onClick={() => loadGoogleOsSheetUrl()}
+                disabled={googleOsLoading}
+              >
+                {googleOsLoading ? "Loading..." : "Connect / Refresh"}
+              </button>
+            </div>
+
+            <div className="gos-source-status">
+              {googleOsUploadName ? <small>Loaded: {googleOsUploadName}</small> : null}
+              {googleOsModel ? <small>{googleOsModel.rows.length.toLocaleString("en-IN")} Google Ads rows loaded</small> : null}
+              {googleOsUploadError ? <small className="error">{googleOsUploadError}</small> : null}
+            </div>
           </div>
 
           <label className="gos-upload-button">
-            Upload CSV
+            Upload CSV backup
             <input
               type="file"
               accept=".csv,text/csv"
