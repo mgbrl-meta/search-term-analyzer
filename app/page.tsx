@@ -3098,38 +3098,237 @@ export default function Page() {
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [fileName, setFileName] = useState("");
 
-  if (!result) {
+  const [googleOsModel, setGoogleOsModel] = useState<GoogleOsModel | null>(null);
+  const [googleOsSheetUrl, setGoogleOsSheetUrl] = useState("");
+  const [googleOsSourceName, setGoogleOsSourceName] = useState("");
+  const [googleOsError, setGoogleOsError] = useState("");
+  const [googleOsLoading, setGoogleOsLoading] = useState(false);
+  const [googleOsHomeTab, setGoogleOsHomeTab] = useState<
+    "summary" | "campaigns" | "ad_groups" | "operator_report" | "settings"
+  >("summary");
+
+  async function loadGoogleOsCsvText(csvText: string, sourceName: string) {
+    const rows = parseCsv(csvText);
+    const model = buildGoogleOsModel(rows);
+
+    if (!model.rows.length) {
+      throw new Error(
+        "No valid Google Ads DoD rows found. Use the Daily Google Ads raw data CSV, not the search-term report."
+      );
+    }
+
+    setGoogleOsModel(model);
+    setGoogleOsSourceName(sourceName);
+    setGoogleOsError("");
+    setGoogleOsHomeTab("summary");
+  }
+
+  async function loadGoogleOsSheetUrl(urlInput?: string) {
+    const url = (urlInput || googleOsSheetUrl).trim();
+
+    if (!url) {
+      setGoogleOsError("Paste the published Google Sheet CSV URL first.");
+      return;
+    }
+
+    setGoogleOsLoading(true);
+    setGoogleOsError("");
+
+    try {
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Could not fetch Google Sheet CSV. Status ${response.status}`);
+      }
+
+      const csvText = await response.text();
+      await loadGoogleOsCsvText(csvText, "Connected Google Sheet");
+      localStorage.setItem("google_os_sheet_csv_url", url);
+    } catch (error) {
+      setGoogleOsModel(null);
+      setGoogleOsError(error instanceof Error ? error.message : "Could not load Google Sheet CSV.");
+    } finally {
+      setGoogleOsLoading(false);
+    }
+  }
+
+  async function handleGoogleOsDailyCsvUpload(file: File | null) {
+    if (!file) return;
+
+    setGoogleOsLoading(true);
+    setGoogleOsError("");
+
+    try {
+      const csvText = await file.text();
+      await loadGoogleOsCsvText(csvText, file.name);
+    } catch (error) {
+      setGoogleOsModel(null);
+      setGoogleOsError(error instanceof Error ? error.message : "Could not parse Google Ads DoD CSV.");
+    } finally {
+      setGoogleOsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    const savedUrl = localStorage.getItem("google_os_sheet_csv_url") || "";
+    if (!savedUrl) return;
+
+    setGoogleOsSheetUrl(savedUrl);
+
+    setTimeout(() => {
+      loadGoogleOsSheetUrl(savedUrl);
+    }, 50);
+  }, []);
+
+  if (result) {
     return (
-      <main className="wr-shell">
-        <style jsx global>{styles}</style>
-
-        <header className="wr-header">
-          <div>
-            <h1>Google OS</h1>
-            <p>Upload a Google Shopping search-terms report for operator-grade actions.</p>
-          </div>
-          <ThemeToggle />
-        </header>
-
-        <FileUpload
-          onResult={(res, name) => {
-            setResult(res);
-            setFileName(name);
-          }}
-        />
-      </main>
+      <PageContent
+        result={result}
+        fileName={fileName}
+        onNewUpload={() => {
+          setResult(null);
+          setFileName("");
+        }}
+      />
     );
   }
 
   return (
-    <PageContent
-      result={result}
-      fileName={fileName}
-      onNewUpload={() => {
-        setResult(null);
-        setFileName("");
-      }}
-    />
+    <main className="wr-shell">
+      <style jsx global>{styles}</style>
+
+      <header className="gos-topbar">
+        <div className="gos-brand">
+          <div className="gos-logo">G</div>
+          <div>
+            <h1>Google OS</h1>
+            <p>Daily Performance OS</p>
+          </div>
+        </div>
+
+        <div className="gos-top-actions">
+          <span className={googleOsModel ? "live" : ""}>
+            {googleOsModel ? "SHEET LIVE" : "SHEET NOT CONNECTED"}
+          </span>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <nav className="gos-home-tabs">
+        {[
+          ["summary", "Summary"],
+          ["campaigns", "Campaigns"],
+          ["ad_groups", "Ad Groups"],
+          ["operator_report", "Operator Report"],
+          ["settings", "Settings"],
+        ].map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            className={googleOsHomeTab === key ? "active" : ""}
+            onClick={() => setGoogleOsHomeTab(key as typeof googleOsHomeTab)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      <section className="gos-data-grid">
+        <div className="gos-data-card">
+          <div className="gos-data-head">
+            <div>
+              <span>Daily Google Ads Data</span>
+              <h2>DoD performance sheet</h2>
+              <p>
+                Connect the team-filled Google Ads sheet. This powers Summary, Campaigns,
+                Ad Groups, bid decisions, and Operator Report.
+              </p>
+            </div>
+            <strong>Required first</strong>
+          </div>
+
+          <div className="gos-sheet-connect">
+            <input
+              value={googleOsSheetUrl}
+              onChange={(event) => setGoogleOsSheetUrl(event.target.value)}
+              placeholder="Paste published Google Sheet CSV URL..."
+            />
+
+            <button
+              type="button"
+              onClick={() => loadGoogleOsSheetUrl()}
+              disabled={googleOsLoading}
+            >
+              {googleOsLoading ? "Loading..." : "Connect / Refresh"}
+            </button>
+          </div>
+
+          <div className="gos-divider">
+            <span>or upload CSV backup</span>
+          </div>
+
+          <label className="gos-big-upload">
+            Upload Daily Google Ads CSV
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={(event) => handleGoogleOsDailyCsvUpload(event.target.files?.[0] || null)}
+            />
+          </label>
+
+          <div className="gos-source-status">
+            {googleOsSourceName ? <small>Loaded: {googleOsSourceName}</small> : null}
+            {googleOsModel ? <small>{googleOsModel.rows.length.toLocaleString("en-IN")} rows loaded</small> : null}
+            {googleOsError ? <small className="error">{googleOsError}</small> : null}
+          </div>
+        </div>
+
+        <div className="gos-data-card">
+          <div className="gos-data-head">
+            <div>
+              <span>Manual Upload</span>
+              <h2>Search term report</h2>
+              <p>
+                Upload only the Google Ads search-term report here. Do not upload DoD campaign data in this box.
+              </p>
+            </div>
+            <strong>Manual</strong>
+          </div>
+
+          <FileUpload
+            onResult={(res, name) => {
+              setResult(res);
+              setFileName(name);
+            }}
+          />
+        </div>
+      </section>
+
+      {googleOsModel ? (
+        <>
+          {googleOsHomeTab === "summary" ? <CommandCenterTab model={googleOsModel} /> : null}
+          {googleOsHomeTab === "campaigns" ? <CampaignsTab model={googleOsModel} /> : null}
+          {googleOsHomeTab === "ad_groups" ? <AdGroupsTab model={googleOsModel} /> : null}
+          {googleOsHomeTab === "operator_report" ? <AiOperatorReportTab model={googleOsModel} /> : null}
+          {googleOsHomeTab === "settings" ? <SettingsTab /> : null}
+        </>
+      ) : (
+        <section className="gos-page">
+          <div className="gos-panel">
+            <div className="gos-panel-head">
+              <div>
+                <span>Start here</span>
+                <h2>Connect the Daily Google Ads DoD sheet first</h2>
+                <p>
+                  After the sheet is connected, Google OS will show Summary, Campaigns,
+                  Ad Groups, and Operator Report. Search terms remain a separate manual upload.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+    </main>
   );
 }
 
