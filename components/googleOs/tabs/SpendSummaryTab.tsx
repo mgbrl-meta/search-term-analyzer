@@ -2,9 +2,11 @@
 
 import { useMemo } from "react";
 import type { GoogleOsModel, GoogleOsRow } from "../../../lib/googleOs/types";
-import { compactInt, compactMoney, money, pct, safeDiv, x } from "../../../lib/googleOs/format";
+import { compactInt, compactMoney, pct, safeDiv, x } from "../../../lib/googleOs/format";
 import { GoogleOsKpi } from "../shared/GoogleOsKpi";
 import { GoogleOsTable } from "../shared/GoogleOsTable";
+import type { GoogleOsDateMode } from "../../../lib/googleOs/dateFilter";
+import { getDateLabel } from "../../../lib/googleOs/dateFilter";
 
 type DailyRow = {
   date: string;
@@ -18,17 +20,33 @@ type DailyRow = {
   cpa: number;
   roas: number;
   avgCpc: number;
+
+  spendChangePct: number;
+  revenueChangePct: number;
+  purchasesChangePct: number;
+  roasChangePct: number;
+  cpaChangePct: number;
+  ctrChangePct: number;
+  cvrChangePct: number;
+  cpcChangePct: number;
 };
+
+function changePct(current: number, previous: number) {
+  if (!previous && !current) return 0;
+  if (!previous && current) return 100;
+  return ((current - previous) / previous) * 100;
+}
 
 function buildDailyRows(rows: GoogleOsRow[]): DailyRow[] {
   const groups = new Map<string, GoogleOsRow[]>();
 
   rows.forEach((row) => {
+    if (!row.date) return;
     if (!groups.has(row.date)) groups.set(row.date, []);
     groups.get(row.date)!.push(row);
   });
 
-  return Array.from(groups.entries())
+  const baseRows = Array.from(groups.entries())
     .map(([date, dayRows]) => {
       const cost = dayRows.reduce((sum, row) => sum + row.cost, 0);
       const revenue = dayRows.reduce((sum, row) => sum + row.conversionValue, 0);
@@ -48,9 +66,40 @@ function buildDailyRows(rows: GoogleOsRow[]): DailyRow[] {
         cpa: safeDiv(cost, purchases),
         roas: safeDiv(revenue, cost),
         avgCpc: safeDiv(cost, clicks),
+
+        spendChangePct: 0,
+        revenueChangePct: 0,
+        purchasesChangePct: 0,
+        roasChangePct: 0,
+        cpaChangePct: 0,
+        ctrChangePct: 0,
+        cvrChangePct: 0,
+        cpcChangePct: 0,
       };
     })
     .sort((a, b) => a.date.localeCompare(b.date));
+
+  return baseRows.map((row, index) => {
+    const previous = baseRows[index - 1];
+
+    if (!previous) return row;
+
+    return {
+      ...row,
+      spendChangePct: changePct(row.cost, previous.cost),
+      revenueChangePct: changePct(row.revenue, previous.revenue),
+      purchasesChangePct: changePct(row.purchases, previous.purchases),
+      roasChangePct: changePct(row.roas, previous.roas),
+      cpaChangePct: changePct(row.cpa, previous.cpa),
+      ctrChangePct: changePct(row.ctr, previous.ctr),
+      cvrChangePct: changePct(row.cvr, previous.cvr),
+      cpcChangePct: changePct(row.avgCpc, previous.avgCpc),
+    };
+  });
+}
+
+function last30DailyRows(rows: DailyRow[]) {
+  return rows.slice(-30);
 }
 
 function dateLabel(date: string) {
@@ -61,6 +110,53 @@ function dateLabel(date: string) {
 
 function maxOf(rows: DailyRow[], key: keyof DailyRow) {
   return Math.max(...rows.map((row) => Number(row[key]) || 0), 1);
+}
+
+function Delta({
+  value,
+  goodWhenPositive = true,
+}: {
+  value: number;
+  goodWhenPositive?: boolean;
+}) {
+  const tone =
+    value === 0
+      ? "neutral"
+      : goodWhenPositive
+        ? value > 0
+          ? "green"
+          : "red"
+        : value > 0
+          ? "red"
+          : "green";
+
+  const sign = value > 0 ? "+" : "";
+
+  return <span className={`gos-metric ${tone}`}>{sign}{value.toFixed(1)}%</span>;
+}
+
+function Metric({
+  value,
+  tone = "neutral",
+}: {
+  value: string;
+  tone?: "green" | "red" | "amber" | "neutral";
+}) {
+  return <span className={`gos-metric ${tone}`}>{value}</span>;
+}
+
+function roasTone(value: number) {
+  if (value >= 3) return "green";
+  if (value < 1) return "red";
+  if (value < 2) return "amber";
+  return "neutral";
+}
+
+function cpaTone(row: Record<string, unknown>) {
+  const roas = Number(row.roas || 0);
+  if (roas >= 3) return "green";
+  if (roas < 1) return "red";
+  return "amber";
 }
 
 function TrendChart({
@@ -84,7 +180,7 @@ function TrendChart({
   rightFormatter: (value: number) => string;
   mode?: "line-line" | "bar-line";
 }) {
-  const chartRows = rows.slice(-45);
+  const chartRows = rows.slice(-30);
   const width = 1000;
   const height = 320;
   const padding = { left: 58, right: 58, top: 34, bottom: 44 };
@@ -118,8 +214,6 @@ function TrendChart({
   const areaPath = `${leftPath} L ${xScale(chartRows.length - 1)} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`;
   const barWidth = Math.max(6, innerW / Math.max(chartRows.length, 1) - 7);
 
-  const yTicks = [0, 0.25, 0.5, 0.75, 1];
-
   return (
     <div className="gos-spend-chart">
       <div className="gos-chart-title-row">
@@ -128,7 +222,7 @@ function TrendChart({
       </div>
 
       <svg viewBox={`0 0 ${width} ${height}`} className="gos-svg-chart gos-responsive-svg" preserveAspectRatio="xMidYMid meet">
-        {yTicks.map((ratio) => {
+        {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
           const leftValue = maxLeft * ratio;
           const rightValue = maxRight * ratio;
           const y = padding.top + innerH - ratio * innerH;
@@ -204,8 +298,28 @@ function TrendChart({
   );
 }
 
-export function SpendSummaryTab({ model }: { model: GoogleOsModel }) {
-  const dailyRows = useMemo(() => buildDailyRows(model.rows), [model.rows]);
+export function SpendSummaryTab({
+  model,
+  rows: inputRows,
+  compareRows = [],
+  dateMode = "last_30",
+  selectedMonth = "",
+  compareMonth = "",
+  customStart = "",
+  customEnd = "",
+}: {
+  model: GoogleOsModel;
+  rows?: GoogleOsRow[];
+  compareRows?: GoogleOsRow[];
+  dateMode?: GoogleOsDateMode;
+  selectedMonth?: string;
+  compareMonth?: string;
+  customStart?: string;
+  customEnd?: string;
+}) {
+  const sourceRows = inputRows || model.rows;
+  const allDailyRows = useMemo(() => buildDailyRows(sourceRows), [sourceRows]);
+  const dailyRows = useMemo(() => last30DailyRows(allDailyRows), [allDailyRows]);
 
   const totals = useMemo(() => {
     const cost = dailyRows.reduce((sum, row) => sum + row.cost, 0);
@@ -235,7 +349,7 @@ export function SpendSummaryTab({ model }: { model: GoogleOsModel }) {
           <span>Spend Summary</span>
           <h1>Daily spend and efficiency trends</h1>
           <p>
-            Visual summary of spend, revenue, CPA, ROAS, clicks, impressions, and purchases from the connected Google Ads dataset.
+            {getDateLabel({ mode: dateMode, selectedMonth, compareMonth, customStart, customEnd })}. Day-wise table below always shows the latest 30 dates from this selected view.
           </p>
         </div>
       </div>
@@ -284,8 +398,10 @@ export function SpendSummaryTab({ model }: { model: GoogleOsModel }) {
         <div className="gos-panel-head">
           <div>
             <span>Daily Table</span>
-            <h2>Day-wise Google Ads performance</h2>
-            <p>Sorted latest first. Use this to check daily movement behind the charts.</p>
+            <h2>Day-wise Google Ads performance — latest 30 days</h2>
+            <p>
+              Most recent date appears first. Green/red values show day-over-day % change versus the previous available date.
+            </p>
           </div>
         </div>
 
@@ -293,16 +409,24 @@ export function SpendSummaryTab({ model }: { model: GoogleOsModel }) {
           rows={dailyRows.slice().reverse() as unknown as Record<string, unknown>[]}
           columns={[
             { key: "date", label: "Date" },
-            { key: "cost", label: "Spend", right: true, render: (row) => compactMoney(row.cost) },
-            { key: "revenue", label: "Revenue", right: true, render: (row) => compactMoney(row.revenue) },
-            { key: "roas", label: "ROAS", right: true, render: (row) => x(row.roas) },
-            { key: "purchases", label: "Purchases", right: true, render: (row) => compactInt(row.purchases) },
-            { key: "cpa", label: "CPA", right: true, render: (row) => compactMoney(row.cpa) },
+            { key: "cost", label: "Spend", right: true, render: (row) => <Metric value={compactMoney(row.cost)} tone="red" /> },
+            { key: "spendChangePct", label: "Spend Δ", right: true, render: (row) => <Delta value={Number(row.spendChangePct || 0)} goodWhenPositive={false} /> },
+            { key: "revenue", label: "Revenue", right: true, render: (row) => <Metric value={compactMoney(row.revenue)} tone="green" /> },
+            { key: "revenueChangePct", label: "Revenue Δ", right: true, render: (row) => <Delta value={Number(row.revenueChangePct || 0)} /> },
+            { key: "roas", label: "ROAS", right: true, render: (row) => <Metric value={x(row.roas)} tone={roasTone(Number(row.roas || 0))} /> },
+            { key: "roasChangePct", label: "ROAS Δ", right: true, render: (row) => <Delta value={Number(row.roasChangePct || 0)} /> },
+            { key: "purchases", label: "Purch.", right: true, render: (row) => compactInt(row.purchases) },
+            { key: "purchasesChangePct", label: "Purch. Δ", right: true, render: (row) => <Delta value={Number(row.purchasesChangePct || 0)} /> },
+            { key: "cpa", label: "CPA", right: true, render: (row) => <Metric value={compactMoney(row.cpa)} tone={cpaTone(row)} /> },
+            { key: "cpaChangePct", label: "CPA Δ", right: true, render: (row) => <Delta value={Number(row.cpaChangePct || 0)} goodWhenPositive={false} /> },
             { key: "impressions", label: "Impr.", right: true, render: (row) => compactInt(row.impressions) },
             { key: "clicks", label: "Clicks", right: true, render: (row) => compactInt(row.clicks) },
             { key: "ctr", label: "CTR", right: true, render: (row) => pct(row.ctr) },
+            { key: "ctrChangePct", label: "CTR Δ", right: true, render: (row) => <Delta value={Number(row.ctrChangePct || 0)} /> },
             { key: "cvr", label: "CVR", right: true, render: (row) => pct(row.cvr) },
-            { key: "avgCpc", label: "Avg CPC", right: true, render: (row) => compactMoney(row.avgCpc) },
+            { key: "cvrChangePct", label: "CVR Δ", right: true, render: (row) => <Delta value={Number(row.cvrChangePct || 0)} /> },
+            { key: "avgCpc", label: "CPC", right: true, render: (row) => compactMoney(row.avgCpc) },
+            { key: "cpcChangePct", label: "CPC Δ", right: true, render: (row) => <Delta value={Number(row.cpcChangePct || 0)} goodWhenPositive={false} /> },
           ]}
           empty="No daily data available."
         />
