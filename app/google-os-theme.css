@@ -4893,3 +4893,74 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+/* =========================================================
+   X-AXIS TIME SERIES CHART FOR ALL CAMPAIGNS
+   ========================================================= */
+
+.gos-dynamic-chart-box.timeseries {
+  padding: 12px !important;
+}
+
+.gos-timeseries-wrap {
+  width: 100% !important;
+  overflow: hidden !important;
+  border: 1px solid var(--gos-border) !important;
+  background: rgba(15, 23, 42, 0.22) !important;
+  border-radius: 13px !important;
+  padding: 8px !important;
+}
+
+.gos-timeseries-svg {
+  display: block !important;
+  width: 100% !important;
+  height: 280px !important;
+}
+
+.gos-timeseries-grid {
+  stroke: rgba(148, 163, 184, 0.16) !important;
+  stroke-width: 1 !important;
+  stroke-dasharray: 4 6 !important;
+}
+
+.gos-timeseries-axis {
+  fill: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+}
+
+.gos-timeseries-axis.x {
+  fill: var(--gos-muted) !important;
+  font-size: 9.5px !important;
+}
+
+.gos-timeseries-area {
+  opacity: 0.12 !important;
+}
+
+.gos-timeseries-line {
+  fill: none !important;
+  stroke-width: 3 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+.gos-timeseries-point circle {
+  stroke: var(--gos-surface) !important;
+  stroke-width: 2 !important;
+  cursor: pointer !important;
+}
+
+.gos-timeseries-point:hover circle {
+  r: 6px !important;
+}
+
+@media(max-width: 760px) {
+  .gos-timeseries-svg {
+    height: 230px !important;
+  }
+
+  .gos-timeseries-axis.x {
+    font-size: 8px !important;
+  }
+}

@@ -349,54 +349,123 @@ function CampaignKpiChart({
   kpi: ChartKpi;
   periodMode: PeriodMode;
 }) {
+  const width = 920;
+  const height = 260;
+  const padLeft = 54;
+  const padRight = 24;
+  const padTop = 24;
+  const padBottom = 46;
+
+  const chartWidth = width - padLeft - padRight;
+  const chartHeight = height - padTop - padBottom;
+
   const maxValue = Math.max(...rows.map((row) => row.value), 1);
+  const minValue = Math.min(...rows.map((row) => row.value), 0);
+  const range = Math.max(maxValue - minValue, 1);
+
+  const points = rows.map((row, index) => {
+    const xPos =
+      rows.length === 1
+        ? padLeft + chartWidth / 2
+        : padLeft + (index / (rows.length - 1)) * chartWidth;
+
+    const yPos = padTop + chartHeight - ((row.value - minValue) / range) * chartHeight;
+
+    return {
+      ...row,
+      x: xPos,
+      y: yPos,
+    };
+  });
+
+  const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const areaPath = points.length
+    ? `M ${points[0].x} ${padTop + chartHeight} L ${points.map((point) => `${point.x} ${point.y}`).join(" L ")} L ${points[points.length - 1].x} ${padTop + chartHeight} Z`
+    : "";
+
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+    const value = minValue + range * (1 - ratio);
+    const y = padTop + chartHeight * ratio;
+    return { value, y };
+  });
+
+  const xTickEvery = rows.length <= 10 ? 1 : Math.ceil(rows.length / 8);
+  const color = SEGMENT_COLORS[segment];
 
   return (
-    <div className="gos-dynamic-chart-box">
+    <div className="gos-dynamic-chart-box timeseries">
       <div className="gos-dynamic-chart-head">
         <div>
           <span>Live Chart</span>
           <strong>{segment} · {CHART_KPIS.find((item) => item.key === kpi)?.label}</strong>
-          <small>{periodMode.charAt(0).toUpperCase() + periodMode.slice(1)} trend</small>
+          <small>{periodMode.charAt(0).toUpperCase() + periodMode.slice(1)} trend · Date on X-axis</small>
         </div>
 
         <div className="gos-dynamic-chart-legend">
-          <i style={{ background: SEGMENT_COLORS[segment] }} />
+          <i style={{ background: color }} />
           <span>{segment}</span>
         </div>
       </div>
 
-      <div className="gos-dynamic-chart">
-        {rows.length ? (
-          rows.map((row) => (
-            <div key={row.period} className="gos-dynamic-chart-row">
-              <span className="gos-dynamic-chart-label">{row.label}</span>
-
-              <div className="gos-dynamic-chart-track">
-                <b
-                  style={{
-                    width: `${Math.max((row.value / maxValue) * 100, row.value > 0 ? 3 : 0)}%`,
-                    background: SEGMENT_COLORS[segment],
-                  }}
-                  title={`${row.label}
-${CHART_KPIS.find((item) => item.key === kpi)?.label}: ${formatChartValue(row.value, kpi)}
-Spend: ${compactMoney(row.spend)}
-Revenue: ${compactMoney(row.revenue)}
-ROAS: ${x(row.roas)}
-CPA: ${compactMoney(row.cpa)}
-Purchases: ${row.purchases.toFixed(0)}
-CTR: ${pct(row.ctr)}
-CVR: ${pct(row.cvr)}`}
+      {rows.length ? (
+        <div className="gos-timeseries-wrap">
+          <svg
+            className="gos-timeseries-svg"
+            viewBox={`0 0 ${width} ${height}`}
+            role="img"
+            aria-label={`${segment} ${kpi} trend`}
+          >
+            {yTicks.map((tick, index) => (
+              <g key={index}>
+                <line
+                  x1={padLeft}
+                  y1={tick.y}
+                  x2={width - padRight}
+                  y2={tick.y}
+                  className="gos-timeseries-grid"
                 />
-              </div>
+                <text x={padLeft - 10} y={tick.y + 4} textAnchor="end" className="gos-timeseries-axis">
+                  {formatChartValue(tick.value, kpi)}
+                </text>
+              </g>
+            ))}
 
-              <strong>{formatChartValue(row.value, kpi)}</strong>
-            </div>
-          ))
-        ) : (
-          <div className="gos-dynamic-chart-empty">No chart data available for this selection.</div>
-        )}
-      </div>
+            {areaPath ? (
+              <path d={areaPath} className="gos-timeseries-area" style={{ fill: color }} />
+            ) : null}
+
+            <polyline points={polyline} className="gos-timeseries-line" style={{ stroke: color }} />
+
+            {points.map((point, index) => (
+              <g key={point.period} className="gos-timeseries-point">
+                <circle cx={point.x} cy={point.y} r="4.5" style={{ fill: color }} />
+                <title>{`${point.label}
+${CHART_KPIS.find((item) => item.key === kpi)?.label}: ${formatChartValue(point.value, kpi)}
+Spend: ${compactMoney(point.spend)}
+Revenue: ${compactMoney(point.revenue)}
+ROAS: ${x(point.roas)}
+CPA: ${compactMoney(point.cpa)}
+Purchases: ${point.purchases.toFixed(0)}
+CTR: ${pct(point.ctr)}
+CVR: ${pct(point.cvr)}`}</title>
+
+                {index % xTickEvery === 0 || index === points.length - 1 ? (
+                  <text
+                    x={point.x}
+                    y={height - 14}
+                    textAnchor="middle"
+                    className="gos-timeseries-axis x"
+                  >
+                    {point.label.replace("Week of ", "")}
+                  </text>
+                ) : null}
+              </g>
+            ))}
+          </svg>
+        </div>
+      ) : (
+        <div className="gos-dynamic-chart-empty">No chart data available for this selection.</div>
+      )}
     </div>
   );
 }
