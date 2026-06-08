@@ -2384,3 +2384,201 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* =========================================================
+   GOOGLE OS MINIMAL GOOGLE THEME
+   Replaces loud gradient with subtle Google Ads-inspired accents
+   ========================================================= */
+
+:root {
+  --google-blue: #4285f4;
+  --google-red: #ea4335;
+  --google-yellow: #fbbc04;
+  --google-green: #34a853;
+
+  --google-accent-soft: rgba(66, 133, 244, 0.14);
+  --google-accent-border: rgba(66, 133, 244, 0.38);
+  --google-accent-shadow: 0 8px 24px rgba(66, 133, 244, 0.14);
+}
+
+/* Remove aggressive gradient from all active buttons */
+.gos-home-tabs button.active,
+.gos-date-buttons button.active,
+.gos-mini-tabs button.active,
+.campaign-type-tabs button.active {
+  position: relative !important;
+  background: var(--gos-surface-3) !important;
+  color: var(--gos-text) !important;
+  border-color: var(--google-accent-border) !important;
+  box-shadow: var(--google-accent-shadow) !important;
+  overflow: hidden !important;
+}
+
+/* Minimal Google color line */
+.gos-home-tabs button.active::before,
+.gos-date-buttons button.active::before,
+.gos-mini-tabs button.active::before,
+.campaign-type-tabs button.active::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 10px !important;
+  right: 10px !important;
+  top: 0 !important;
+  height: 3px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(
+    90deg,
+    var(--google-blue) 0%,
+    var(--google-blue) 28%,
+    var(--google-green) 28%,
+    var(--google-green) 54%,
+    var(--google-yellow) 54%,
+    var(--google-yellow) 76%,
+    var(--google-red) 76%,
+    var(--google-red) 100%
+  ) !important;
+}
+
+/* Normal inactive tabs stay quiet */
+.gos-home-tabs button,
+.gos-date-buttons button,
+.gos-mini-tabs button,
+.campaign-type-tabs button {
+  background: var(--gos-surface-2) !important;
+  color: var(--gos-muted) !important;
+  border: 1px solid var(--gos-border) !important;
+  box-shadow: none !important;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+.gos-home-tabs button:hover,
+.gos-date-buttons button:hover,
+.gos-mini-tabs button:hover,
+.campaign-type-tabs button:hover {
+  background: color-mix(in srgb, var(--gos-surface-3) 78%, var(--google-blue)) !important;
+  border-color: rgba(66, 133, 244, 0.25) !important;
+  color: var(--gos-text) !important;
+}
+
+/* Google OS logo / brand accent more minimal */
+.gos-logo {
+  background: var(--gos-surface-3) !important;
+  border: 1px solid var(--google-accent-border) !important;
+  color: var(--google-blue) !important;
+  box-shadow: none !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.gos-logo::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 5px !important;
+  right: 5px !important;
+  bottom: 4px !important;
+  height: 3px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(
+    90deg,
+    var(--google-blue),
+    var(--google-green),
+    var(--google-yellow),
+    var(--google-red)
+  ) !important;
+}
+
+/* Small Google dots for campaign type tabs */
+.gos-home-tabs button {
+  padding-left: 13px !important;
+}
+
+.gos-home-tabs button.active {
+  padding-top: 8px !important;
+}
+
+/* Google-colored campaign type indicators */
+.campaign-type-icon.search {
+  background: var(--google-blue) !important;
+}
+
+.campaign-type-icon.shopping {
+  background: var(--google-green) !important;
+}
+
+.campaign-type-icon.demand {
+  background: var(--google-yellow) !important;
+}
+
+.campaign-type-icon.video {
+  background: var(--google-red) !important;
+}
+
+/* Metric accents stay clean */
+.gos-metric.green,
+.campaign-accordion-row b.green,
+.campaign-type-summary-strip strong.green {
+  color: var(--google-green) !important;
+}
+
+.gos-metric.red,
+.campaign-accordion-row b.red,
+.campaign-type-summary-strip strong.red {
+  color: var(--google-red) !important;
+}
+
+.gos-metric.amber,
+.campaign-accordion-row b.amber,
+.campaign-type-summary-strip strong.amber {
+  color: var(--google-yellow) !important;
+}
+
+/* Primary blue actions become Google-blue but not gradient */
+.gos-source-actions button,
+.gos-upload-btn {
+  background: var(--google-blue) !important;
+  border-color: var(--google-blue) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 20px rgba(66, 133, 244, 0.16) !important;
+}
+
+.gos-source-actions button:hover,
+.gos-upload-btn:hover {
+  background: #3367d6 !important;
+  border-color: #3367d6 !important;
+}
+
+/* Tables: subtle Google accent on sticky header */
+.gos-table th {
+  border-bottom: 1px solid rgba(66, 133, 244, 0.22) !important;
+}
+
+/* Panel focus accent, very subtle */
+.gos-panel:hover {
+  border-color: rgba(66, 133, 244, 0.16) !important;
+}
+
+/* Remove any previous full-gradient active backgrounds if duplicated later */
+.gos-home-tabs button.active,
+.gos-date-buttons button.active,
+.gos-mini-tabs button.active,
+.campaign-type-tabs button.active {
+  background-image: none !important;
+}
+
+/* But keep only the tiny color rail */
+.gos-home-tabs button.active::before,
+.gos-date-buttons button.active::before,
+.gos-mini-tabs button.active::before,
+.campaign-type-tabs button.active::before {
+  background-image: linear-gradient(
+    90deg,
+    #4285f4 0%,
+    #4285f4 28%,
+    #34a853 28%,
+    #34a853 54%,
+    #fbbc04 54%,
+    #fbbc04 76%,
+    #ea4335 76%,
+    #ea4335 100%
+  ) !important;
+}
