@@ -720,6 +720,7 @@ export function SearchTermWasterTab({ model }: { model: GoogleOsModel }) {
             <SearchTermHeadDropdown
               key={head.key}
               head={head}
+              totalSpend={summary.totalSpend}
               isOpen={Boolean(openHeads[head.key])}
               onToggle={() => setOpenHeads((current) => ({ ...current, [head.key]: !current[head.key] }))}
             />
