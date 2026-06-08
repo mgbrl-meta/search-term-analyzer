@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { buildGoogleOsModel } from "@/lib/googleOs/normalize";
 import type { GoogleOsModel } from "@/lib/googleOs/types";
+import { formatGoogleOsDateLabel } from "@/lib/googleOs/dateFilter";
 
 import { SpendSummaryTab } from "@/components/googleOs/tabs/SpendSummaryTab";
 import { CampaignsTab } from "@/components/googleOs/tabs/CampaignsTab";
@@ -184,6 +185,16 @@ export function GoogleOsApp() {
     return TABS.find((tab) => tab.key === activeTab)?.label || "Google OS";
   }, [activeTab]);
 
+  const latestDateLabel = useMemo(() => {
+    if (!model?.rows?.length) return "No date";
+
+    const latestDate = Array.from(
+      new Set(model.rows.map((row) => row.date).filter(Boolean))
+    ).sort().at(-1);
+
+    return latestDate ? formatGoogleOsDateLabel(latestDate) : "No date";
+  }, [model]);
+
   return (
     <main className="google-os-shell">
       <header className="gos-topbar">
@@ -195,14 +206,23 @@ export function GoogleOsApp() {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="gos-header-source-pill"
-          onClick={() => setSourceOpen((value) => !value)}
-        >
-          <span>{model ? "Sheet Live" : "Connect Data"}</span>
-          <b>{sourceLabel}</b>
-        </button>
+        <div className="gos-header-pills">
+          {model ? (
+            <div className="gos-header-date-pill">
+              <span>Latest Date</span>
+              <b>{latestDateLabel}</b>
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            className="gos-header-source-pill"
+            onClick={() => setSourceOpen((value) => !value)}
+          >
+            <span>{model ? "Sheet Live" : "Connect Data"}</span>
+            <b>{sourceLabel}</b>
+          </button>
+        </div>
       </header>
 
       <nav className="gos-home-tabs">
