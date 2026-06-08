@@ -18,7 +18,6 @@ type GoogleOsTab =
   | "shopping"
   | "demand_gen"
   | "video"
-  | "search_term_waster"
   | "monthly_summary"
   | "operator_report"
   | "settings";
