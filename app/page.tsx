@@ -5,6 +5,7 @@ import { CampaignsTab } from "@/components/googleOs/tabs/CampaignsTab";
 import { AdGroupsTab } from "@/components/googleOs/tabs/AdGroupsTab";
 import { AiOperatorReportTab } from "@/components/googleOs/tabs/AiOperatorReportTab";
 import { SettingsTab } from "@/components/googleOs/tabs/SettingsTab";
+import { CompactSearchTermUpload } from "@/components/googleOs/shared/CompactSearchTermUpload";
 import { parseCsv } from "@/lib/googleOs/csv";
 import { buildGoogleOsModel } from "@/lib/googleOs/normalize";
 import type { GoogleOsModel } from "@/lib/googleOs/types";
@@ -3104,7 +3105,7 @@ export default function Page() {
   const [googleOsError, setGoogleOsError] = useState("");
   const [googleOsLoading, setGoogleOsLoading] = useState(false);
   const [googleOsHomeTab, setGoogleOsHomeTab] = useState<
-    "summary" | "campaigns" | "ad_groups" | "operator_report" | "settings"
+    "summary" | "campaigns" | "ad_groups" | "search_terms" | "operator_report" | "settings"
   >("summary");
 
   async function loadGoogleOsCsvText(csvText: string, sourceName: string) {
@@ -3145,8 +3146,8 @@ export default function Page() {
       await loadGoogleOsCsvText(csvText, "Connected Google Sheet");
       localStorage.setItem("google_os_sheet_csv_url", url);
     } catch (error) {
-      setGoogleOsModel(null);
       setGoogleOsError(error instanceof Error ? error.message : "Could not load Google Sheet CSV.");
+      if (!googleOsModel) setGoogleOsModel(null);
     } finally {
       setGoogleOsLoading(false);
     }
@@ -3193,8 +3194,17 @@ export default function Page() {
     );
   }
 
+  const tabs = [
+    ["summary", "Summary"],
+    ["campaigns", "Campaigns"],
+    ["ad_groups", "Ad Groups"],
+    ["search_terms", "Search Terms"],
+    ["operator_report", "Operator Report"],
+    ["settings", "Settings"],
+  ] as const;
+
   return (
-    <main className="wr-shell">
+    <main className="wr-shell google-os-shell">
       <style jsx global>{styles}</style>
 
       <header className="gos-topbar">
@@ -3215,96 +3225,76 @@ export default function Page() {
       </header>
 
       <nav className="gos-home-tabs">
-        {[
-          ["summary", "Summary"],
-          ["campaigns", "Campaigns"],
-          ["ad_groups", "Ad Groups"],
-          ["operator_report", "Operator Report"],
-          ["settings", "Settings"],
-        ].map(([key, label]) => (
+        {tabs.map(([key, label]) => (
           <button
             key={key}
             type="button"
             className={googleOsHomeTab === key ? "active" : ""}
-            onClick={() => setGoogleOsHomeTab(key as typeof googleOsHomeTab)}
+            onClick={() => setGoogleOsHomeTab(key)}
           >
             {label}
           </button>
         ))}
       </nav>
 
-      <section className="gos-data-grid">
-        <div className="gos-data-card">
-          <div className="gos-data-head">
-            <div>
-              <span>Daily Google Ads Data</span>
-              <h2>DoD performance sheet</h2>
-              <p>
-                Connect the team-filled Google Ads sheet. This powers Summary, Campaigns,
-                Ad Groups, bid decisions, and Operator Report.
-              </p>
-            </div>
-            <strong>Required first</strong>
-          </div>
+      <section className={googleOsModel ? "gos-source-strip compact" : "gos-source-strip"}>
+        <div className="gos-source-main">
+          <span>Daily Google Ads Data</span>
+          <strong>
+            {googleOsModel
+              ? `${googleOsModel.rows.length.toLocaleString("en-IN")} rows loaded`
+              : "Connect Google Ads DoD data"}
+          </strong>
+          <small>
+            {googleOsSourceName || "Use published Google Sheet CSV URL or upload CSV backup."}
+          </small>
+        </div>
 
-          <div className="gos-sheet-connect">
-            <input
-              value={googleOsSheetUrl}
-              onChange={(event) => setGoogleOsSheetUrl(event.target.value)}
-              placeholder="Paste published Google Sheet CSV URL..."
-            />
+        <div className="gos-source-actions">
+          <input
+            value={googleOsSheetUrl}
+            onChange={(event) => {
+              setGoogleOsSheetUrl(event.target.value);
+              if (googleOsError) setGoogleOsError("");
+            }}
+            placeholder="Published Google Sheet CSV URL..."
+          />
 
-            <button
-              type="button"
-              onClick={() => loadGoogleOsSheetUrl()}
-              disabled={googleOsLoading}
-            >
-              {googleOsLoading ? "Loading..." : "Connect / Refresh"}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => loadGoogleOsSheetUrl()}
+            disabled={googleOsLoading}
+          >
+            {googleOsLoading ? "Loading..." : "Connect / Refresh"}
+          </button>
 
-          <div className="gos-divider">
-            <span>or upload CSV backup</span>
-          </div>
-
-          <label className="gos-big-upload">
-            Upload Daily Google Ads CSV
+          <label>
+            Replace CSV
             <input
               type="file"
               accept=".csv,text/csv"
               onChange={(event) => handleGoogleOsDailyCsvUpload(event.target.files?.[0] || null)}
             />
           </label>
-
-          <div className="gos-source-status">
-            {googleOsSourceName ? <small>Loaded: {googleOsSourceName}</small> : null}
-            {googleOsModel ? <small>{googleOsModel.rows.length.toLocaleString("en-IN")} rows loaded</small> : null}
-            {googleOsError ? <small className="error">{googleOsError}</small> : null}
-          </div>
         </div>
 
-        <div className="gos-data-card">
-          <div className="gos-data-head">
-            <div>
-              <span>Manual Upload</span>
-              <h2>Search term report</h2>
-              <p>
-                Upload only the Google Ads search-term report here. Do not upload DoD campaign data in this box.
-              </p>
-            </div>
-            <strong>Manual</strong>
-          </div>
-
-          <FileUpload
-            onResult={(res, name) => {
-              setResult(res);
-              setFileName(name);
-            }}
-          />
-        </div>
+        {googleOsError && !googleOsModel ? (
+          <div className="gos-source-error">{googleOsError}</div>
+        ) : null}
       </section>
 
-      {googleOsModel ? (
+      {googleOsHomeTab === "search_terms" ? (
+        <section className="gos-page">
+          <div className="gos-panel">
+            <CompactSearchTermUpload
+              onResult={(res, name) => {
+                setResult(res);
+                setFileName(name);
+              }}
+            />
+          </div>
+        </section>
+      ) : googleOsModel ? (
         <>
           {googleOsHomeTab === "summary" ? <CommandCenterTab model={googleOsModel} /> : null}
           {googleOsHomeTab === "campaigns" ? <CampaignsTab model={googleOsModel} /> : null}
@@ -3318,10 +3308,10 @@ export default function Page() {
             <div className="gos-panel-head">
               <div>
                 <span>Start here</span>
-                <h2>Connect the Daily Google Ads DoD sheet first</h2>
+                <h2>Connect Daily Google Ads DoD data</h2>
                 <p>
-                  After the sheet is connected, Google OS will show Summary, Campaigns,
-                  Ad Groups, and Operator Report. Search terms remain a separate manual upload.
+                  Once connected, Google OS will show Summary, Campaigns, Ad Groups,
+                  and Operator Report immediately. Search terms remain manual in the Search Terms tab.
                 </p>
               </div>
             </div>
