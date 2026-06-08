@@ -4964,3 +4964,183 @@ body {
     font-size: 8px !important;
   }
 }
+
+/* =========================================================
+   BRAND VS NON BRAND SUMMARY TABLE
+   ========================================================= */
+
+.gos-brand-summary-table {
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  background: var(--gos-surface-2) !important;
+}
+
+.gos-brand-summary-title {
+  padding: 11px 12px !important;
+  border-bottom: 1px solid var(--gos-border) !important;
+  display: grid !important;
+  gap: 3px !important;
+}
+
+.gos-brand-summary-title span {
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+.gos-brand-summary-title strong {
+  color: var(--gos-text) !important;
+  font-size: 14px !important;
+}
+
+.gos-brand-summary-title small {
+  color: var(--gos-muted) !important;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+}
+
+.gos-brand-table-header,
+.gos-brand-parent-row,
+.gos-brand-child-row {
+  display: grid !important;
+  grid-template-columns:
+    minmax(260px, 2fr)
+    minmax(78px, 0.55fr)
+    minmax(92px, 0.7fr)
+    minmax(138px, 0.9fr)
+    minmax(100px, 0.75fr)
+    minmax(70px, 0.55fr)
+    minmax(70px, 0.55fr)
+    minmax(78px, 0.6fr)
+    minmax(70px, 0.55fr)
+    minmax(70px, 0.55fr);
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.gos-brand-table-header {
+  padding: 9px 11px !important;
+  background: rgba(66, 133, 244, 0.07) !important;
+  border-bottom: 1px solid rgba(66, 133, 244, 0.22) !important;
+}
+
+.gos-brand-table-header span {
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  text-align: right !important;
+}
+
+.gos-brand-table-header .brand-col-main {
+  text-align: left !important;
+}
+
+.gos-brand-parent-row {
+  width: 100% !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--gos-border) !important;
+  background: transparent !important;
+  padding: 10px 11px !important;
+  cursor: pointer !important;
+  text-align: right !important;
+}
+
+.gos-brand-parent-row:hover {
+  background: rgba(66, 133, 244, 0.045) !important;
+}
+
+.gos-brand-parent-row span,
+.gos-brand-child-row span {
+  color: var(--gos-muted) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-align: right !important;
+}
+
+.gos-brand-parent-row .red,
+.gos-brand-child-row .red {
+  color: var(--gos-red) !important;
+  font-weight: 900 !important;
+}
+
+.gos-brand-parent-row .green,
+.gos-brand-child-row .green {
+  color: var(--gos-green) !important;
+  font-weight: 900 !important;
+}
+
+.gos-brand-parent-row .amber,
+.gos-brand-child-row .amber {
+  color: var(--gos-amber) !important;
+  font-weight: 900 !important;
+}
+
+.brand-parent-name,
+.brand-child-name {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  text-align: left !important;
+}
+
+.brand-parent-name b {
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 6px !important;
+  background: rgba(66, 133, 244, 0.14) !important;
+  color: var(--google-blue, #4285f4) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+
+.brand-parent-name strong {
+  color: var(--gos-text) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+.gos-brand-child-table {
+  background: rgba(15, 23, 42, 0.24) !important;
+}
+
+.gos-brand-child-row {
+  padding: 9px 11px !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16) !important;
+}
+
+.brand-child-name {
+  padding-left: 28px !important;
+}
+
+.brand-child-name i {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 999px !important;
+  display: inline-block !important;
+}
+
+.brand-child-name strong {
+  color: var(--gos-text) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+@media(max-width: 1300px) {
+  .gos-brand-summary-table {
+    overflow-x: auto !important;
+  }
+
+  .gos-brand-table-header,
+  .gos-brand-parent-row,
+  .gos-brand-child-row {
+    min-width: 1180px !important;
+  }
+}

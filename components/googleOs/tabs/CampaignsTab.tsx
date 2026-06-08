@@ -471,6 +471,59 @@ CVR: ${pct(point.cvr)}`}</title>
 }
 
 
+
+type BrandGroup = "Brand" | "Non Brand";
+
+type BrandSummaryRow = {
+  group: BrandGroup;
+  rows: SegmentRow[];
+  campaigns: number;
+  spend: number;
+  revenue: number;
+  purchases: number;
+  roas: number;
+  cpa: number;
+  ctr: number;
+  cvr: number;
+  share: number;
+};
+
+function buildBrandSummaryRows(segmentRows: SegmentRow[]) {
+  const totalSpend = segmentRows.reduce((sum, row) => sum + row.spend, 0);
+
+  const groups: { group: BrandGroup; segments: Segment[] }[] = [
+    { group: "Brand", segments: ["Search Brand", "Shopping Brand"] },
+    { group: "Non Brand", segments: ["Search Non Brand", "Shopping Non Brand"] },
+  ];
+
+  return groups
+    .map(({ group, segments }) => {
+      const rows = segmentRows.filter((row) => segments.includes(row.segment));
+      const spend = rows.reduce((sum, row) => sum + row.spend, 0);
+      const revenue = rows.reduce((sum, row) => sum + row.revenue, 0);
+      const purchases = rows.reduce((sum, row) => sum + row.purchases, 0);
+
+      const weightedCtrNumerator = rows.reduce((sum, row) => sum + row.ctr * row.spend, 0);
+      const weightedCvrNumerator = rows.reduce((sum, row) => sum + row.cvr * row.spend, 0);
+
+      return {
+        group,
+        rows,
+        campaigns: rows.reduce((sum, row) => sum + row.campaigns, 0),
+        spend,
+        revenue,
+        purchases,
+        roas: safeDiv(revenue, spend),
+        cpa: safeDiv(spend, purchases),
+        ctr: safeDiv(weightedCtrNumerator, spend),
+        cvr: safeDiv(weightedCvrNumerator, spend),
+        share: safeDiv(spend, totalSpend),
+      };
+    })
+    .filter((row) => row.spend > 0 || row.campaigns > 0);
+}
+
+
 export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   const [periodMode, setPeriodMode] = useState<PeriodMode>("daily");
   const [chartSegment, setChartSegment] = useState<Segment>("Search Brand");
@@ -479,6 +532,11 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   const periods = useMemo(() => getAvailablePeriods(model.rows, periodMode), [model.rows, periodMode]);
   const latestPeriod = periods[periods.length - 1] || "";
   const [selectedPeriod, setSelectedPeriod] = useState("");
+  const [openBrandGroups, setOpenBrandGroups] = useState<Record<string, boolean>>({
+    Brand: true,
+    "Non Brand": true,
+  });
+
   const [openSegments, setOpenSegments] = useState<Record<string, boolean>>({
     "Search Brand": true,
     "Search Non Brand": true,
@@ -493,6 +551,7 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   }, [model.rows, periodMode, activePeriod]);
 
   const segmentRows = useMemo(() => buildSegmentRows(periodRows), [periodRows]);
+  const brandSummaryRows = useMemo(() => buildBrandSummaryRows(segmentRows), [segmentRows]);
 
   const availableChartSegments = useMemo(() => {
     return segmentRows.map((row) => row.segment);
@@ -507,6 +566,13 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   }, [model.rows, chartPeriodMode, activeChartSegment, chartKpi]);
 
   const totals = useMemo(() => aggregate(periodRows), [periodRows]);
+
+  function toggleBrandGroup(group: BrandGroup) {
+    setOpenBrandGroups((current) => ({
+      ...current,
+      [group]: !current[group],
+    }));
+  }
 
   function toggleSegment(segment: Segment) {
     setOpenSegments((current) => ({
@@ -670,6 +736,80 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
             kpi={chartKpi}
             periodMode={chartPeriodMode}
           />
+        </div>
+
+
+        <div className="gos-brand-summary-table">
+          <div className="gos-brand-summary-title">
+            <span>Brand vs Non Brand</span>
+            <strong>Spend split summary</strong>
+            <small>Click Brand or Non Brand to view Search and Shopping split under it.</small>
+          </div>
+
+          <div className="gos-brand-table-header">
+            <span className="brand-col-main">Group</span>
+            <span>Campaigns</span>
+            <span>Spend</span>
+            <span>% Share of Total Spend</span>
+            <span>Revenue</span>
+            <span>ROAS</span>
+            <span>Purch.</span>
+            <span>CPA</span>
+            <span>CTR</span>
+            <span>CVR</span>
+          </div>
+
+          {brandSummaryRows.map((groupRow) => {
+            const isOpen = Boolean(openBrandGroups[groupRow.group]);
+
+            return (
+              <div key={groupRow.group} className="gos-brand-group">
+                <button
+                  type="button"
+                  className="gos-brand-parent-row"
+                  onClick={() => toggleBrandGroup(groupRow.group)}
+                >
+                  <span className="brand-col-main brand-parent-name">
+                    <b>{isOpen ? "−" : "+"}</b>
+                    <strong>{groupRow.group}</strong>
+                  </span>
+
+                  <span>{groupRow.campaigns}</span>
+                  <span className="red">{compactMoney(groupRow.spend)}</span>
+                  <span>{pct(groupRow.share)}</span>
+                  <span className="green">{compactMoney(groupRow.revenue)}</span>
+                  <span className={roasClass(groupRow.roas)}>{x(groupRow.roas)}</span>
+                  <span>{groupRow.purchases.toFixed(0)}</span>
+                  <span>{compactMoney(groupRow.cpa)}</span>
+                  <span>{pct(groupRow.ctr)}</span>
+                  <span>{pct(groupRow.cvr)}</span>
+                </button>
+
+                {isOpen ? (
+                  <div className="gos-brand-child-table">
+                    {groupRow.rows.map((segmentRow) => (
+                      <div key={segmentRow.segment} className="gos-brand-child-row">
+                        <span className="brand-col-main brand-child-name">
+                          <i style={{ background: SEGMENT_COLORS[segmentRow.segment] }} />
+                          <strong>{segmentRow.segment}</strong>
+                        </span>
+
+                        <span>{segmentRow.campaigns}</span>
+                        <span className="red">{compactMoney(segmentRow.spend)}</span>
+                        <span>{pct(segmentRow.share)}</span>
+                        <span className="green">{compactMoney(segmentRow.revenue)}</span>
+                        <span className={roasClass(segmentRow.roas)}>{x(segmentRow.roas)}</span>
+                        <span>{segmentRow.purchases.toFixed(0)}</span>
+                        <span>{compactMoney(segmentRow.cpa)}</span>
+                        <span>{pct(segmentRow.ctr)}</span>
+                        <span>{pct(segmentRow.cvr)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
 
         <div className="gos-campaign-type-table">
