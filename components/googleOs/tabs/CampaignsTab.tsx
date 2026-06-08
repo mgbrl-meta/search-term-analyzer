@@ -3,24 +3,11 @@
 import { useMemo, useState } from "react";
 import type { GoogleOsModel, GoogleOsRow, GoogleOsStatus } from "../../../lib/googleOs/types";
 import { compactMoney, pct, safeDiv, x } from "../../../lib/googleOs/format";
-import { GoogleOsTable } from "../shared/GoogleOsTable";
 import { formatGoogleOsDateLabel, formatGoogleOsMonthLabel } from "../../../lib/googleOs/dateFilter";
 
 type PeriodMode = "daily" | "weekly" | "monthly" | "quarterly";
 
 type Segment =
-  | "All"
-  | "Search All"
-  | "Search Brand"
-  | "Search Non Brand"
-  | "Shopping All"
-  | "Shopping Brand"
-  | "Shopping Non Brand"
-  | "Demand Gen"
-  | "Video"
-  | "Other";
-
-type CoreSegment =
   | "Search Brand"
   | "Search Non Brand"
   | "Shopping Brand"
@@ -30,7 +17,7 @@ type CoreSegment =
   | "Other";
 
 type SegmentRow = {
-  segment: CoreSegment;
+  segment: Segment;
   campaigns: number;
   spend: number;
   revenue: number;
@@ -45,7 +32,7 @@ type SegmentRow = {
 type CampaignRow = {
   key: string;
   campaign: string;
-  segment: CoreSegment;
+  segment: Segment;
   statusText: string;
   spend: number;
   revenue: number;
@@ -54,13 +41,12 @@ type CampaignRow = {
   cpa: number;
   ctr: number;
   cvr: number;
-  avgCpc: number;
   share: number;
   decision: GoogleOsStatus;
   action: string;
 };
 
-const CORE_SEGMENTS: CoreSegment[] = [
+const SEGMENTS: Segment[] = [
   "Search Brand",
   "Search Non Brand",
   "Shopping Brand",
@@ -70,25 +56,9 @@ const CORE_SEGMENTS: CoreSegment[] = [
   "Other",
 ];
 
-const FILTER_SEGMENTS: Segment[] = [
-  "All",
-  "Search All",
-  "Search Brand",
-  "Search Non Brand",
-  "Shopping All",
-  "Shopping Brand",
-  "Shopping Non Brand",
-  "Demand Gen",
-  "Video",
-  "Other",
-];
-
-const SEGMENT_COLORS: Record<Segment | CoreSegment, string> = {
-  All: "#94A3B8",
-  "Search All": "#4285F4",
+const SEGMENT_COLORS: Record<Segment, string> = {
   "Search Brand": "#4285F4",
   "Search Non Brand": "#7BAAF7",
-  "Shopping All": "#34A853",
   "Shopping Brand": "#34A853",
   "Shopping Non Brand": "#81C995",
   "Demand Gen": "#FBBC04",
@@ -119,7 +89,7 @@ function getBaseType(row: GoogleOsRow) {
   return "Other";
 }
 
-function getCoreSegment(row: GoogleOsRow): CoreSegment {
+function getSegment(row: GoogleOsRow): Segment {
   const type = getBaseType(row);
 
   if (type === "Search") {
@@ -134,16 +104,6 @@ function getCoreSegment(row: GoogleOsRow): CoreSegment {
   if (type === "Video") return "Video";
 
   return "Other";
-}
-
-function segmentMatches(row: GoogleOsRow, segment: Segment) {
-  const core = getCoreSegment(row);
-
-  if (segment === "All") return true;
-  if (segment === "Search All") return core === "Search Brand" || core === "Search Non Brand";
-  if (segment === "Shopping All") return core === "Shopping Brand" || core === "Shopping Non Brand";
-
-  return core === segment;
 }
 
 function startOfWeek(date: Date) {
@@ -204,7 +164,6 @@ function aggregate(rows: GoogleOsRow[]) {
     cpa: safeDiv(spend, purchases),
     ctr: safeDiv(clicks, impressions),
     cvr: safeDiv(purchases, clicks),
-    avgCpc: safeDiv(spend, clicks),
   };
 }
 
@@ -231,8 +190,8 @@ function decide(row: { spend: number; purchases: number; roas: number }): Pick<C
 function buildSegmentRows(rows: GoogleOsRow[]) {
   const totalSpend = rows.reduce((sum, row) => sum + row.cost, 0);
 
-  return CORE_SEGMENTS.map((segment) => {
-    const segmentRows = rows.filter((row) => getCoreSegment(row) === segment);
+  return SEGMENTS.map((segment) => {
+    const segmentRows = rows.filter((row) => getSegment(row) === segment);
     const a = aggregate(segmentRows);
     const campaigns = new Set(segmentRows.map((row) => row.campaignId || row.campaign).filter(Boolean)).size;
 
@@ -251,9 +210,9 @@ function buildSegmentRows(rows: GoogleOsRow[]) {
   }).filter((row) => row.spend > 0 || row.campaigns > 0);
 }
 
-function buildCampaignRows(rows: GoogleOsRow[], selectedSegment: Segment) {
-  const filteredRows = rows.filter((row) => segmentMatches(row, selectedSegment));
-  const totalSpend = filteredRows.reduce((sum, row) => sum + row.cost, 0);
+function buildCampaignRows(rows: GoogleOsRow[], segment: Segment) {
+  const filteredRows = rows.filter((row) => getSegment(row) === segment);
+  const totalSegmentSpend = filteredRows.reduce((sum, row) => sum + row.cost, 0);
   const groups = new Map<string, GoogleOsRow[]>();
 
   filteredRows.forEach((row) => {
@@ -268,10 +227,11 @@ function buildCampaignRows(rows: GoogleOsRow[], selectedSegment: Segment) {
     .map(([key, groupRows]) => {
       const first = groupRows[0];
       const a = aggregate(groupRows);
+
       const base = {
         key,
         campaign: first.campaign,
-        segment: getCoreSegment(first),
+        segment,
         statusText: first.campaignStatus || "-",
         spend: a.spend,
         revenue: a.revenue,
@@ -280,8 +240,7 @@ function buildCampaignRows(rows: GoogleOsRow[], selectedSegment: Segment) {
         cpa: a.cpa,
         ctr: a.ctr,
         cvr: a.cvr,
-        avgCpc: a.avgCpc,
-        share: safeDiv(a.spend, totalSpend),
+        share: safeDiv(a.spend, totalSegmentSpend),
       };
 
       return {
@@ -292,88 +251,25 @@ function buildCampaignRows(rows: GoogleOsRow[], selectedSegment: Segment) {
     .sort((a, b) => b.spend - a.spend);
 }
 
-function Metric({
-  value,
-  tone = "neutral",
-}: {
-  value: string;
-  tone?: "green" | "red" | "amber" | "neutral";
-}) {
-  return <span className={`gos-metric ${tone}`}>{value}</span>;
-}
-
-function roasTone(value: number) {
+function roasClass(value: number) {
   if (value >= 3) return "green";
   if (value < 1) return "red";
   if (value < 2) return "amber";
-  return "neutral";
+  return "";
 }
 
-function statusTone(value: unknown) {
+function decisionClass(value: unknown) {
   const s = String(value || "");
 
   if (s === "SCALE" || s === "KEEP") return "green";
   if (s === "PAUSE" || s === "REDUCE") return "red";
   if (s === "WATCH") return "amber";
 
-  return "neutral";
+  return "";
 }
 
-function SegmentDot({ segment }: { segment: Segment | CoreSegment }) {
-  return <i className="all-campaign-type-dot" style={{ background: SEGMENT_COLORS[segment] }} />;
-}
-
-function SegmentVisual({ rows }: { rows: SegmentRow[] }) {
-  const maxSpend = Math.max(...rows.map((row) => row.spend), 1);
-  const maxRevenue = Math.max(...rows.map((row) => row.revenue), 1);
-
-  return (
-    <div className="all-campaign-unified-visual">
-      {rows.map((row) => (
-        <div key={row.segment} className="all-campaign-unified-row">
-          <div className="all-campaign-segment-name">
-            <SegmentDot segment={row.segment} />
-            <strong>{row.segment}</strong>
-            <small>{row.campaigns} campaigns</small>
-          </div>
-
-          <div className="all-campaign-bars">
-            <div>
-              <span>Spend</span>
-              <div className="all-campaign-bar-track">
-                <b
-                  style={{
-                    width: `${Math.max((row.spend / maxSpend) * 100, row.spend > 0 ? 3 : 0)}%`,
-                    background: SEGMENT_COLORS[row.segment],
-                  }}
-                />
-              </div>
-              <em>{compactMoney(row.spend)} · {pct(row.share)}</em>
-            </div>
-
-            <div>
-              <span>Revenue</span>
-              <div className="all-campaign-bar-track muted">
-                <b
-                  style={{
-                    width: `${Math.max((row.revenue / maxRevenue) * 100, row.revenue > 0 ? 3 : 0)}%`,
-                    background: SEGMENT_COLORS[row.segment],
-                  }}
-                />
-              </div>
-              <em>{compactMoney(row.revenue)}</em>
-            </div>
-          </div>
-
-          <div className="all-campaign-mini-kpis">
-            <strong className={roasTone(row.roas)}>ROAS {x(row.roas)}</strong>
-            <strong>CPA {compactMoney(row.cpa)}</strong>
-            <strong>{row.purchases.toFixed(0)} Purch.</strong>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+function SegmentDot({ segment }: { segment: Segment }) {
+  return <i className="gos-segment-dot" style={{ background: SEGMENT_COLORS[segment] }} />;
 }
 
 export function CampaignsTab({ model }: { model: GoogleOsModel }) {
@@ -381,7 +277,12 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   const periods = useMemo(() => getAvailablePeriods(model.rows, periodMode), [model.rows, periodMode]);
   const latestPeriod = periods[periods.length - 1] || "";
   const [selectedPeriod, setSelectedPeriod] = useState("");
-  const [selectedSegment, setSelectedSegment] = useState<Segment>("All");
+  const [openSegments, setOpenSegments] = useState<Record<string, boolean>>({
+    "Search Brand": true,
+    "Search Non Brand": true,
+    "Shopping Brand": true,
+    "Shopping Non Brand": true,
+  });
 
   const activePeriod = selectedPeriod && periods.includes(selectedPeriod) ? selectedPeriod : latestPeriod;
 
@@ -390,55 +291,30 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   }, [model.rows, periodMode, activePeriod]);
 
   const segmentRows = useMemo(() => buildSegmentRows(periodRows), [periodRows]);
-  const campaignRows = useMemo(() => buildCampaignRows(periodRows, selectedSegment), [periodRows, selectedSegment]);
 
-  const availableFilterSegments = useMemo(() => {
-    const hasSearch = segmentRows.some((row) => row.segment === "Search Brand" || row.segment === "Search Non Brand");
-    const hasShopping = segmentRows.some((row) => row.segment === "Shopping Brand" || row.segment === "Shopping Non Brand");
+  const totals = useMemo(() => aggregate(periodRows), [periodRows]);
 
-    return FILTER_SEGMENTS.filter((segment) => {
-      if (segment === "All") return true;
-      if (segment === "Search All") return hasSearch;
-      if (segment === "Shopping All") return hasShopping;
-
-      return segmentRows.some((row) => row.segment === segment);
-    });
-  }, [segmentRows]);
-
-  const selectedSummary = useMemo(() => {
-    const selectedRows = periodRows.filter((row) => segmentMatches(row, selectedSegment));
-    const a = aggregate(selectedRows);
-    const campaigns = new Set(selectedRows.map((row) => row.campaignId || row.campaign).filter(Boolean)).size;
-    const totalSpend = periodRows.reduce((sum, row) => sum + row.cost, 0);
-
-    return {
-      segment: selectedSegment,
-      campaigns,
-      spend: a.spend,
-      revenue: a.revenue,
-      purchases: a.purchases,
-      roas: a.roas,
-      cpa: a.cpa,
-      ctr: a.ctr,
-      cvr: a.cvr,
-      share: safeDiv(a.spend, totalSpend),
-    };
-  }, [periodRows, selectedSegment]);
+  function toggleSegment(segment: Segment) {
+    setOpenSegments((current) => ({
+      ...current,
+      [segment]: !current[segment],
+    }));
+  }
 
   return (
     <section className="gos-page all-campaigns-summary-page">
-      <div className="gos-panel all-campaigns-unified-panel">
-        <div className="all-campaigns-top">
+      <div className="gos-panel gos-campaign-accordion-panel">
+        <div className="gos-campaign-accordion-head">
           <div>
             <span>All Campaigns</span>
-            <h2>Campaign segment spend, share and efficiency</h2>
+            <h2>Campaign type spend and campaign breakdown</h2>
             <p>
-              Showing {getPeriodLabel(activePeriod, periodMode)}. Search and Shopping are split into Brand and Non Brand.
+              Showing {getPeriodLabel(activePeriod, periodMode)}. Click any campaign type row to view campaigns below it.
             </p>
           </div>
 
-          <div className="all-campaign-date-filter">
-            <div className="all-campaign-filter-sidebar">
+          <div className="gos-campaign-period-filter">
+            <div className="gos-campaign-period-buttons">
               <button
                 type="button"
                 className={periodMode === "daily" ? "active" : ""}
@@ -481,137 +357,119 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
               </button>
             </div>
 
-            <div className="all-campaign-filter-main">
-              <label>
-                Period
-                <select value={activePeriod} onChange={(event) => setSelectedPeriod(event.target.value)}>
-                  {periods.slice().reverse().map((period) => (
-                    <option key={period} value={period}>
-                      {getPeriodLabel(period, periodMode)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label>
-                Segment / Campaign Group
-                <select value={selectedSegment} onChange={(event) => setSelectedSegment(event.target.value as Segment)}>
-                  {availableFilterSegments.map((segment) => (
-                    <option key={segment} value={segment}>
-                      {segment === "All" ? "All Segments" : segment}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <label>
+              Period
+              <select value={activePeriod} onChange={(event) => setSelectedPeriod(event.target.value)}>
+                {periods.slice().reverse().map((period) => (
+                  <option key={period} value={period}>
+                    {getPeriodLabel(period, periodMode)}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
 
-        <div className="all-campaign-selected-summary compact">
+        <div className="gos-campaign-summary-strip">
           <div>
-            <span>Selected View</span>
-            <strong>{selectedSummary.segment === "All" ? "All Segments" : selectedSummary.segment}</strong>
-            <small>{selectedSummary.campaigns} campaigns</small>
+            <span>Total Spend</span>
+            <strong className="red">{compactMoney(totals.spend)}</strong>
           </div>
-
           <div>
-            <span>Spend</span>
-            <strong className="red">{compactMoney(selectedSummary.spend)}</strong>
-            <small>{pct(selectedSummary.share)} share</small>
+            <span>Total Revenue</span>
+            <strong className="green">{compactMoney(totals.revenue)}</strong>
           </div>
-
           <div>
-            <span>Revenue</span>
-            <strong className="green">{compactMoney(selectedSummary.revenue)}</strong>
-            <small>{selectedSummary.purchases.toFixed(0)} purchases</small>
+            <span>ROAS</span>
+            <strong className={roasClass(totals.roas)}>{x(totals.roas)}</strong>
           </div>
-
           <div>
-            <span>ROAS / CPA</span>
-            <strong>{x(selectedSummary.roas)}</strong>
-            <small>CPA {compactMoney(selectedSummary.cpa)}</small>
+            <span>Purchases</span>
+            <strong>{totals.purchases.toFixed(0)}</strong>
           </div>
-
+          <div>
+            <span>CPA</span>
+            <strong>{compactMoney(totals.cpa)}</strong>
+          </div>
           <div>
             <span>CTR / CVR</span>
-            <strong>{pct(selectedSummary.ctr)}</strong>
-            <small>CVR {pct(selectedSummary.cvr)}</small>
+            <strong>{pct(totals.ctr)}</strong>
+            <small>CVR {pct(totals.cvr)}</small>
           </div>
         </div>
 
-        <div className="all-campaigns-combined-grid">
-          <div className="all-campaigns-table-wrap">
-            <div className="all-campaign-section-title">
-              <span>Segment Table</span>
-              <strong>Spend mix</strong>
-            </div>
-
-            <GoogleOsTable
-              rows={segmentRows as unknown as Record<string, unknown>[]}
-              columns={[
-                {
-                  key: "segment",
-                  label: "Segment",
-                  render: (row) => (
-                    <span className="all-campaign-type-name">
-                      <SegmentDot segment={String(row.segment || "Other") as CoreSegment} />
-                      {String(row.segment || "")}
-                    </span>
-                  ),
-                },
-                { key: "campaigns", label: "Campaigns", right: true },
-                { key: "spend", label: "Spend", right: true, render: (row) => <Metric value={compactMoney(row.spend)} tone="red" /> },
-                { key: "share", label: "Share", right: true, render: (row) => pct(row.share) },
-                { key: "revenue", label: "Revenue", right: true, render: (row) => <Metric value={compactMoney(row.revenue)} tone="green" /> },
-                { key: "roas", label: "ROAS", right: true, render: (row) => <Metric value={x(row.roas)} tone={roasTone(Number(row.roas || 0))} /> },
-                { key: "purchases", label: "Purch.", right: true, render: (row) => Number(row.purchases || 0).toFixed(0) },
-                { key: "cpa", label: "CPA", right: true, render: (row) => compactMoney(row.cpa) },
-              ]}
-              empty="No segment data available."
-            />
+        <div className="gos-campaign-type-table">
+          <div className="gos-campaign-table-header">
+            <span className="campaign-col-main">Campaign Type</span>
+            <span>Campaigns</span>
+            <span>Spend</span>
+            <span>% Share of Total Spend</span>
+            <span>Revenue</span>
+            <span>ROAS</span>
+            <span>Purch.</span>
+            <span>CPA</span>
+            <span>CTR</span>
+            <span>CVR</span>
           </div>
 
-          <div>
-            <div className="all-campaign-section-title">
-              <span>Visualisation</span>
-              <strong>Segment KPI comparison</strong>
-            </div>
+          {segmentRows.map((segmentRow) => {
+            const isOpen = Boolean(openSegments[segmentRow.segment]);
+            const campaigns = buildCampaignRows(periodRows, segmentRow.segment);
 
-            <SegmentVisual rows={segmentRows} />
-          </div>
+            return (
+              <div key={segmentRow.segment} className="gos-campaign-segment-group">
+                <button
+                  type="button"
+                  className="gos-campaign-segment-row"
+                  onClick={() => toggleSegment(segmentRow.segment)}
+                >
+                  <span className="campaign-col-main campaign-segment-name">
+                    <b>{isOpen ? "−" : "+"}</b>
+                    <SegmentDot segment={segmentRow.segment} />
+                    <strong>{segmentRow.segment}</strong>
+                  </span>
+
+                  <span>{segmentRow.campaigns}</span>
+                  <span className="red">{compactMoney(segmentRow.spend)}</span>
+                  <span>{pct(segmentRow.share)}</span>
+                  <span className="green">{compactMoney(segmentRow.revenue)}</span>
+                  <span className={roasClass(segmentRow.roas)}>{x(segmentRow.roas)}</span>
+                  <span>{segmentRow.purchases.toFixed(0)}</span>
+                  <span>{compactMoney(segmentRow.cpa)}</span>
+                  <span>{pct(segmentRow.ctr)}</span>
+                  <span>{pct(segmentRow.cvr)}</span>
+                </button>
+
+                {isOpen ? (
+                  <div className="gos-campaign-child-table">
+                    {campaigns.map((campaign) => (
+                      <div key={campaign.key} className="gos-campaign-child-row">
+                        <span className="campaign-col-main campaign-child-name">
+                          <i />
+                          <strong>{campaign.campaign}</strong>
+                          <small>{campaign.statusText}</small>
+                        </span>
+
+                        <span>—</span>
+                        <span className="red">{compactMoney(campaign.spend)}</span>
+                        <span>{pct(campaign.share)} of type</span>
+                        <span className="green">{compactMoney(campaign.revenue)}</span>
+                        <span className={roasClass(campaign.roas)}>{x(campaign.roas)}</span>
+                        <span>{campaign.purchases.toFixed(0)}</span>
+                        <span>{compactMoney(campaign.cpa)}</span>
+                        <span>{pct(campaign.ctr)}</span>
+                        <span>{pct(campaign.cvr)}</span>
+                        <span className={`campaign-decision ${decisionClass(campaign.decision)}`}>
+                          {campaign.decision}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
-      </div>
-
-      <div className="gos-panel">
-        <div className="gos-panel-head">
-          <div>
-            <span>Campaign Dropdown</span>
-            <h2>{selectedSegment === "All" ? "All campaigns" : `${selectedSegment} campaigns`}</h2>
-            <p>
-              Campaign list for selected segment and period. Use Search/Shopping main tabs for deeper campaign drilldowns.
-            </p>
-          </div>
-        </div>
-
-        <GoogleOsTable
-          rows={campaignRows as unknown as Record<string, unknown>[]}
-          columns={[
-            { key: "campaign", label: "Campaign" },
-            { key: "segment", label: "Segment" },
-            { key: "statusText", label: "Status" },
-            { key: "spend", label: "Spend", right: true, render: (row) => <Metric value={compactMoney(row.spend)} tone="red" /> },
-            { key: "share", label: "Share", right: true, render: (row) => pct(row.share) },
-            { key: "revenue", label: "Revenue", right: true, render: (row) => <Metric value={compactMoney(row.revenue)} tone="green" /> },
-            { key: "roas", label: "ROAS", right: true, render: (row) => <Metric value={x(row.roas)} tone={roasTone(Number(row.roas || 0))} /> },
-            { key: "purchases", label: "Purch.", right: true, render: (row) => Number(row.purchases || 0).toFixed(0) },
-            { key: "cpa", label: "CPA", right: true, render: (row) => compactMoney(row.cpa) },
-            { key: "ctr", label: "CTR", right: true, render: (row) => pct(row.ctr) },
-            { key: "cvr", label: "CVR", right: true, render: (row) => pct(row.cvr) },
-            { key: "decision", label: "Decision", render: (row) => <Metric value={String(row.decision || "")} tone={statusTone(row.decision)} /> },
-            { key: "action", label: "Action" },
-          ]}
-          empty="No campaigns available for selected segment."
-        />
       </div>
     </section>
   );
