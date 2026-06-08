@@ -329,6 +329,8 @@ function SegmentDot({ segment }: { segment: Segment }) {
 
 type ChartKpi = "spend" | "revenue" | "roas" | "cpa" | "purchases" | "ctr" | "cvr";
 
+type ChartDimension = "All Account" | Segment;
+
 const CHART_KPIS: { key: ChartKpi; label: string }[] = [
   { key: "spend", label: "Spend" },
   { key: "revenue", label: "Revenue" },
@@ -338,6 +340,16 @@ const CHART_KPIS: { key: ChartKpi; label: string }[] = [
   { key: "ctr", label: "CTR" },
   { key: "cvr", label: "CVR" },
 ];
+
+const CHART_KPI_COLORS: Record<ChartKpi, string> = {
+  spend: "#4285F4",
+  revenue: "#34A853",
+  roas: "#FBBC04",
+  cpa: "#EA4335",
+  purchases: "#8B5CF6",
+  ctr: "#06B6D4",
+  cvr: "#F97316",
+};
 
 function formatChartValue(value: number, kpi: ChartKpi) {
   if (kpi === "spend" || kpi === "revenue" || kpi === "cpa") return compactMoney(value);
@@ -357,11 +369,14 @@ function getKpiValue(row: ReturnType<typeof aggregate>, kpi: ChartKpi) {
   return 0;
 }
 
-function buildChartRows(rows: GoogleOsRow[], periodMode: PeriodMode, segment: Segment, kpi: ChartKpi) {
+function buildChartRows(rows: GoogleOsRow[], periodMode: PeriodMode, dimension: ChartDimension) {
   const grouped = new Map<string, GoogleOsRow[]>();
 
   rows
-    .filter((row) => getSegment(row) === segment)
+    .filter((row) => {
+      if (dimension === "All Account") return true;
+      return getSegment(row) === dimension;
+    })
     .forEach((row) => {
       const key = getPeriodKey(row, periodMode);
       if (!key) return;
@@ -370,17 +385,17 @@ function buildChartRows(rows: GoogleOsRow[], periodMode: PeriodMode, segment: Se
       grouped.get(key)!.push(row);
     });
 
-  const limit = periodMode === "daily" ? 30 : periodMode === "weekly" ? 12 : periodMode === "monthly" ? 12 : 8;
+  const limit = periodMode === "daily" ? 30 : periodMode === "weekly" ? 12 : 12;
 
   return Array.from(grouped.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .slice(-limit)
     .map(([period, periodRows]) => {
       const a = aggregate(periodRows);
+
       return {
         period,
         label: getPeriodLabel(period, periodMode),
-        value: getKpiValue(a, kpi),
         spend: a.spend,
         revenue: a.revenue,
         roas: a.roas,
@@ -392,60 +407,53 @@ function buildChartRows(rows: GoogleOsRow[], periodMode: PeriodMode, segment: Se
     });
 }
 
+
+
+type ChartRow = ReturnType<typeof buildChartRows>[number];
+
+function getChartRowMetric(row: ChartRow, kpi: ChartKpi): number {
+  if (kpi === "spend") return row.spend;
+  if (kpi === "revenue") return row.revenue;
+  if (kpi === "roas") return row.roas;
+  if (kpi === "cpa") return row.cpa;
+  if (kpi === "purchases") return row.purchases;
+  if (kpi === "ctr") return row.ctr;
+  if (kpi === "cvr") return row.cvr;
+
+  return 0;
+}
+
 function CampaignKpiChart({
   rows,
-  segment,
-  kpi,
+  dimension,
+  kpis,
   periodMode,
 }: {
   rows: ReturnType<typeof buildChartRows>;
-  segment: Segment;
-  kpi: ChartKpi;
+  dimension: ChartDimension;
+  kpis: ChartKpi[];
   periodMode: PeriodMode;
 }) {
   const width = 1080;
-  const height = 300;
+  const height = 320;
   const padLeft = 62;
-  const padRight = 28;
-  const padTop = 24;
-  const padBottom = 54;
+  const padRight = 30;
+  const padTop = 26;
+  const padBottom = 58;
 
   const chartWidth = width - padLeft - padRight;
   const chartHeight = height - padTop - padBottom;
 
-  const maxValue = Math.max(...rows.map((row) => row.value), 1);
-  const minValue = Math.min(...rows.map((row) => row.value), 0);
+  const activeKpis: ChartKpi[] = kpis.length ? kpis : ["spend"];
+
+  const values = rows.flatMap((row) => activeKpis.map((kpi) => getChartRowMetric(row, kpi)));
+  const maxValue = Math.max(...values, 1);
+  const minValue = Math.min(...values, 0);
   const range = Math.max(maxValue - minValue, 1);
-  const color = SEGMENT_COLORS[segment];
-  const kpiLabel = CHART_KPIS.find((item) => item.key === kpi)?.label || "KPI";
-
-  const points = rows.map((row, index) => {
-    const xPos =
-      rows.length === 1
-        ? padLeft + chartWidth / 2
-        : padLeft + (index / (rows.length - 1)) * chartWidth;
-
-    const yPos = padTop + chartHeight - ((row.value - minValue) / range) * chartHeight;
-
-    return {
-      ...row,
-      x: xPos,
-      y: yPos,
-    };
-  });
-
-  const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
-
-  const areaPath = points.length
-    ? `M ${points[0].x} ${padTop + chartHeight} L ${points
-        .map((point) => `${point.x} ${point.y}`)
-        .join(" L ")} L ${points[points.length - 1].x} ${padTop + chartHeight} Z`
-    : "";
 
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
     const value = minValue + range * (1 - ratio);
     const y = padTop + chartHeight * ratio;
-
     return { value, y };
   });
 
@@ -454,9 +462,7 @@ function CampaignKpiChart({
 
     if (periodMode === "daily") {
       const parts = clean.split("-");
-      if (parts.length === 3) {
-        return `${parts[0]}-${parts[1]}`;
-      }
+      if (parts.length === 3) return `${parts[0]}-${parts[1]}`;
       return clean;
     }
 
@@ -465,37 +471,52 @@ function CampaignKpiChart({
 
   function shouldShowXAxisLabel(index: number) {
     if (rows.length <= 8) return true;
+    if (index === 0 || index === rows.length - 1) return true;
 
-    const first = index === 0;
-    const last = index === rows.length - 1;
-
-    if (first || last) return true;
-
-    if (periodMode === "daily") {
-      return index % Math.ceil(rows.length / 6) === 0;
-    }
-
-    if (periodMode === "weekly") {
-      return index % Math.ceil(rows.length / 8) === 0;
-    }
+    if (periodMode === "daily") return index % Math.ceil(rows.length / 6) === 0;
+    if (periodMode === "weekly") return index % Math.ceil(rows.length / 8) === 0;
 
     return true;
   }
+
+  function getPoint(row: ReturnType<typeof buildChartRows>[number], index: number, kpi: ChartKpi) {
+    const value = getChartRowMetric(row, kpi);
+
+    const x =
+      rows.length === 1
+        ? padLeft + chartWidth / 2
+        : padLeft + (index / (rows.length - 1)) * chartWidth;
+
+    const y = padTop + chartHeight - ((value - minValue) / range) * chartHeight;
+
+    return {
+      x,
+      y,
+      value,
+    };
+  }
+
+  const primaryKpi = activeKpis[0];
+  const primaryLabel = CHART_KPIS.find((item) => item.key === primaryKpi)?.label || "Metric";
 
   return (
     <div className="gos-axis-chart-box">
       <div className="gos-axis-chart-head">
         <div>
           <span>Axis Chart</span>
-          <strong>{segment} · {kpiLabel}</strong>
+          <strong>{dimension} · {activeKpis.map((kpi) => CHART_KPIS.find((item) => item.key === kpi)?.label).join(" + ")}</strong>
           <small>
-            X-axis = {periodMode}. Y-axis = {kpiLabel}. Hover points for full details.
+            X-axis = {periodMode}. Multiple key metrics can be compared together.
           </small>
         </div>
 
-        <div className="gos-axis-chart-legend">
-          <i style={{ background: color }} />
-          <span>{segment}</span>
+        <div className="gos-axis-chart-legend multi">
+          {activeKpis.map((kpi) => (
+            <span key={kpi}>
+              <i style={{ background: CHART_KPI_COLORS[kpi] }} />
+              {CHART_KPIS.find((item) => item.key === kpi)?.label}
+            </span>
+          ))}
         </div>
       </div>
 
@@ -505,7 +526,7 @@ function CampaignKpiChart({
             className="gos-axis-chart-svg"
             viewBox={`0 0 ${width} ${height}`}
             role="img"
-            aria-label={`${segment} ${kpiLabel} trend`}
+            aria-label={`${dimension} multi metric trend`}
           >
             {yTicks.map((tick, index) => (
               <g key={index}>
@@ -522,7 +543,7 @@ function CampaignKpiChart({
                   textAnchor="end"
                   className="gos-axis-chart-text"
                 >
-                  {formatChartValue(tick.value, kpi)}
+                  {formatChartValue(tick.value, primaryKpi)}
                 </text>
               </g>
             ))}
@@ -543,44 +564,60 @@ function CampaignKpiChart({
               className="gos-axis-chart-axis"
             />
 
-            {areaPath ? (
-              <path d={areaPath} className="gos-axis-chart-area" style={{ fill: color }} />
-            ) : null}
+            {activeKpis.map((kpi) => {
+              const points = rows.map((row, index) => getPoint(row, index, kpi));
+              const line = points.map((point) => `${point.x},${point.y}`).join(" ");
 
-            {polyline ? (
-              <polyline points={polyline} className="gos-axis-chart-line" style={{ stroke: color }} />
-            ) : null}
+              return (
+                <g key={kpi}>
+                  <polyline
+                    points={line}
+                    className="gos-axis-chart-line"
+                    style={{ stroke: CHART_KPI_COLORS[kpi] }}
+                  />
 
-            {points.map((point, index) => (
-              <g key={point.period} className="gos-axis-chart-point">
-                <circle cx={point.x} cy={point.y} r="4.5" style={{ fill: color }} />
+                  {points.map((point, index) => {
+                    const row = rows[index];
+                    const kpiLabel = CHART_KPIS.find((item) => item.key === kpi)?.label || kpi;
 
-                <title>{`${point.label}
+                    return (
+                      <g key={`${kpi}-${row.period}`} className="gos-axis-chart-point">
+                        <circle cx={point.x} cy={point.y} r="4.3" style={{ fill: CHART_KPI_COLORS[kpi] }} />
+                        <title>{`${row.label}
 ${kpiLabel}: ${formatChartValue(point.value, kpi)}
-Spend: ${compactMoney(point.spend)}
-Revenue: ${compactMoney(point.revenue)}
-ROAS: ${x(point.roas)}
-CPA: ${compactMoney(point.cpa)}
-Purchases: ${point.purchases.toFixed(0)}
-CTR: ${pct(point.ctr)}
-CVR: ${pct(point.cvr)}`}</title>
+Spend: ${compactMoney(row.spend)}
+Revenue: ${compactMoney(row.revenue)}
+ROAS: ${x(row.roas)}
+CPA: ${compactMoney(row.cpa)}
+Purchases: ${row.purchases.toFixed(0)}
+CTR: ${pct(row.ctr)}
+CVR: ${pct(row.cvr)}`}</title>
+                      </g>
+                    );
+                  })}
+                </g>
+              );
+            })}
 
-                {shouldShowXAxisLabel(index) ? (
-                  <text
-                    x={point.x}
-                    y={height - 18}
-                    textAnchor="middle"
-                    className="gos-axis-chart-text x"
-                  >
-                    {getShortXAxisLabel(point.label)}
-                  </text>
-                ) : null}
-              </g>
-            ))}
+            {rows.map((row, index) => {
+              const point = getPoint(row, index, primaryKpi);
+
+              return shouldShowXAxisLabel(index) ? (
+                <text
+                  key={row.period}
+                  x={point.x}
+                  y={height - 20}
+                  textAnchor="middle"
+                  className="gos-axis-chart-text x"
+                >
+                  {getShortXAxisLabel(row.label)}
+                </text>
+              ) : null;
+            })}
 
             <text
               x={padLeft + chartWidth / 2}
-              y={height - 4}
+              y={height - 5}
               textAnchor="middle"
               className="gos-axis-chart-caption"
             >
@@ -594,7 +631,7 @@ CVR: ${pct(point.cvr)}`}</title>
               className="gos-axis-chart-caption"
               transform={`rotate(-90 14 ${padTop + chartHeight / 2})`}
             >
-              {kpiLabel.toUpperCase()}
+              {primaryLabel.toUpperCase()}
             </text>
           </svg>
         </div>
@@ -608,8 +645,8 @@ CVR: ${pct(point.cvr)}`}</title>
 
 export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   const [periodMode, setPeriodMode] = useState<PeriodMode>("daily");
-  const [chartSegment, setChartSegment] = useState<Segment>("Search Brand");
-  const [chartKpi, setChartKpi] = useState<ChartKpi>("spend");
+  const [chartDimension, setChartDimension] = useState<ChartDimension>("All Account");
+  const [chartKpis, setChartKpis] = useState<ChartKpi[]>(["spend"]);
   const [chartPeriodMode, setChartPeriodMode] = useState<PeriodMode>("daily");
   const periods = useMemo(() => getAvailablePeriods(model.rows, periodMode), [model.rows, periodMode]);
   const latestPeriod = periods[periods.length - 1] || "";
@@ -635,19 +672,30 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   const segmentRows = useMemo(() => buildSegmentRows(periodRows), [periodRows]);
   const brandSummaryRows = useMemo(() => buildBrandSummaryRows(segmentRows), [segmentRows]);
 
-  const availableChartSegments = useMemo(() => {
-    return segmentRows.map((row) => row.segment);
+  const availableChartDimensions = useMemo(() => {
+    return ["All Account", ...segmentRows.map((row) => row.segment)] as ChartDimension[];
   }, [segmentRows]);
 
-  const activeChartSegment = availableChartSegments.includes(chartSegment)
-    ? chartSegment
-    : availableChartSegments[0] || "Search Brand";
+  const activeChartDimension = availableChartDimensions.includes(chartDimension)
+    ? chartDimension
+    : "All Account";
 
   const chartRows = useMemo(() => {
-    return buildChartRows(model.rows, chartPeriodMode, activeChartSegment, chartKpi);
-  }, [model.rows, chartPeriodMode, activeChartSegment, chartKpi]);
+    return buildChartRows(model.rows, chartPeriodMode, activeChartDimension);
+  }, [model.rows, chartPeriodMode, activeChartDimension]);
 
   const totals = useMemo(() => aggregate(periodRows), [periodRows]);
+
+  function toggleChartKpi(kpi: ChartKpi) {
+    setChartKpis((current) => {
+      if (current.includes(kpi)) {
+        const next = current.filter((item) => item !== kpi);
+        return next.length ? next : ["spend"];
+      }
+
+      return [...current, kpi];
+    });
+  }
 
   function toggleBrandGroup(group: BrandGroup) {
     setOpenBrandGroups((current) => ({
@@ -766,14 +814,14 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
             <div>
               <span>Dimension</span>
               <div className="gos-chart-button-group">
-                {availableChartSegments.map((segment) => (
+                {availableChartDimensions.map((dimension) => (
                   <button
-                    key={segment}
+                    key={dimension}
                     type="button"
-                    className={activeChartSegment === segment ? "active" : ""}
-                    onClick={() => setChartSegment(segment)}
+                    className={activeChartDimension === dimension ? "active" : ""}
+                    onClick={() => setChartDimension(dimension)}
                   >
-                    {segment}
+                    {dimension}
                   </button>
                 ))}
               </div>
@@ -786,8 +834,8 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
                   <button
                     key={kpiItem.key}
                     type="button"
-                    className={chartKpi === kpiItem.key ? "active" : ""}
-                    onClick={() => setChartKpi(kpiItem.key)}
+                    className={chartKpis.includes(kpiItem.key) ? "active" : ""}
+                    onClick={() => toggleChartKpi(kpiItem.key)}
                   >
                     {kpiItem.label}
                   </button>
@@ -814,8 +862,8 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
 
           <CampaignKpiChart
             rows={chartRows}
-            segment={activeChartSegment}
-            kpi={chartKpi}
+            dimension={activeChartDimension}
+            kpis={chartKpis}
             periodMode={chartPeriodMode}
           />
         </div>
