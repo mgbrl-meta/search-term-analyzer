@@ -1,4 +1,5 @@
 import "./search-term-os.css";
+import "./google-os-theme.css";
 import type { Metadata } from 'next';
 import './globals.css';
 

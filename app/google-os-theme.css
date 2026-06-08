@@ -1,0 +1,338 @@
+/* =========================================================
+   GOOGLE OS THEME TOOLKIT
+   Stable layout, typography, light/dark tokens, table rules
+   ========================================================= */
+
+:root {
+  --gos-bg: #060913;
+  --gos-bg-soft: #08111d;
+  --gos-surface: #101827;
+  --gos-surface-2: #131d2d;
+  --gos-surface-3: #182235;
+
+  --gos-border: rgba(148, 163, 184, 0.18);
+  --gos-border-strong: rgba(148, 163, 184, 0.28);
+
+  --gos-text: #f8fafc;
+  --gos-muted: #cbd5e1;
+  --gos-faint: #94a3b8;
+
+  --gos-blue: #4285f4;
+  --gos-green: #22c55e;
+  --gos-red: #ef4444;
+  --gos-amber: #f59e0b;
+
+  --gos-radius-sm: 10px;
+  --gos-radius-md: 14px;
+  --gos-radius-lg: 18px;
+
+  --gos-shadow: 0 18px 60px rgba(0, 0, 0, 0.28);
+
+  --gos-font-xs: clamp(10px, 0.64vw, 11px);
+  --gos-font-sm: clamp(11px, 0.72vw, 12px);
+  --gos-font-md: clamp(12px, 0.82vw, 14px);
+  --gos-font-lg: clamp(16px, 1.15vw, 20px);
+  --gos-font-xl: clamp(22px, 1.8vw, 32px);
+
+  --gos-shell: min(100% - 32px, 1480px);
+}
+
+html[data-theme="light"],
+body.light,
+.light {
+  --gos-bg: #f6f8fb;
+  --gos-bg-soft: #eef3f8;
+  --gos-surface: #ffffff;
+  --gos-surface-2: #f8fafc;
+  --gos-surface-3: #eef2f7;
+
+  --gos-border: rgba(15, 23, 42, 0.12);
+  --gos-border-strong: rgba(15, 23, 42, 0.2);
+
+  --gos-text: #0f172a;
+  --gos-muted: #334155;
+  --gos-faint: #64748b;
+
+  --gos-shadow: 0 14px 42px rgba(15, 23, 42, 0.08);
+}
+
+/* Shell */
+.google-os-shell,
+.gos-page {
+  width: var(--gos-shell) !important;
+  max-width: var(--gos-shell) !important;
+  margin-inline: auto !important;
+  box-sizing: border-box;
+}
+
+.google-os-shell {
+  overflow-x: clip;
+}
+
+/* Cards */
+.gos-hero,
+.gos-panel,
+.gos-kpi,
+.gos-insight-card,
+.gos-source-strip,
+.gos-data-card,
+.gos-setting-card {
+  background: var(--gos-surface) !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: var(--gos-radius-lg) !important;
+  box-shadow: var(--gos-shadow);
+  color: var(--gos-text);
+}
+
+.gos-panel {
+  padding: clamp(14px, 1.1vw, 20px) !important;
+}
+
+/* Text */
+.gos-hero span,
+.gos-panel-head span,
+.gos-insight-card span,
+.gos-kpi span,
+.gos-setting-card span,
+.gos-source-main span,
+.gos-data-head span {
+  color: var(--gos-faint) !important;
+  font-size: var(--gos-font-xs) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase;
+}
+
+.gos-hero h1,
+.gos-panel-head h2,
+.gos-brand h1,
+.gos-data-head h2,
+.gos-compact-upload h2 {
+  color: var(--gos-text) !important;
+  letter-spacing: -0.045em;
+}
+
+.gos-hero h1 {
+  font-size: var(--gos-font-xl) !important;
+}
+
+.gos-panel-head h2,
+.gos-data-head h2 {
+  font-size: var(--gos-font-lg) !important;
+}
+
+.gos-hero p,
+.gos-panel-head p,
+.gos-insight-card p,
+.gos-data-head p,
+.gos-source-main small {
+  color: var(--gos-muted) !important;
+  font-size: var(--gos-font-md) !important;
+  line-height: 1.45;
+}
+
+/* KPI */
+.gos-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: clamp(10px, 0.9vw, 14px) !important;
+}
+
+.gos-kpi {
+  padding: clamp(12px, 1vw, 16px) !important;
+  min-height: 88px;
+}
+
+.gos-kpi strong {
+  color: var(--gos-text) !important;
+  font-size: clamp(21px, 1.8vw, 31px) !important;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+/* Tables — default */
+.gos-table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: var(--gos-radius-md) !important;
+  background: var(--gos-surface-2) !important;
+  scrollbar-width: thin;
+}
+
+.gos-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  table-layout: auto !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.gos-table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--gos-surface-2) !important;
+  color: var(--gos-faint) !important;
+  border-bottom: 1px solid var(--gos-border-strong) !important;
+  padding: 11px 12px !important;
+  font-size: var(--gos-font-xs) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase;
+  white-space: nowrap !important;
+  text-align: left;
+}
+
+.gos-table td {
+  color: var(--gos-muted) !important;
+  border-top: 1px solid var(--gos-border) !important;
+  padding: 11px 12px !important;
+  font-size: var(--gos-font-sm) !important;
+  line-height: 1.35 !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+}
+
+.gos-table th.right,
+.gos-table td.right {
+  text-align: right !important;
+}
+
+.gos-table td strong,
+.gos-pos,
+.gos-neg {
+  white-space: nowrap !important;
+}
+
+.gos-pos {
+  color: var(--gos-green) !important;
+}
+
+.gos-neg {
+  color: var(--gos-red) !important;
+}
+
+/* Monthly table — wide but controlled */
+.monthly-summary-page {
+  width: var(--gos-shell) !important;
+  max-width: var(--gos-shell) !important;
+  margin-inline: auto !important;
+}
+
+.monthly-table-panel {
+  width: 100% !important;
+}
+
+.monthly-table-panel .gos-table-wrap {
+  width: 100% !important;
+  overflow-x: auto !important;
+}
+
+.monthly-table-panel .gos-table {
+  min-width: 1320px !important;
+  width: max-content !important;
+  table-layout: auto !important;
+}
+
+.monthly-table-panel .gos-table th,
+.monthly-table-panel .gos-table td {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.monthly-table-panel .gos-table th:first-child,
+.monthly-table-panel .gos-table td:first-child {
+  min-width: 95px;
+  text-align: left !important;
+}
+
+.monthly-table-panel .gos-table th:not(:first-child),
+.monthly-table-panel .gos-table td:not(:first-child) {
+  min-width: 86px;
+}
+
+/* Charts */
+.gos-chart-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.gos-svg-chart {
+  width: 100%;
+  min-width: 900px;
+  height: auto;
+}
+
+/* Prevent page-level horizontal scroll */
+body {
+  overflow-x: hidden;
+}
+
+/* Responsive: cards only on real mobile */
+@media(max-width: 900px) {
+  :root {
+    --gos-shell: min(100% - 20px, 1480px);
+  }
+
+  .gos-kpi-grid,
+  .gos-insight-grid,
+  .gos-chart-grid,
+  .gos-two-col,
+  .gos-source-strip,
+  .gos-source-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gos-table-wrap {
+    overflow-x: auto !important;
+  }
+
+  .monthly-table-panel .gos-table {
+    min-width: 1100px !important;
+  }
+}
+
+/* Only phones become stacked row cards */
+@media(max-width: 560px) {
+  .gos-table.mobile-card,
+  .gos-table.mobile-card thead,
+  .gos-table.mobile-card tbody,
+  .gos-table.mobile-card th,
+  .gos-table.mobile-card td,
+  .gos-table.mobile-card tr {
+    display: block;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .gos-table.mobile-card thead {
+    display: none;
+  }
+
+  .gos-table.mobile-card tr {
+    border-bottom: 1px solid var(--gos-border);
+    padding: 10px 0;
+  }
+
+  .gos-table.mobile-card td {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    white-space: normal !important;
+    text-align: right !important;
+    border: 0 !important;
+  }
+
+  .gos-table.mobile-card td::before {
+    content: attr(data-label);
+    color: var(--gos-faint);
+    font-weight: 900;
+    text-align: left;
+    max-width: 48%;
+  }
+}

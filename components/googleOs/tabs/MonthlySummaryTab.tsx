@@ -531,6 +531,7 @@ export function MonthlySummaryTab({ model }: { model: GoogleOsModel }) {
         </div>
 
         <GoogleOsTable
+          className="monthly-wide-table"
           rows={monthlyRows.slice().reverse() as unknown as Record<string, unknown>[]}
           columns={[
             { key: "month", label: "Month" },

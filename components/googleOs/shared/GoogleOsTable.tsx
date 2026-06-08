@@ -11,10 +11,12 @@ export function GoogleOsTable<T extends Record<string, unknown>>({
   rows,
   columns,
   empty = "No data available.",
+  className = "",
 }: {
   rows: T[];
   columns: GoogleOsColumn<T>[];
   empty?: string;
+  className?: string;
 }) {
   if (!rows.length) {
     return (
@@ -26,7 +28,7 @@ export function GoogleOsTable<T extends Record<string, unknown>>({
 
   return (
     <div className="gos-table-wrap">
-      <table className="gos-table">
+      <table className={`gos-table ${className}`.trim()}>
         <thead>
           <tr>
             {columns.map((column) => (
