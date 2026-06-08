@@ -763,9 +763,17 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   const periods = useMemo(() => getAvailablePeriods(model.rows, periodMode), [model.rows, periodMode]);
   const latestPeriod = periods[periods.length - 1] || "";
   const [selectedPeriod, setSelectedPeriod] = useState("");
-  const [openBrandGroups, setOpenBrandGroups] = useState<Record<string, boolean>>({});
+  const [openBrandGroups, setOpenBrandGroups] = useState<Record<string, boolean>>({
+    Brand: true,
+    "Non Brand": true,
+  });
 
-  const [openSegments, setOpenSegments] = useState<Record<string, boolean>>({});
+  const [openSegments, setOpenSegments] = useState<Record<string, boolean>>({
+    "Search Brand": true,
+    "Search Non Brand": true,
+    "Shopping Brand": true,
+    "Shopping Non Brand": true,
+  });
 
   const activePeriod = selectedPeriod && periods.includes(selectedPeriod) ? selectedPeriod : latestPeriod;
 
