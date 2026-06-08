@@ -1,0 +1,326 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import type { GoogleOsModel, GoogleOsRow } from "@/lib/googleOs/types";
+import {
+  DEFAULT_SEARCH_TERM_SETTINGS,
+  aggregateSearchTerms,
+  buildSearchTermCsv,
+  buildSearchTermSummary,
+  convertSearchTermRawRowsToGoogleRows,
+  filterSearchTermRows,
+  formatMoney,
+  formatPercent,
+  formatX,
+  normalizeUploadedSearchTermRows,
+  parseCsvText,
+  type NegativeMatchType,
+  type SearchTermMode,
+  type SearchTermRawRow,
+} from "@/lib/googleOs/searchTermWasterToolkit";
+
+const STORAGE_KEY = "google_os_search_term_upload_rows_v1";
+
+const MODES: { key: SearchTermMode; label: string; description: string }[] = [
+  { key: "all_waste", label: "All Waste", description: "All negative, bid-down, and isolate candidates." },
+  { key: "spend_waste", label: "Spend Waster", description: "Spend above threshold with zero purchases." },
+  { key: "click_waste", label: "Click Waster", description: "Clicks above threshold with zero purchases." },
+  { key: "low_roas", label: "Low ROAS", description: "Converted terms below target ROAS." },
+  { key: "high_cpa", label: "High CPA", description: "Converted terms above max CPA." },
+  { key: "intent_mismatch", label: "Intent Mismatch", description: "Bad intent / marketplace leakage." },
+  { key: "positive_keywords", label: "Positive Keywords", description: "Profitable terms to promote." },
+];
+
+function downloadCsv(filename: string, csv: string) {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyText(text: string) {
+  navigator.clipboard?.writeText(text);
+}
+
+function getLatestDate(rows: SearchTermRawRow[]) {
+  return rows.map((row) => row.date).filter(Boolean).sort().at(-1) || "—";
+}
+
+function getEarliestDate(rows: SearchTermRawRow[]) {
+  return rows.map((row) => row.date).filter(Boolean).sort()[0] || "—";
+}
+
+export function SearchTermWasterTab({ model }: { model: GoogleOsModel }) {
+  const [uploadedRawRows, setUploadedRawRows] = useState<SearchTermRawRow[]>([]);
+  const [uploadError, setUploadError] = useState("");
+  const [mode, setMode] = useState<SearchTermMode>("all_waste");
+  const [minSpend, setMinSpend] = useState(DEFAULT_SEARCH_TERM_SETTINGS.minSpend);
+  const [minClicks, setMinClicks] = useState(DEFAULT_SEARCH_TERM_SETTINGS.minClicks);
+  const [targetRoas, setTargetRoas] = useState(DEFAULT_SEARCH_TERM_SETTINGS.targetRoas);
+  const [maxCpa, setMaxCpa] = useState(DEFAULT_SEARCH_TERM_SETTINGS.maxCpa);
+  const [contains, setContains] = useState("");
+  const [campaign, setCampaign] = useState("all");
+  const [matchType, setMatchType] = useState<NegativeMatchType | "all">("all");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+      setUploadedRawRows(JSON.parse(saved));
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, []);
+
+  async function handleCsvUpload(file: File | null) {
+    setUploadError("");
+
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = parseCsvText(text);
+      const normalized = normalizeUploadedSearchTermRows(parsed);
+
+      if (!normalized.length) {
+        const sample = parsed[0] || {};
+        const detectedHeaders = sample.__detected_headers || Object.keys(sample).join(" | ");
+        const delimiter = sample.__detected_delimiter || "unknown";
+
+        setUploadError(
+          `No valid search term rows found. Detected delimiter: ${delimiter}. Detected headers: ${detectedHeaders}. Required: Search term, Cost, Clicks, Impr./Impressions, Conversions, Conv. value.`
+        );
+        return;
+      }
+
+      setUploadedRawRows(normalized);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "CSV upload failed.");
+    }
+  }
+
+  function clearUpload() {
+    setUploadedRawRows([]);
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
+  const uploadedRows: GoogleOsRow[] = useMemo(() => {
+    return convertSearchTermRawRowsToGoogleRows(uploadedRawRows);
+  }, [uploadedRawRows]);
+
+  const settings = useMemo(() => ({
+    ...DEFAULT_SEARCH_TERM_SETTINGS,
+    minSpend,
+    minClicks,
+    targetRoas,
+    maxCpa,
+  }), [minSpend, minClicks, targetRoas, maxCpa]);
+
+  const searchTermRows = useMemo(() => {
+    return aggregateSearchTerms(uploadedRows, settings);
+  }, [uploadedRows, settings]);
+
+  const campaigns = useMemo(() => {
+    return Array.from(new Set(searchTermRows.map((row) => row.campaign))).sort();
+  }, [searchTermRows]);
+
+  const filteredRows = useMemo(() => {
+    return filterSearchTermRows({
+      rows: searchTermRows,
+      mode,
+      minSpend,
+      minClicks,
+      targetRoas,
+      maxCpa,
+      contains,
+      campaign,
+      matchType,
+    });
+  }, [searchTermRows, mode, minSpend, minClicks, targetRoas, maxCpa, contains, campaign, matchType]);
+
+  const summary = useMemo(() => buildSearchTermSummary(searchTermRows), [searchTermRows]);
+
+  const exactList = filteredRows.map((row) => row.exactSyntax).join("\n");
+  const phraseList = filteredRows.map((row) => row.phraseSyntax).join("\n");
+  const broadList = filteredRows.map((row) => row.broadSyntax).join("\n");
+
+  return (
+    <section className="gos-page search-term-waster-page">
+      <div className="stw-header">
+        <div>
+          <span>Search Term Waster</span>
+          <h2>Search term waste finder and negative export center</h2>
+          <p>
+            Upload Google Ads Search Terms CSV directly. This avoids Google Sheet cell limits and keeps heavy search-term data outside the campaign sheet.
+          </p>
+        </div>
+
+        <div className="stw-header-actions">
+          <button type="button" onClick={() => downloadCsv("search-term-waster.csv", buildSearchTermCsv(filteredRows))}>
+            Download CSV / Excel
+          </button>
+        </div>
+      </div>
+
+      <div className="stw-upload-card">
+        <div>
+          <span>Search Term Data Source</span>
+          <h3>Direct CSV Upload</h3>
+          <p>
+            Required minimum columns: Date, Campaign, Ad group, Search term, Cost, Clicks, Impr., Conversions, Conv. value.
+          </p>
+        </div>
+
+        <div className="stw-upload-actions">
+          <label>
+            Upload Search Term CSV
+            <input type="file" accept=".csv,text/csv" onChange={(event) => handleCsvUpload(event.target.files?.[0] || null)} />
+          </label>
+
+          <button type="button" onClick={clearUpload}>
+            Clear Upload
+          </button>
+        </div>
+
+        <div className="stw-upload-status">
+          <div><span>Rows Loaded</span><strong>{uploadedRawRows.length.toLocaleString("en-IN")}</strong></div>
+          <div><span>Date Range</span><strong>{getEarliestDate(uploadedRawRows)} → {getLatestDate(uploadedRawRows)}</strong></div>
+          <div><span>Campaign Sheet Rows</span><strong>{model.rows.length.toLocaleString("en-IN")}</strong></div>
+        </div>
+
+        {uploadError ? <div className="stw-upload-error">{uploadError}</div> : null}
+      </div>
+
+      <div className="stw-summary-grid">
+        <div><span>Total Terms</span><strong>{summary.totalTerms}</strong></div>
+        <div><span>Total Spend</span><strong>{formatMoney(summary.totalSpend)}</strong></div>
+        <div><span>Wasted Spend</span><strong className="red">{formatMoney(summary.wastedSpend)}</strong></div>
+        <div><span>Waste Share</span><strong className="red">{formatPercent(summary.wasteShare)}</strong></div>
+        <div><span>Zero-sale Terms</span><strong>{summary.zeroSaleTerms}</strong></div>
+        <div><span>Negative Candidates</span><strong>{summary.negativeCandidates}</strong></div>
+        <div><span>Positive Candidates</span><strong className="green">{summary.positiveCandidates}</strong></div>
+      </div>
+
+      {!uploadedRawRows.length ? (
+        <div className="stw-empty">
+          <h3>Upload a Search Terms CSV to start.</h3>
+          <p>
+            Do not paste search terms into Google Sheets. Use the upload box above. The data is stored locally in your browser and can be cleared anytime.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="stw-mode-tabs">
+            {MODES.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                className={mode === item.key ? "active" : ""}
+                onClick={() => setMode(item.key)}
+              >
+                <strong>{item.label}</strong>
+                <small>{item.description}</small>
+              </button>
+            ))}
+          </div>
+
+          <div className="stw-filters">
+            <label>
+              Min Spend ₹
+              <input type="number" value={minSpend} onChange={(e) => setMinSpend(Number(e.target.value || 0))} />
+            </label>
+
+            <label>
+              Min Clicks
+              <input type="number" value={minClicks} onChange={(e) => setMinClicks(Number(e.target.value || 0))} />
+            </label>
+
+            <label>
+              Target ROAS
+              <input type="number" step="0.1" value={targetRoas} onChange={(e) => setTargetRoas(Number(e.target.value || 0))} />
+            </label>
+
+            <label>
+              Max CPA ₹
+              <input type="number" value={maxCpa} onChange={(e) => setMaxCpa(Number(e.target.value || 0))} />
+            </label>
+
+            <label>
+              Contains
+              <input value={contains} onChange={(e) => setContains(e.target.value)} placeholder="e.g. free, amazon, hair fall" />
+            </label>
+
+            <label>
+              Campaign
+              <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
+                <option value="all">All Campaigns</option>
+                {campaigns.map((name) => <option key={name} value={name}>{name}</option>)}
+              </select>
+            </label>
+
+            <label>
+              Match Type
+              <select value={matchType} onChange={(e) => setMatchType(e.target.value as NegativeMatchType | "all")}>
+                <option value="all">All</option>
+                <option value="exact">Exact</option>
+                <option value="phrase">Phrase</option>
+                <option value="broad">Broad</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="stw-export-panel">
+            <div>
+              <span>Export Center</span>
+              <h3>{filteredRows.length} terms ready</h3>
+              <p>Copy directly into Google Ads negative keyword lists.</p>
+            </div>
+
+            <button type="button" onClick={() => copyText(exactList)}>Copy Exact</button>
+            <button type="button" onClick={() => copyText(phraseList)}>Copy Phrase</button>
+            <button type="button" onClick={() => copyText(broadList)}>Copy Broad</button>
+            <button type="button" onClick={() => downloadCsv("search-term-waster.csv", buildSearchTermCsv(filteredRows))}>Download CSV</button>
+          </div>
+
+          <div className="stw-table">
+            <div className="stw-table-header">
+              <span>Search Term</span>
+              <span>Campaign</span>
+              <span>Ad Group</span>
+              <span>Spend</span>
+              <span>Clicks</span>
+              <span>Purch.</span>
+              <span>Revenue</span>
+              <span>ROAS</span>
+              <span>CPA</span>
+              <span>Recommendation</span>
+              <span>Exact</span>
+              <span>Phrase</span>
+            </div>
+
+            {filteredRows.map((row) => (
+              <div key={row.id} className="stw-table-row">
+                <span><strong>{row.searchTerm}</strong><small>{row.wasteReason}</small></span>
+                <span>{row.campaign}</span>
+                <span>{row.adGroup}</span>
+                <span className="red">{formatMoney(row.spend)}</span>
+                <span>{row.clicks}</span>
+                <span>{row.purchases}</span>
+                <span className="green">{formatMoney(row.revenue)}</span>
+                <span>{formatX(row.roas)}</span>
+                <span>{formatMoney(row.cpa)}</span>
+                <span><b className={row.recommendation.includes("NEGATIVE") ? "red" : row.recommendation.includes("PROMOTE") ? "green" : "amber"}>{row.recommendation}</b></span>
+                <span>{row.exactSyntax}</span>
+                <span>{row.phraseSyntax}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}

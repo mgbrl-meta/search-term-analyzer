@@ -115,23 +115,7 @@ function normalizeHeader(value: string) {
     .replace(/^_+|_+$/g, "");
 }
 
-function detectDelimiter(headerLine: string) {
-  const candidates = [",", "\t", ";"];
-  let best = ",";
-  let bestCount = 0;
-
-  candidates.forEach((delimiter) => {
-    const count = headerLine.split(delimiter).length;
-    if (count > bestCount) {
-      best = delimiter;
-      bestCount = count;
-    }
-  });
-
-  return best;
-}
-
-function parseDelimitedLine(line: string, delimiter: string) {
+function parseCsvLine(line: string) {
   const values: string[] = [];
   let current = "";
   let insideQuotes = false;
@@ -151,7 +135,7 @@ function parseDelimitedLine(line: string, delimiter: string) {
       continue;
     }
 
-    if (char === delimiter && !insideQuotes) {
+    if (char === "," && !insideQuotes) {
       values.push(current);
       current = "";
       continue;
@@ -175,17 +159,11 @@ export function parseCsvText(csvText: string) {
     return [];
   }
 
-  // Google Ads exports are sometimes tab-separated even when saved as .csv.
-  const delimiter = detectDelimiter(lines[0]);
-  const originalHeaders = parseDelimitedLine(lines[0], delimiter);
-  const headers = originalHeaders.map(normalizeHeader);
+  const headers = parseCsvLine(lines[0]).map(normalizeHeader);
 
   return lines.slice(1).map((line) => {
-    const values = parseDelimitedLine(line, delimiter);
-    const row: Record<string, string> = {
-      __detected_delimiter: delimiter === "\t" ? "tab" : delimiter,
-      __detected_headers: originalHeaders.join(" | "),
-    };
+    const values = parseCsvLine(line);
+    const row: Record<string, string> = {};
 
     headers.forEach((header, index) => {
       row[header] = values[index] || "";
@@ -205,14 +183,10 @@ function pick(row: Record<string, string>, keys: string[]) {
 }
 
 function num(value: unknown) {
-  const raw = String(value || "").trim();
-
-  // Handles ₹1,234.56, 1,234.56, 12.34%, and Google Ads blanks.
-  const cleaned = raw
+  const cleaned = String(value || "")
     .replace(/₹/g, "")
     .replace(/,/g, "")
     .replace(/%/g, "")
-    .replace(/--/g, "0")
     .trim();
 
   const n = Number(cleaned || 0);
@@ -225,25 +199,6 @@ function normalizeDate(value: string) {
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
 
-  // Handles DD-MM-YYYY, DD/MM/YYYY, MM/DD/YYYY, Google Ads textual dates.
-  const parts = raw.split(/[/-]/);
-  if (parts.length === 3) {
-    const [a, b, c] = parts.map((x) => x.trim());
-
-    if (c.length === 4) {
-      const first = Number(a);
-      const second = Number(b);
-
-      // India/Google Ads usually exports DD/MM/YYYY. If first > 12, definitely DD/MM.
-      if (first > 12) {
-        return `${c}-${String(second).padStart(2, "0")}-${String(first).padStart(2, "0")}`;
-      }
-
-      // Safe default: DD/MM/YYYY for Indian account exports.
-      return `${c}-${String(second).padStart(2, "0")}-${String(first).padStart(2, "0")}`;
-    }
-  }
-
   const date = new Date(raw);
   if (!Number.isNaN(date.getTime())) {
     const y = date.getFullYear();
@@ -252,20 +207,28 @@ function normalizeDate(value: string) {
     return `${y}-${m}-${d}`;
   }
 
+  const parts = raw.split(/[/-]/);
+  if (parts.length === 3) {
+    const [a, b, c] = parts;
+    if (c.length === 4) {
+      return `${c}-${String(b).padStart(2, "0")}-${String(a).padStart(2, "0")}`;
+    }
+  }
+
   return raw;
 }
 
 export function normalizeUploadedSearchTermRows(rawRows: Record<string, string>[]): SearchTermRawRow[] {
   return rawRows
     .map((row) => {
-      const cost = num(pick(row, ["Cost", "Cost (INR)", "Spend", "Amount spent", "Amount Spent"]));
-      const clicks = num(pick(row, ["Clicks", "Interactions"]));
-      const impressions = num(pick(row, ["Impr.", "Impressions", "Impr"]));
-      const conversions = num(pick(row, ["Conversions", "Conv.", "Purchases", "Purchase", "Orders"]));
-      const conversionValue = num(pick(row, ["Conv. value", "Conversion value", "Revenue", "Purchase value", "Conversion Value", "Conv value"]));
+      const cost = num(pick(row, ["Cost", "Cost (INR)", "Spend", "Amount spent"]));
+      const clicks = num(pick(row, ["Clicks"]));
+      const impressions = num(pick(row, ["Impr.", "Impressions"]));
+      const conversions = num(pick(row, ["Conversions", "Conv.", "Purchases"]));
+      const conversionValue = num(pick(row, ["Conv. value", "Conversion value", "Revenue", "Purchase value"]));
 
       return {
-        date: normalizeDate(pick(row, ["Date", "Day", "Date range"])),
+        date: normalizeDate(pick(row, ["Date", "Day"])),
         campaign: pick(row, ["Campaign", "Campaign name"]),
         campaignId: pick(row, ["Campaign ID", "Campaign id"]),
         campaignType: pick(row, ["Campaign type", "Advertising channel type", "Channel type"]),
@@ -276,15 +239,12 @@ export function normalizeUploadedSearchTermRows(rawRows: Record<string, string>[
         searchTerm: cleanTerm(pick(row, [
           "Search term",
           "Search Term",
-          "Search terms",
           "Search query",
           "Search Query",
           "Query",
           "User search term",
           "Customer search term",
           "Matched search term",
-          "Customer search query",
-          "Search term text"
         ])),
         keyword: pick(row, ["Keyword", "Keyword text", "Keyword Text", "Matched keyword"]),
         keywordMatchType: pick(row, ["Keyword match type", "Match type", "Search term match type"]),
