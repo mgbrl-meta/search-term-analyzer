@@ -65,3 +65,44 @@ export function changePct(current: number, previous: number): number {
   if (!previous && current) return 100;
   return ((current - previous) / previous) * 100;
 }
+
+
+export function compactMoney(value: unknown): string {
+  const n = num(value);
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+
+  if (abs >= 10000000) {
+    return `${sign}₹${(abs / 10000000).toFixed(abs >= 100000000 ? 1 : 2)}Cr`;
+  }
+
+  if (abs >= 100000) {
+    return `${sign}₹${(abs / 100000).toFixed(abs >= 1000000 ? 1 : 2)}L`;
+  }
+
+  if (abs >= 1000) {
+    return `${sign}₹${(abs / 1000).toFixed(abs >= 10000 ? 1 : 2)}K`;
+  }
+
+  return `${sign}₹${Math.round(abs).toLocaleString("en-IN")}`;
+}
+
+export function compactInt(value: unknown): string {
+  const n = num(value);
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+
+  if (abs >= 10000000) {
+    return `${sign}${(abs / 10000000).toFixed(abs >= 100000000 ? 1 : 2)}Cr`;
+  }
+
+  if (abs >= 100000) {
+    return `${sign}${(abs / 100000).toFixed(abs >= 1000000 ? 1 : 2)}L`;
+  }
+
+  if (abs >= 1000) {
+    return `${sign}${(abs / 1000).toFixed(abs >= 10000 ? 1 : 2)}K`;
+  }
+
+  return `${sign}${Math.round(abs).toLocaleString("en-IN")}`;
+}

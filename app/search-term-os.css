@@ -1570,3 +1570,120 @@ body {
     min-height: 260px;
   }
 }
+
+/* Monthly Summary table full-width readability fix */
+.monthly-summary-page {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.monthly-summary-page .gos-hero,
+.monthly-summary-page .gos-kpi-grid,
+.monthly-summary-page .gos-insight-grid,
+.monthly-summary-page .gos-panel {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.monthly-table-panel {
+  width: 100% !important;
+  overflow: hidden;
+}
+
+.monthly-table-panel .gos-table-wrap {
+  width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+  border-radius: 16px;
+}
+
+.monthly-table-panel .gos-table {
+  width: 100% !important;
+  min-width: 1380px !important;
+  table-layout: fixed !important;
+}
+
+.monthly-table-panel .gos-table th,
+.monthly-table-panel .gos-table td {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-align: right;
+  font-size: 12px;
+  line-height: 1.25;
+  padding: 11px 10px;
+}
+
+.monthly-table-panel .gos-table th:first-child,
+.monthly-table-panel .gos-table td:first-child {
+  text-align: left;
+  width: 92px !important;
+}
+
+.monthly-table-panel .gos-table th:nth-child(2),
+.monthly-table-panel .gos-table td:nth-child(2),
+.monthly-table-panel .gos-table th:nth-child(8),
+.monthly-table-panel .gos-table td:nth-child(8),
+.monthly-table-panel .gos-table th:nth-child(12),
+.monthly-table-panel .gos-table td:nth-child(12),
+.monthly-table-panel .gos-table th:nth-child(14),
+.monthly-table-panel .gos-table td:nth-child(14) {
+  width: 104px !important;
+}
+
+.monthly-table-panel .gos-table th {
+  color: var(--wr-faint);
+  background: var(--wr-panel2);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.monthly-table-panel .gos-table td {
+  color: var(--wr-dim);
+}
+
+.monthly-table-panel .gos-table td strong {
+  white-space: nowrap !important;
+}
+
+/* Keep monthly table as real table on desktop. Only cardify on small screens. */
+@media(max-width: 760px) {
+  .monthly-table-panel .gos-table,
+  .monthly-table-panel .gos-table thead,
+  .monthly-table-panel .gos-table tbody,
+  .monthly-table-panel .gos-table th,
+  .monthly-table-panel .gos-table td,
+  .monthly-table-panel .gos-table tr {
+    display: block;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .monthly-table-panel .gos-table thead {
+    display: none;
+  }
+
+  .monthly-table-panel .gos-table tr {
+    border-bottom: 1px solid var(--wr-line);
+    padding: 10px 0;
+  }
+
+  .monthly-table-panel .gos-table td {
+    border: 0 !important;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    text-align: right !important;
+    padding: 7px 12px !important;
+    white-space: normal !important;
+  }
+
+  .monthly-table-panel .gos-table td::before {
+    content: attr(data-label);
+    color: var(--wr-faint);
+    font-weight: 900;
+    text-align: left;
+    max-width: 45%;
+  }
+}

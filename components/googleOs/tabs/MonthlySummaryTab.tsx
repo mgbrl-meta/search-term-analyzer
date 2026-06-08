@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { GoogleOsModel, GoogleOsRow } from "../../../lib/googleOs/types";
-import { int, money, pct, safeDiv, x } from "../../../lib/googleOs/format";
+import { compactInt, compactMoney, money, pct, safeDiv, x } from "../../../lib/googleOs/format";
 import { GoogleOsKpi } from "../shared/GoogleOsKpi";
 import { GoogleOsTable } from "../shared/GoogleOsTable";
 
@@ -451,8 +451,8 @@ function DeltaValue({
   const positive = value >= 0;
   let formatted = "";
 
-  if (type === "money") formatted = money(value);
-  if (type === "number") formatted = value.toFixed(2);
+  if (type === "money") formatted = compactMoney(value);
+  if (type === "number") formatted = compactInt(value);
   if (type === "pct") formatted = `${value.toFixed(1)}%`;
   if (type === "x") formatted = x(value);
 
@@ -484,11 +484,11 @@ export function MonthlySummaryTab({ model }: { model: GoogleOsModel }) {
       {latest ? (
         <div className="gos-kpi-grid">
           <GoogleOsKpi label="Latest Month" value={latest.month} />
-          <GoogleOsKpi label="Spend" value={money(latest.cost)} tone="red" />
-          <GoogleOsKpi label="Revenue" value={money(latest.revenue)} tone="green" />
+          <GoogleOsKpi label="Spend" value={compactMoney(latest.cost)} tone="red" />
+          <GoogleOsKpi label="Revenue" value={compactMoney(latest.revenue)} tone="green" />
           <GoogleOsKpi label="ROAS" value={x(latest.roas)} tone={latest.roas >= 3 ? "green" : latest.roas < 1 ? "red" : "amber"} />
           <GoogleOsKpi label="Purchases" value={latest.purchases.toFixed(2)} />
-          <GoogleOsKpi label="CPA" value={money(latest.cpa)} />
+          <GoogleOsKpi label="CPA" value={compactMoney(latest.cpa)} />
           <GoogleOsKpi label="Incremental Spend" value={<DeltaValue value={latest.incrementalSpend} />} />
           <GoogleOsKpi label="Marginal ROAS" value={<DeltaValue value={latest.marginalRoas} type="x" />} />
         </div>
@@ -534,23 +534,23 @@ export function MonthlySummaryTab({ model }: { model: GoogleOsModel }) {
           rows={monthlyRows.slice().reverse() as unknown as Record<string, unknown>[]}
           columns={[
             { key: "month", label: "Month" },
-            { key: "cost", label: "Spend", right: true, render: (row) => money(row.cost) },
-            { key: "impressions", label: "Impr.", right: true, render: (row) => int(row.impressions) },
-            { key: "clicks", label: "Clicks", right: true, render: (row) => int(row.clicks) },
+            { key: "cost", label: "Spend", right: true, render: (row) => compactMoney(row.cost) },
+            { key: "impressions", label: "Impr.", right: true, render: (row) => compactInt(row.impressions) },
+            { key: "clicks", label: "Clicks", right: true, render: (row) => compactInt(row.clicks) },
             { key: "ctr", label: "CTR", right: true, render: (row) => pct(row.ctr) },
-            { key: "costPerImpression", label: "Cost / Impr.", right: true, render: (row) => money(row.costPerImpression) },
-            { key: "purchases", label: "Purchases", right: true, render: (row) => Number(row.purchases || 0).toFixed(2) },
-            { key: "revenue", label: "Revenue", right: true, render: (row) => money(row.revenue) },
+            { key: "costPerImpression", label: "CPI", right: true, render: (row) => compactMoney(row.costPerImpression) },
+            { key: "purchases", label: "Purchases", right: true, render: (row) => compactInt(row.purchases) },
+            { key: "revenue", label: "Revenue", right: true, render: (row) => compactMoney(row.revenue) },
             { key: "roas", label: "ROAS", right: true, render: (row) => x(row.roas) },
-            { key: "cpa", label: "CPA", right: true, render: (row) => money(row.cpa) },
-            { key: "cvr", label: "Purchase CVR", right: true, render: (row) => pct(row.cvr) },
-            { key: "incrementalSpend", label: "Incr. Spend ₹", right: true, render: (row) => <DeltaValue value={Number(row.incrementalSpend || 0)} /> },
-            { key: "incrementalSpendPct", label: "Incr. Spend %", right: true, render: (row) => <DeltaValue value={Number(row.incrementalSpendPct || 0)} type="pct" /> },
-            { key: "incrementalRevenue", label: "Incr. Revenue ₹", right: true, render: (row) => <DeltaValue value={Number(row.incrementalRevenue || 0)} /> },
-            { key: "incrementalPurchases", label: "Incr. Purch.", right: true, render: (row) => <DeltaValue value={Number(row.incrementalPurchases || 0)} type="number" /> },
-            { key: "incrementalCpa", label: "Incr. CPA ₹", right: true, render: (row) => <DeltaValue value={Number(row.incrementalCpa || 0)} /> },
-            { key: "incrementalCpaPct", label: "Incr. CPA %", right: true, render: (row) => <DeltaValue value={Number(row.incrementalCpaPct || 0)} type="pct" /> },
-            { key: "marginalRoas", label: "Marginal ROAS", right: true, render: (row) => <DeltaValue value={Number(row.marginalRoas || 0)} type="x" /> },
+            { key: "cpa", label: "CPA", right: true, render: (row) => compactMoney(row.cpa) },
+            { key: "cvr", label: "CVR", right: true, render: (row) => pct(row.cvr) },
+            { key: "incrementalSpend", label: "Inc Spend", right: true, render: (row) => <DeltaValue value={Number(row.incrementalSpend || 0)} /> },
+            { key: "incrementalSpendPct", label: "Inc Spend %", right: true, render: (row) => <DeltaValue value={Number(row.incrementalSpendPct || 0)} type="pct" /> },
+            { key: "incrementalRevenue", label: "Inc Rev", right: true, render: (row) => <DeltaValue value={Number(row.incrementalRevenue || 0)} /> },
+            { key: "incrementalPurchases", label: "Inc Purch", right: true, render: (row) => <DeltaValue value={Number(row.incrementalPurchases || 0)} type="number" /> },
+            { key: "incrementalCpa", label: "Inc CPA", right: true, render: (row) => <DeltaValue value={Number(row.incrementalCpa || 0)} /> },
+            { key: "incrementalCpaPct", label: "Inc CPA %", right: true, render: (row) => <DeltaValue value={Number(row.incrementalCpaPct || 0)} type="pct" /> },
+            { key: "marginalRoas", label: "Marg ROAS", right: true, render: (row) => <DeltaValue value={Number(row.marginalRoas || 0)} type="x" /> },
           ]}
           empty="No monthly data available."
         />
