@@ -5445,3 +5445,723 @@ html.light,
   color: var(--gos-chart-axis) !important;
   fill: var(--gos-chart-axis) !important;
 }
+
+/* =========================================================
+   FINAL LIGHT/DARK MODE + AXIS CHART TOOLKIT
+   ========================================================= */
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.light {
+  color-scheme: light;
+  --gos-bg: #f7f9fc;
+  --gos-surface: #ffffff;
+  --gos-surface-2: #f8fafc;
+  --gos-surface-3: #eef4ff;
+  --gos-border: rgba(15, 23, 42, 0.14);
+  --gos-text: #0f172a;
+  --gos-muted: #475569;
+  --gos-faint: #64748b;
+  --gos-green: #16a34a;
+  --gos-red: #dc2626;
+  --gos-amber: #d97706;
+}
+
+html.light body {
+  background: #f7f9fc !important;
+  color: #0f172a !important;
+}
+
+html.light .google-os-shell {
+  background:
+    radial-gradient(circle at top left, rgba(66, 133, 244, 0.10), transparent 34%),
+    radial-gradient(circle at top right, rgba(52, 168, 83, 0.08), transparent 30%),
+    #f7f9fc !important;
+}
+
+html.light .gos-topbar,
+html.light .gos-home-tabs,
+html.light .gos-panel,
+html.light .gos-campaign-accordion-panel,
+html.light .gos-campaign-type-table,
+html.light .gos-brand-summary-table,
+html.light .gos-axis-chart-box {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+html.light .gos-home-tabs button,
+html.light .gos-campaign-period-buttons,
+html.light .gos-campaign-period-filter select,
+html.light .gos-campaign-summary-strip > div {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+html.light .gos-home-tabs button.active,
+html.light .gos-campaign-period-buttons button.active {
+  background: #eef4ff !important;
+  color: #0f172a !important;
+}
+
+/* Theme toggle button */
+.gos-theme-toggle {
+  min-height: 30px !important;
+  border-radius: 999px !important;
+  padding: 6px 11px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid rgba(251, 188, 4, 0.36) !important;
+  background: rgba(251, 188, 4, 0.09) !important;
+  color: var(--gos-text) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  cursor: pointer !important;
+}
+
+/* Axis chart */
+.gos-axis-chart-box {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 14px !important;
+  padding: 12px !important;
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.gos-axis-chart-head {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+.gos-axis-chart-head span {
+  display: block !important;
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+.gos-axis-chart-head strong {
+  display: block !important;
+  margin-top: 4px !important;
+  color: var(--gos-text) !important;
+  font-size: 14px !important;
+}
+
+.gos-axis-chart-head small {
+  display: block !important;
+  margin-top: 3px !important;
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+}
+
+.gos-axis-chart-legend {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 999px !important;
+  padding: 6px 9px !important;
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+}
+
+.gos-axis-chart-legend i {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 999px !important;
+}
+
+.gos-axis-chart-wrap {
+  width: 100% !important;
+  overflow: hidden !important;
+  border: 1px solid var(--gos-border) !important;
+  background: color-mix(in srgb, var(--gos-surface) 90%, transparent) !important;
+  border-radius: 13px !important;
+  padding: 8px !important;
+}
+
+.gos-axis-chart-svg {
+  display: block !important;
+  width: 100% !important;
+  height: 310px !important;
+}
+
+.gos-axis-chart-grid {
+  stroke: rgba(148, 163, 184, 0.24) !important;
+  stroke-width: 1 !important;
+  stroke-dasharray: 4 6 !important;
+}
+
+.gos-axis-chart-axis {
+  stroke: rgba(148, 163, 184, 0.46) !important;
+  stroke-width: 1.2 !important;
+}
+
+.gos-axis-chart-text,
+.gos-axis-chart-caption {
+  fill: var(--gos-text) !important;
+  color: var(--gos-text) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  opacity: 1 !important;
+}
+
+.gos-axis-chart-text.x {
+  fill: var(--gos-muted) !important;
+  font-size: 9.5px !important;
+}
+
+.gos-axis-chart-caption {
+  fill: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  letter-spacing: 0.12em !important;
+}
+
+.gos-axis-chart-area {
+  opacity: 0.13 !important;
+}
+
+.gos-axis-chart-line {
+  fill: none !important;
+  stroke-width: 3 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+.gos-axis-chart-point circle {
+  stroke: var(--gos-surface) !important;
+  stroke-width: 2 !important;
+  cursor: pointer !important;
+}
+
+.gos-axis-chart-point:hover circle {
+  r: 6px !important;
+}
+
+html.light .gos-axis-chart-grid {
+  stroke: rgba(15, 23, 42, 0.14) !important;
+}
+
+html.light .gos-axis-chart-axis {
+  stroke: rgba(15, 23, 42, 0.34) !important;
+}
+
+html.light .gos-axis-chart-text,
+html.light .gos-axis-chart-caption {
+  fill: #0f172a !important;
+}
+
+@media(max-width: 760px) {
+  .gos-axis-chart-svg {
+    height: 240px !important;
+  }
+
+  .gos-axis-chart-text.x {
+    font-size: 8px !important;
+  }
+}
+
+/* =========================================================
+   ALL CAMPAIGNS AXIS CHART — DECLUTTER + DIMENSION CONTROLS
+   ========================================================= */
+
+.gos-dynamic-chart-panel {
+  margin-top: 4px !important;
+  padding: 12px !important;
+  border-radius: 14px !important;
+}
+
+.gos-chart-control-row {
+  grid-template-columns: 1.2fr 1fr 0.65fr !important;
+  gap: 12px !important;
+}
+
+.gos-chart-button-group {
+  gap: 6px !important;
+}
+
+.gos-chart-button-group button {
+  height: 28px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+}
+
+.gos-axis-chart-box {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 14px !important;
+  padding: 12px !important;
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.gos-axis-chart-head {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+.gos-axis-chart-head span {
+  display: block !important;
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+.gos-axis-chart-head strong {
+  display: block !important;
+  margin-top: 4px !important;
+  color: var(--gos-text) !important;
+  font-size: 14px !important;
+}
+
+.gos-axis-chart-head small {
+  display: block !important;
+  margin-top: 3px !important;
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+}
+
+.gos-axis-chart-legend {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 999px !important;
+  padding: 6px 9px !important;
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+}
+
+.gos-axis-chart-legend i {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 999px !important;
+}
+
+.gos-axis-chart-wrap {
+  width: 100% !important;
+  overflow: hidden !important;
+  border: 1px solid var(--gos-border) !important;
+  background: color-mix(in srgb, var(--gos-surface) 90%, transparent) !important;
+  border-radius: 13px !important;
+  padding: 8px !important;
+}
+
+.gos-axis-chart-svg {
+  display: block !important;
+  width: 100% !important;
+  height: 310px !important;
+}
+
+.gos-axis-chart-grid {
+  stroke: rgba(148, 163, 184, 0.24) !important;
+  stroke-width: 1 !important;
+  stroke-dasharray: 4 6 !important;
+}
+
+.gos-axis-chart-axis {
+  stroke: rgba(148, 163, 184, 0.48) !important;
+  stroke-width: 1.2 !important;
+}
+
+.gos-axis-chart-text,
+.gos-axis-chart-caption {
+  fill: var(--gos-text) !important;
+  color: var(--gos-text) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  opacity: 1 !important;
+}
+
+.gos-axis-chart-text.x {
+  fill: var(--gos-muted) !important;
+  font-size: 9px !important;
+}
+
+.gos-axis-chart-caption {
+  fill: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  letter-spacing: 0.12em !important;
+}
+
+.gos-axis-chart-area {
+  opacity: 0.13 !important;
+}
+
+.gos-axis-chart-line {
+  fill: none !important;
+  stroke-width: 3 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+.gos-axis-chart-point circle {
+  stroke: var(--gos-surface) !important;
+  stroke-width: 2 !important;
+  cursor: pointer !important;
+}
+
+.gos-axis-chart-point:hover circle {
+  r: 6px !important;
+}
+
+/* Light mode axis readability */
+html.light .gos-axis-chart-grid {
+  stroke: rgba(15, 23, 42, 0.14) !important;
+}
+
+html.light .gos-axis-chart-axis {
+  stroke: rgba(15, 23, 42, 0.34) !important;
+}
+
+html.light .gos-axis-chart-text,
+html.light .gos-axis-chart-caption {
+  fill: #0f172a !important;
+}
+
+/* Reduce clutter on smaller screens */
+@media(max-width: 1050px) {
+  .gos-chart-control-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gos-axis-chart-svg {
+    height: 260px !important;
+  }
+}
+
+@media(max-width: 760px) {
+  .gos-axis-chart-svg {
+    height: 230px !important;
+  }
+
+  .gos-axis-chart-text.x {
+    font-size: 7.5px !important;
+  }
+}
+
+/* =========================================================
+   ALL CAMPAIGNS AXIS CHART — DECLUTTER + DIMENSION CONTROLS
+   ========================================================= */
+
+.gos-dynamic-chart-panel {
+  margin-top: 4px !important;
+  padding: 12px !important;
+  border-radius: 14px !important;
+}
+
+.gos-chart-control-row {
+  grid-template-columns: 1.2fr 1fr 0.65fr !important;
+  gap: 12px !important;
+}
+
+.gos-chart-button-group {
+  gap: 6px !important;
+}
+
+.gos-chart-button-group button {
+  height: 28px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+}
+
+.gos-axis-chart-box {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 14px !important;
+  padding: 12px !important;
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.gos-axis-chart-head {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+.gos-axis-chart-head span {
+  display: block !important;
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+.gos-axis-chart-head strong {
+  display: block !important;
+  margin-top: 4px !important;
+  color: var(--gos-text) !important;
+  font-size: 14px !important;
+}
+
+.gos-axis-chart-head small {
+  display: block !important;
+  margin-top: 3px !important;
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+}
+
+.gos-axis-chart-legend {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 999px !important;
+  padding: 6px 9px !important;
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+}
+
+.gos-axis-chart-legend i {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 999px !important;
+}
+
+.gos-axis-chart-wrap {
+  width: 100% !important;
+  overflow: hidden !important;
+  border: 1px solid var(--gos-border) !important;
+  background: color-mix(in srgb, var(--gos-surface) 90%, transparent) !important;
+  border-radius: 13px !important;
+  padding: 8px !important;
+}
+
+.gos-axis-chart-svg {
+  display: block !important;
+  width: 100% !important;
+  height: 310px !important;
+}
+
+.gos-axis-chart-grid {
+  stroke: rgba(148, 163, 184, 0.24) !important;
+  stroke-width: 1 !important;
+  stroke-dasharray: 4 6 !important;
+}
+
+.gos-axis-chart-axis {
+  stroke: rgba(148, 163, 184, 0.48) !important;
+  stroke-width: 1.2 !important;
+}
+
+.gos-axis-chart-text,
+.gos-axis-chart-caption {
+  fill: var(--gos-text) !important;
+  color: var(--gos-text) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  opacity: 1 !important;
+}
+
+.gos-axis-chart-text.x {
+  fill: var(--gos-muted) !important;
+  font-size: 9px !important;
+}
+
+.gos-axis-chart-caption {
+  fill: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  letter-spacing: 0.12em !important;
+}
+
+.gos-axis-chart-area {
+  opacity: 0.13 !important;
+}
+
+.gos-axis-chart-line {
+  fill: none !important;
+  stroke-width: 3 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+.gos-axis-chart-point circle {
+  stroke: var(--gos-surface) !important;
+  stroke-width: 2 !important;
+  cursor: pointer !important;
+}
+
+.gos-axis-chart-point:hover circle {
+  r: 6px !important;
+}
+
+/* Light mode axis readability */
+html.light .gos-axis-chart-grid {
+  stroke: rgba(15, 23, 42, 0.14) !important;
+}
+
+html.light .gos-axis-chart-axis {
+  stroke: rgba(15, 23, 42, 0.34) !important;
+}
+
+html.light .gos-axis-chart-text,
+html.light .gos-axis-chart-caption {
+  fill: #0f172a !important;
+}
+
+/* Reduce clutter on smaller screens */
+@media(max-width: 1050px) {
+  .gos-chart-control-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gos-axis-chart-svg {
+    height: 260px !important;
+  }
+}
+
+@media(max-width: 760px) {
+  .gos-axis-chart-svg {
+    height: 230px !important;
+  }
+
+  .gos-axis-chart-text.x {
+    font-size: 7.5px !important;
+  }
+}
+
+/* =========================================================
+   MULTI-METRIC AXIS CHART + ALL ACCOUNT DIMENSION
+   ========================================================= */
+
+.gos-axis-chart-legend.multi {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  gap: 7px !important;
+  max-width: 520px !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+.gos-axis-chart-legend.multi span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 999px !important;
+  padding: 6px 9px !important;
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  background: var(--gos-surface) !important;
+}
+
+.gos-axis-chart-legend.multi i {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 999px !important;
+}
+
+.gos-chart-button-group button.active {
+  position: relative !important;
+}
+
+.gos-chart-button-group button.active::after {
+  content: "✓" !important;
+  margin-left: 6px !important;
+  font-size: 9px !important;
+  color: var(--gos-green) !important;
+}
+
+.gos-axis-chart-line {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.20)) !important;
+}
+
+.gos-axis-chart-point circle {
+  transition: r 120ms ease, opacity 120ms ease !important;
+}
+
+.gos-axis-chart-point:hover circle {
+  r: 6.5px !important;
+}
+
+@media(max-width: 900px) {
+  .gos-axis-chart-legend.multi {
+    justify-content: flex-start !important;
+    max-width: none !important;
+  }
+}
+
+/* =========================================================
+   DIMENSION BUTTONS SINGLE-LINE FIX
+   Keeps Dimension selector in one row.
+   ========================================================= */
+
+.gos-chart-control-row > div:first-child {
+  min-width: 0 !important;
+}
+
+.gos-chart-control-row > div:first-child .gos-chart-button-group {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  white-space: nowrap !important;
+  gap: 6px !important;
+  padding-bottom: 3px !important;
+  scrollbar-width: thin !important;
+}
+
+.gos-chart-control-row > div:first-child .gos-chart-button-group button {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+
+/* Keep the whole control row balanced */
+.gos-chart-control-row {
+  grid-template-columns: minmax(520px, 1.5fr) minmax(360px, 1fr) minmax(260px, 0.65fr) !important;
+  align-items: start !important;
+}
+
+/* Better scrollbar for dimension row */
+.gos-chart-control-row > div:first-child .gos-chart-button-group::-webkit-scrollbar {
+  height: 4px !important;
+}
+
+.gos-chart-control-row > div:first-child .gos-chart-button-group::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.gos-chart-control-row > div:first-child .gos-chart-button-group::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35) !important;
+  border-radius: 999px !important;
+}
+
+/* Tablet/mobile fallback */
+@media(max-width: 1100px) {
+  .gos-chart-control-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gos-chart-control-row > div:first-child .gos-chart-button-group {
+    max-width: calc(100vw - 64px) !important;
+  }
+}
