@@ -4321,3 +4321,325 @@ html.light {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* =========================================================
+   FINAL SEARCH TERM WASTER UI RESET
+   One clean scoped system. Do not patch older stw2/stw3 classes.
+   ========================================================= */
+
+.google-os-shell .search-term-waster-page .stw-final-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-kpi {
+  min-height: 76px !important;
+  padding: 12px 13px !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 14px !important;
+  background: var(--gos-surface-2) !important;
+  display: grid !important;
+  grid-template-rows: auto auto auto !important;
+  gap: 5px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-kpi span {
+  color: var(--gos-faint) !important;
+  font-size: 8px !important;
+  line-height: 1.1 !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-kpi strong {
+  color: var(--gos-text) !important;
+  font-size: 18px !important;
+  line-height: 1.05 !important;
+  font-weight: 950 !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-kpi small {
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  font-weight: 750 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-rule-panel {
+  display: grid !important;
+  grid-template-columns: minmax(260px, 1.4fr) repeat(2, minmax(180px, 0.7fr)) !important;
+  gap: 12px !important;
+  align-items: end !important;
+  padding: 14px !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 16px !important;
+  background: var(--gos-surface-2) !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-filter-panel {
+  display: grid !important;
+  grid-template-columns: 180px minmax(280px, 1fr) minmax(320px, 1fr) 170px !important;
+  gap: 12px !important;
+  padding: 14px !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 16px !important;
+  background: var(--gos-surface-2) !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-rule-panel label,
+.google-os-shell .search-term-waster-page .stw-final-filter-panel label {
+  display: grid !important;
+  gap: 6px !important;
+  color: var(--gos-faint) !important;
+  font-size: 8px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-rule-panel input,
+.google-os-shell .search-term-waster-page .stw-final-filter-panel input,
+.google-os-shell .search-term-waster-page .stw-final-filter-panel select {
+  width: 100% !important;
+  height: 36px !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 10px !important;
+  background: var(--gos-surface) !important;
+  color: var(--gos-text) !important;
+  padding: 0 11px !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+  box-sizing: border-box !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-card {
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 14px !important;
+  background: var(--gos-surface-2) !important;
+  overflow: hidden !important;
+  width: 100% !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-row {
+  width: 100% !important;
+  min-height: 62px !important;
+  padding: 11px 14px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--gos-text) !important;
+  display: grid !important;
+  grid-template-columns: minmax(420px, 2.6fr) repeat(5, minmax(96px, 0.65fr)) !important;
+  gap: 10px !important;
+  align-items: center !important;
+  text-align: right !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-row > span {
+  display: grid !important;
+  gap: 3px !important;
+  justify-items: end !important;
+  min-width: 0 !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-row small {
+  color: var(--gos-faint) !important;
+  font-size: 7.5px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.11em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-row strong {
+  color: var(--gos-text) !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-name {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  justify-items: start !important;
+  text-align: left !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-name b {
+  width: 22px !important;
+  height: 22px !important;
+  flex: 0 0 22px !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(66, 133, 244, 0.18) !important;
+  color: var(--google-blue) !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-name span {
+  display: grid !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-name strong,
+.google-os-shell .search-term-waster-page .stw-final-head-name small {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-name small {
+  color: var(--gos-muted) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-body {
+  border-top: 1px solid var(--gos-border) !important;
+  padding: 10px !important;
+  background: color-mix(in srgb, var(--gos-surface) 88%, transparent) !important;
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-tools {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-tools > div {
+  margin-left: auto !important;
+  display: flex !important;
+  gap: 7px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-tools p {
+  margin: 0 !important;
+  color: var(--gos-muted) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-head-tools button {
+  height: 30px !important;
+  border: 1px solid rgba(66, 133, 244, 0.34) !important;
+  background: rgba(66, 133, 244, 0.13) !important;
+  color: var(--gos-text) !important;
+  border-radius: 9px !important;
+  padding: 0 10px !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-table-wrap {
+  max-height: 520px !important;
+  overflow: auto !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 12px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-table {
+  display: grid !important;
+  grid-template-columns:
+    minmax(230px, 1.45fr)
+    minmax(210px, 1.1fr)
+    minmax(150px, 0.85fr)
+    minmax(72px, 0.42fr)
+    minmax(58px, 0.34fr)
+    minmax(70px, 0.38fr)
+    minmax(60px, 0.34fr)
+    minmax(58px, 0.34fr)
+    minmax(72px, 0.42fr)
+    minmax(72px, 0.42fr)
+    minmax(58px, 0.34fr)
+    minmax(130px, 0.75fr)
+    minmax(130px, 0.75fr) !important;
+  gap: 6px !important;
+  min-width: 1360px !important;
+  align-items: center !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-table-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+  padding: 7px 8px !important;
+  background: rgba(66, 133, 244, 0.10) !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-table-row {
+  padding: 6px 8px !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12) !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-table-header span {
+  color: var(--gos-faint) !important;
+  font-size: 7px !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  text-align: right !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-table-row span {
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-final-table-header span:first-child,
+.google-os-shell .search-term-waster-page .stw-final-table-header span:nth-child(2),
+.google-os-shell .search-term-waster-page .stw-final-table-header span:nth-child(3),
+.google-os-shell .search-term-waster-page .stw-final-table-row span:first-child,
+.google-os-shell .search-term-waster-page .stw-final-table-row span:nth-child(2),
+.google-os-shell .search-term-waster-page .stw-final-table-row span:nth-child(3) {
+  text-align: left !important;
+}
+
+@media(max-width: 1600px) {
+  .google-os-shell .search-term-waster-page .stw-final-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .google-os-shell .search-term-waster-page .stw-final-head-card {
+    overflow-x: auto !important;
+  }
+
+  .google-os-shell .search-term-waster-page .stw-final-head-row {
+    min-width: 1000px !important;
+  }
+}
+
+@media(max-width: 900px) {
+  .google-os-shell .search-term-waster-page .stw-final-kpi-grid,
+  .google-os-shell .search-term-waster-page .stw-final-rule-panel,
+  .google-os-shell .search-term-waster-page .stw-final-filter-panel {
+    grid-template-columns: 1fr !important;
+  }
+}
+

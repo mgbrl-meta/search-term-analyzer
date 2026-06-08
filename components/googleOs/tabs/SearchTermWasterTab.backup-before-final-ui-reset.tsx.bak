@@ -677,7 +677,7 @@ export function SearchTermWasterTab({ model }: { model: GoogleOsModel }) {
         <label>Spend, 0 Purchase ₹<input type="number" value={rules.spendWasteAmount} onChange={(e) => setRules(updateRule(rules, "spendWasteAmount", Number(e.target.value || 0)))} /></label>
       </div>
 
-      <div className="stw-final-filter-panel">
+      <div className="stw2-filter-panel">
         <label>
           Analysis Mode
           <select value={mode} onChange={(e) => setMode(e.target.value as SearchTermMode)}>
