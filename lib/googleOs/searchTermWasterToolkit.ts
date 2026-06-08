@@ -697,3 +697,372 @@ export function buildSearchTermCsv(rows: SearchTermWasterRow[]) {
     .map((line) => line.map(escapeCsv).join(","))
     .join("\n");
 }
+
+/* =========================================================
+   SEARCH TERM WASTER — DYNAMIC HEADS + N-GRAM TOOLKIT
+   ========================================================= */
+
+export type SearchTermHeadKey =
+  | "click_zero_purchase"
+  | "spend_zero_purchase"
+  | "high_spend_low_roas"
+  | "high_cpa"
+  | "high_impression_low_ctr"
+  | "intent_mismatch"
+  | "marketplace_leakage"
+  | "phrase_waster"
+  | "repeat_waster"
+  | "positive_keywords"
+  | "protected_terms";
+
+export type SearchTermDynamicRules = {
+  clickWasteClicks: number;
+  spendWasteAmount: number;
+  lowRoasSpend: number;
+  lowRoasTarget: number;
+  highCpaAmount: number;
+  lowCtrImpressions: number;
+  lowCtrPercent: number;
+  phraseMinWords: number;
+  phraseMaxWords: number;
+  phraseMinTerms: number;
+  phraseMinSpend: number;
+  repeatMinCampaigns: number;
+  repeatMinSpend: number;
+  positivePurchases: number;
+  positiveRoas: number;
+};
+
+export type SearchTermAnalysisHead = {
+  key: SearchTermHeadKey;
+  title: string;
+  subtitle: string;
+  action: string;
+  risk: "High" | "Medium" | "Low" | "Protect" | "Opportunity";
+  rows: SearchTermWasterRow[];
+  totalSpend: number;
+  totalRevenue: number;
+  purchases: number;
+};
+
+export type PhraseWasterGroup = {
+  phrase: string;
+  rows: SearchTermWasterRow[];
+  totalSpend: number;
+  totalClicks: number;
+  totalPurchases: number;
+  totalRevenue: number;
+  roas: number;
+};
+
+export const DEFAULT_SEARCH_TERM_DYNAMIC_RULES: SearchTermDynamicRules = {
+  clickWasteClicks: 10,
+  spendWasteAmount: 500,
+  lowRoasSpend: 500,
+  lowRoasTarget: 2,
+  highCpaAmount: 600,
+  lowCtrImpressions: 500,
+  lowCtrPercent: 1,
+  phraseMinWords: 2,
+  phraseMaxWords: 3,
+  phraseMinTerms: 3,
+  phraseMinSpend: 1000,
+  repeatMinCampaigns: 2,
+  repeatMinSpend: 500,
+  positivePurchases: 2,
+  positiveRoas: 2,
+};
+
+const STOP_WORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "as",
+  "at",
+  "be",
+  "best",
+  "buy",
+  "for",
+  "from",
+  "how",
+  "in",
+  "is",
+  "it",
+  "near",
+  "of",
+  "on",
+  "or",
+  "the",
+  "to",
+  "with",
+  "without",
+]);
+
+export function getSearchTermRisk(row: SearchTermWasterRow, rules: SearchTermDynamicRules) {
+  if (row.isProtected || row.recommendation === "PROTECT") return "Protect";
+  if (row.purchases >= rules.positivePurchases && row.roas >= rules.positiveRoas) return "Opportunity";
+  if (row.spend >= rules.spendWasteAmount * 2 && row.purchases === 0) return "High";
+  if (row.spend >= rules.spendWasteAmount && row.purchases === 0) return "Medium";
+  if (row.clicks >= rules.clickWasteClicks && row.purchases === 0) return "Low";
+  return "Low";
+}
+
+export function buildTermNgrams(term: string, minWords: number, maxWords: number) {
+  const words = cleanTerm(term)
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word) => word.replace(/[^a-z0-9]/g, ""))
+    .filter((word) => word && !STOP_WORDS.has(word));
+
+  const ngrams: string[] = [];
+
+  for (let size = minWords; size <= maxWords; size += 1) {
+    for (let i = 0; i <= words.length - size; i += 1) {
+      ngrams.push(words.slice(i, i + size).join(" "));
+    }
+  }
+
+  return Array.from(new Set(ngrams));
+}
+
+export function buildPhraseWasterGroups(rows: SearchTermWasterRow[], rules: SearchTermDynamicRules): PhraseWasterGroup[] {
+  const map = new Map<string, SearchTermWasterRow[]>();
+
+  rows.forEach((row) => {
+    if (row.purchases > 0 || row.isProtected) return;
+
+    const phrases = buildTermNgrams(row.searchTerm, rules.phraseMinWords, rules.phraseMaxWords);
+
+    phrases.forEach((phrase) => {
+      if (!map.has(phrase)) map.set(phrase, []);
+      map.get(phrase)!.push(row);
+    });
+  });
+
+  return Array.from(map.entries())
+    .map(([phrase, phraseRows]) => {
+      const uniqueRows = Array.from(new Map(phraseRows.map((row) => [row.id, row])).values());
+      const totalSpend = uniqueRows.reduce((sum, row) => sum + row.spend, 0);
+      const totalClicks = uniqueRows.reduce((sum, row) => sum + row.clicks, 0);
+      const totalPurchases = uniqueRows.reduce((sum, row) => sum + row.purchases, 0);
+      const totalRevenue = uniqueRows.reduce((sum, row) => sum + row.revenue, 0);
+
+      return {
+        phrase,
+        rows: uniqueRows,
+        totalSpend,
+        totalClicks,
+        totalPurchases,
+        totalRevenue,
+        roas: safeDiv(totalRevenue, totalSpend),
+      };
+    })
+    .filter((group) => {
+      return group.rows.length >= rules.phraseMinTerms && group.totalSpend >= rules.phraseMinSpend && group.totalPurchases === 0;
+    })
+    .sort((a, b) => b.totalSpend - a.totalSpend);
+}
+
+export function buildRepeatWasterRows(rows: SearchTermWasterRow[], rules: SearchTermDynamicRules) {
+  const map = new Map<string, SearchTermWasterRow[]>();
+
+  rows.forEach((row) => {
+    if (row.purchases > 0 || row.isProtected) return;
+
+    const key = row.searchTerm.toLowerCase();
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(row);
+  });
+
+  const repeatedIds = new Set<string>();
+
+  Array.from(map.values()).forEach((termRows) => {
+    const campaigns = new Set(termRows.map((row) => row.campaign));
+    const spend = termRows.reduce((sum, row) => sum + row.spend, 0);
+
+    if (campaigns.size >= rules.repeatMinCampaigns && spend >= rules.repeatMinSpend) {
+      termRows.forEach((row) => repeatedIds.add(row.id));
+    }
+  });
+
+  return rows.filter((row) => repeatedIds.has(row.id)).sort((a, b) => b.spend - a.spend);
+}
+
+export function buildSearchTermAnalysisHeads(
+  rows: SearchTermWasterRow[],
+  rules: SearchTermDynamicRules,
+  settings: SearchTermSettings
+): SearchTermAnalysisHead[] {
+  const badIntentRows = rows.filter((row) => {
+    const term = row.searchTerm.toLowerCase();
+    return settings.badIntentWords.some((word) => term.includes(word.toLowerCase())) && !row.isProtected;
+  });
+
+  const marketplaceRows = rows.filter((row) => {
+    const term = row.searchTerm.toLowerCase();
+    return settings.marketplaceWords.some((word) => term.includes(word.toLowerCase())) && !row.isProtected;
+  });
+
+  const phraseGroups = buildPhraseWasterGroups(rows, rules);
+  const phraseRows = Array.from(
+    new Map(phraseGroups.flatMap((group) => group.rows).map((row) => [row.id, row])).values()
+  ).sort((a, b) => b.spend - a.spend);
+
+  const heads: Omit<SearchTermAnalysisHead, "totalSpend" | "totalRevenue" | "purchases">[] = [
+    {
+      key: "click_zero_purchase",
+      title: `More than ${rules.clickWasteClicks} clicks, 0 purchase`,
+      subtitle: "Search terms consuming clicks without generating purchases.",
+      action: "Exact negative / investigate before adding negative if term is strategic.",
+      risk: "Medium",
+      rows: rows.filter((row) => row.clicks >= rules.clickWasteClicks && row.purchases === 0 && !row.isProtected),
+    },
+    {
+      key: "spend_zero_purchase",
+      title: `More than ₹${rules.spendWasteAmount}, 0 purchase`,
+      subtitle: "Search terms spending above threshold with no conversion output.",
+      action: "Exact negative. Phrase negative if repeated pattern appears.",
+      risk: "High",
+      rows: rows.filter((row) => row.spend >= rules.spendWasteAmount && row.purchases === 0 && !row.isProtected),
+    },
+    {
+      key: "high_spend_low_roas",
+      title: `Spend > ₹${rules.lowRoasSpend}, ROAS < ${rules.lowRoasTarget}x`,
+      subtitle: "Terms that convert but below efficiency threshold.",
+      action: "Bid down, isolate into exact campaign, or review landing-page intent.",
+      risk: "Medium",
+      rows: rows.filter((row) => row.spend >= rules.lowRoasSpend && row.purchases > 0 && row.roas < rules.lowRoasTarget && !row.isProtected),
+    },
+    {
+      key: "high_cpa",
+      title: `CPA above ₹${rules.highCpaAmount}`,
+      subtitle: "Converted terms with acquisition cost above target.",
+      action: "Bid down or isolate. Do not negative if strategically important.",
+      risk: "Medium",
+      rows: rows.filter((row) => row.purchases > 0 && row.cpa > rules.highCpaAmount && !row.isProtected),
+    },
+    {
+      key: "high_impression_low_ctr",
+      title: `Impressions > ${rules.lowCtrImpressions}, CTR < ${rules.lowCtrPercent}%`,
+      subtitle: "High visibility but poor search intent or weak relevance.",
+      action: "Review ad relevance. Negative if term is irrelevant.",
+      risk: "Low",
+      rows: rows.filter((row) => row.impressions >= rules.lowCtrImpressions && row.ctr < rules.lowCtrPercent / 100 && !row.isProtected),
+    },
+    {
+      key: "intent_mismatch",
+      title: "Intent mismatch terms",
+      subtitle: `Contains bad-intent words like ${settings.badIntentWords.slice(0, 6).join(", ")}.`,
+      action: "Phrase negative unless it has profitable conversion history.",
+      risk: "High",
+      rows: badIntentRows,
+    },
+    {
+      key: "marketplace_leakage",
+      title: "Marketplace leakage terms",
+      subtitle: `Contains marketplace words like ${settings.marketplaceWords.join(", ")}.`,
+      action: "Phrase negative unless marketplace comparison terms are profitable.",
+      risk: "Medium",
+      rows: marketplaceRows,
+    },
+    {
+      key: "phrase_waster",
+      title: "Phrase wasters from n-gram analysis",
+      subtitle: `Repeated ${rules.phraseMinWords}-${rules.phraseMaxWords} word phrases across ${rules.phraseMinTerms}+ terms with ₹${rules.phraseMinSpend}+ wasted spend.`,
+      action: "Phrase negative candidate. Review rows before upload.",
+      risk: "High",
+      rows: phraseRows,
+    },
+    {
+      key: "repeat_waster",
+      title: `Repeat wasters across ${rules.repeatMinCampaigns}+ campaigns`,
+      subtitle: "Same search term wasting spend across multiple campaigns/ad groups.",
+      action: "Account-level negative exact or phrase depending on pattern.",
+      risk: "High",
+      rows: buildRepeatWasterRows(rows, rules),
+    },
+    {
+      key: "positive_keywords",
+      title: `Positive keyword candidates: ${rules.positivePurchases}+ purchases, ROAS > ${rules.positiveRoas}x`,
+      subtitle: "Terms to promote into exact/phrase keywords.",
+      action: "Add as exact keyword or isolate into high-intent ad group.",
+      risk: "Opportunity",
+      rows: rows.filter((row) => row.purchases >= rules.positivePurchases && row.roas >= rules.positiveRoas),
+    },
+    {
+      key: "protected_terms",
+      title: "Protected brand/product terms",
+      subtitle: "Terms that should not be blindly added as negatives.",
+      action: "Protect. Review separately for bid strategy.",
+      risk: "Protect",
+      rows: rows.filter((row) => row.isProtected || row.recommendation === "PROTECT"),
+    },
+  ];
+
+  return heads
+    .map((head) => ({
+      ...head,
+      rows: head.rows.sort((a, b) => b.spend - a.spend),
+      totalSpend: head.rows.reduce((sum, row) => sum + row.spend, 0),
+      totalRevenue: head.rows.reduce((sum, row) => sum + row.revenue, 0),
+      purchases: head.rows.reduce((sum, row) => sum + row.purchases, 0),
+    }))
+    .sort((a, b) => {
+      const priority: Record<SearchTermHeadKey, number> = {
+        spend_zero_purchase: 1,
+        click_zero_purchase: 2,
+        phrase_waster: 3,
+        repeat_waster: 4,
+        intent_mismatch: 5,
+        marketplace_leakage: 6,
+        high_spend_low_roas: 7,
+        high_cpa: 8,
+        high_impression_low_ctr: 9,
+        positive_keywords: 10,
+        protected_terms: 11,
+      };
+
+      return priority[a.key] - priority[b.key];
+    });
+}
+
+export function buildHeadCsv(head: SearchTermAnalysisHead) {
+  return buildSearchTermCsv(head.rows);
+}
+
+export function buildHeadNegativeText(head: SearchTermAnalysisHead, matchType: NegativeMatchType) {
+  return head.rows
+    .map((row) => {
+      if (matchType === "exact") return row.exactSyntax;
+      if (matchType === "phrase") return row.phraseSyntax;
+      return row.broadSyntax;
+    })
+    .join("\n");
+}
+
+export function buildPhraseWasterCsv(groups: PhraseWasterGroup[]) {
+  const headers = [
+    "Phrase",
+    "Terms Count",
+    "Total Spend",
+    "Clicks",
+    "Purchases",
+    "Revenue",
+    "ROAS",
+    "Phrase Negative Syntax",
+  ];
+
+  const rows = groups.map((group) => [
+    group.phrase,
+    group.rows.length,
+    group.totalSpend,
+    group.totalClicks,
+    group.totalPurchases,
+    group.totalRevenue,
+    formatX(group.roas),
+    phraseSyntax(group.phrase),
+  ]);
+
+  return [headers, ...rows].map((line) => line.map(escapeCsv).join(",")).join("\n");
+}

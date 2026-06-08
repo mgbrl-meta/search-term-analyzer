@@ -2334,3 +2334,738 @@ html.light {
     height: 320px !important;
   }
 }
+
+/* =========================================================
+   SEARCH TERM WASTER TOOLKIT
+   Quantitative search term waste finder + export center.
+   ========================================================= */
+
+.google-os-shell .search-term-waster-page {
+  display: grid !important;
+  gap: 14px !important;
+}
+
+.google-os-shell .stw-header,
+.google-os-shell .stw-empty,
+.google-os-shell .stw-export-panel,
+.google-os-shell .stw-table,
+.google-os-shell .stw-mode-tabs,
+.google-os-shell .stw-filters,
+.google-os-shell .stw-summary-grid {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.google-os-shell .stw-header {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 16px !important;
+  padding: 14px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+}
+
+.google-os-shell .stw-header span,
+.google-os-shell .stw-export-panel span {
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .stw-header h2,
+.google-os-shell .stw-export-panel h3 {
+  color: var(--gos-text) !important;
+  margin: 6px 0 0 !important;
+  font-size: 19px !important;
+}
+
+.google-os-shell .stw-header p,
+.google-os-shell .stw-export-panel p,
+.google-os-shell .stw-empty p {
+  color: var(--gos-muted) !important;
+  margin: 7px 0 0 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.google-os-shell .stw-header button,
+.google-os-shell .stw-export-panel button {
+  height: 36px !important;
+  border: 1px solid rgba(66, 133, 244, 0.36) !important;
+  background: rgba(66, 133, 244, 0.14) !important;
+  color: var(--gos-text) !important;
+  border-radius: 10px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+.google-os-shell .stw-summary-grid {
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 9px !important;
+}
+
+.google-os-shell .stw-summary-grid > div {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 13px !important;
+  padding: 12px !important;
+  display: grid !important;
+  gap: 7px !important;
+}
+
+.google-os-shell .stw-summary-grid span {
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .stw-summary-grid strong {
+  color: var(--gos-text) !important;
+  font-size: 17px !important;
+  font-weight: 900 !important;
+}
+
+.google-os-shell .stw-mode-tabs {
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.google-os-shell .stw-mode-tabs button {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  color: var(--gos-muted) !important;
+  border-radius: 13px !important;
+  padding: 10px !important;
+  text-align: left !important;
+  cursor: pointer !important;
+}
+
+.google-os-shell .stw-mode-tabs button.active {
+  background: var(--gos-surface-3) !important;
+  border-color: rgba(66, 133, 244, 0.44) !important;
+  color: var(--gos-text) !important;
+}
+
+.google-os-shell .stw-mode-tabs strong {
+  display: block !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+.google-os-shell .stw-mode-tabs small {
+  display: block !important;
+  margin-top: 5px !important;
+  font-size: 9.5px !important;
+  color: var(--gos-faint) !important;
+  line-height: 1.25 !important;
+}
+
+.google-os-shell .stw-filters {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 16px !important;
+  padding: 12px !important;
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.google-os-shell .stw-filters label {
+  display: grid !important;
+  gap: 6px !important;
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .stw-filters input,
+.google-os-shell .stw-filters select {
+  height: 36px !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface) !important;
+  color: var(--gos-text) !important;
+  border-radius: 10px !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+.google-os-shell .stw-export-panel {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 16px !important;
+  padding: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.google-os-shell .stw-export-panel > div {
+  margin-right: auto !important;
+}
+
+.google-os-shell .stw-table {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 16px !important;
+  overflow-x: auto !important;
+}
+
+.google-os-shell .stw-table-header,
+.google-os-shell .stw-table-row {
+  display: grid !important;
+  grid-template-columns:
+    minmax(240px, 1.5fr)
+    minmax(220px, 1.25fr)
+    minmax(170px, 1fr)
+    minmax(90px, 0.55fr)
+    minmax(70px, 0.45fr)
+    minmax(70px, 0.45fr)
+    minmax(90px, 0.55fr)
+    minmax(75px, 0.45fr)
+    minmax(85px, 0.5fr)
+    minmax(130px, 0.8fr)
+    minmax(150px, 0.9fr)
+    minmax(150px, 0.9fr);
+  gap: 8px !important;
+  align-items: center !important;
+  min-width: 1650px !important;
+}
+
+.google-os-shell .stw-table-header {
+  padding: 10px 12px !important;
+  background: rgba(66, 133, 244, 0.08) !important;
+  border-bottom: 1px solid rgba(66, 133, 244, 0.24) !important;
+}
+
+.google-os-shell .stw-table-header span {
+  color: var(--gos-faint) !important;
+  font-size: 8px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  text-align: right !important;
+}
+
+.google-os-shell .stw-table-header span:first-child,
+.google-os-shell .stw-table-header span:nth-child(2),
+.google-os-shell .stw-table-header span:nth-child(3) {
+  text-align: left !important;
+}
+
+.google-os-shell .stw-table-row {
+  padding: 10px 12px !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14) !important;
+}
+
+.google-os-shell .stw-table-row span {
+  color: var(--gos-muted) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-align: right !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.google-os-shell .stw-table-row span:first-child,
+.google-os-shell .stw-table-row span:nth-child(2),
+.google-os-shell .stw-table-row span:nth-child(3) {
+  text-align: left !important;
+}
+
+.google-os-shell .stw-table-row strong {
+  display: block !important;
+  color: var(--gos-text) !important;
+  font-weight: 900 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.google-os-shell .stw-table-row small {
+  display: block !important;
+  color: var(--gos-faint) !important;
+  margin-top: 4px !important;
+  font-size: 9px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.google-os-shell .stw-empty {
+  border: 1px dashed var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 16px !important;
+  padding: 22px !important;
+}
+
+.google-os-shell .stw-empty h3 {
+  color: var(--gos-text) !important;
+  margin: 0 !important;
+  font-size: 17px !important;
+}
+
+.google-os-shell .red { color: var(--gos-red) !important; }
+.google-os-shell .green { color: var(--gos-green) !important; }
+.google-os-shell .amber { color: var(--gos-amber) !important; }
+
+@media(max-width: 1300px) {
+  .google-os-shell .stw-summary-grid,
+  .google-os-shell .stw-mode-tabs,
+  .google-os-shell .stw-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media(max-width: 760px) {
+  .google-os-shell .stw-header,
+  .google-os-shell .stw-export-panel {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .google-os-shell .stw-summary-grid,
+  .google-os-shell .stw-mode-tabs,
+  .google-os-shell .stw-filters {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* =========================================================
+   SEARCH TERM WASTER DIRECT CSV UPLOAD
+   ========================================================= */
+
+.google-os-shell .stw-upload-card {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 16px !important;
+  padding: 14px !important;
+  display: grid !important;
+  gap: 14px !important;
+  box-sizing: border-box !important;
+}
+
+.google-os-shell .stw-upload-card > div:first-child span {
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .stw-upload-card h3 {
+  margin: 6px 0 0 !important;
+  color: var(--gos-text) !important;
+  font-size: 17px !important;
+}
+
+.google-os-shell .stw-upload-card p {
+  margin: 6px 0 0 !important;
+  color: var(--gos-muted) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.google-os-shell .stw-upload-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  align-items: center !important;
+}
+
+.google-os-shell .stw-upload-actions label,
+.google-os-shell .stw-upload-actions button {
+  min-height: 38px !important;
+  border: 1px solid rgba(66, 133, 244, 0.36) !important;
+  background: rgba(66, 133, 244, 0.14) !important;
+  color: var(--gos-text) !important;
+  border-radius: 10px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  cursor: pointer !important;
+}
+
+.google-os-shell .stw-upload-actions input {
+  display: none !important;
+}
+
+.google-os-shell .stw-upload-status {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 9px !important;
+}
+
+.google-os-shell .stw-upload-status > div {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface) !important;
+  border-radius: 12px !important;
+  padding: 10px !important;
+  display: grid !important;
+  gap: 5px !important;
+}
+
+.google-os-shell .stw-upload-status span {
+  color: var(--gos-faint) !important;
+  font-size: 8px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .stw-upload-status strong {
+  color: var(--gos-text) !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+
+.google-os-shell .stw-upload-error {
+  border: 1px solid rgba(239, 68, 68, 0.34) !important;
+  background: rgba(239, 68, 68, 0.10) !important;
+  color: var(--gos-red) !important;
+  border-radius: 12px !important;
+  padding: 10px !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+}
+
+@media(max-width: 900px) {
+  .google-os-shell .stw-upload-status {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* =========================================================
+   SEARCH TERM WASTER — DYNAMIC HEAD DROPDOWNS
+   ========================================================= */
+
+.google-os-shell .stw-dynamic-rules,
+.google-os-shell .stw-phrase-summary,
+.google-os-shell .stw-head-card {
+  width: 100% !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 16px !important;
+  box-sizing: border-box !important;
+}
+
+.google-os-shell .stw-dynamic-rules {
+  padding: 14px !important;
+  display: grid !important;
+  grid-template-columns: 1.4fr repeat(9, minmax(90px, 1fr)) !important;
+  gap: 10px !important;
+  align-items: end !important;
+}
+
+.google-os-shell .stw-dynamic-rules > div span,
+.google-os-shell .stw-phrase-summary span {
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .stw-dynamic-rules h3,
+.google-os-shell .stw-phrase-summary h3 {
+  margin: 6px 0 0 !important;
+  color: var(--gos-text) !important;
+  font-size: 15px !important;
+}
+
+.google-os-shell .stw-dynamic-rules label {
+  display: grid !important;
+  gap: 6px !important;
+  color: var(--gos-faint) !important;
+  font-size: 8px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .stw-dynamic-rules input {
+  height: 34px !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface) !important;
+  color: var(--gos-text) !important;
+  border-radius: 10px !important;
+  padding: 0 9px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+.google-os-shell .stw-phrase-summary {
+  padding: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+}
+
+.google-os-shell .stw-phrase-summary p {
+  margin: 6px 0 0 !important;
+  color: var(--gos-muted) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.google-os-shell .stw-phrase-summary button,
+.google-os-shell .stw-head-action button {
+  height: 34px !important;
+  border: 1px solid rgba(66, 133, 244, 0.36) !important;
+  background: rgba(66, 133, 244, 0.14) !important;
+  color: var(--gos-text) !important;
+  border-radius: 10px !important;
+  padding: 0 12px !important;
+  font-size: 10.5px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+
+.google-os-shell .stw-head-list {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.google-os-shell .stw-head-card {
+  overflow: hidden !important;
+}
+
+.google-os-shell .stw-head-row {
+  width: 100% !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--gos-text) !important;
+  cursor: pointer !important;
+  display: grid !important;
+  grid-template-columns: minmax(420px, 2fr) repeat(5, minmax(100px, 0.55fr)) !important;
+  gap: 10px !important;
+  align-items: center !important;
+  padding: 13px 14px !important;
+  text-align: right !important;
+}
+
+.google-os-shell .stw-head-row > span {
+  display: grid !important;
+  gap: 4px !important;
+  justify-items: end !important;
+  min-width: 0 !important;
+}
+
+.google-os-shell .stw-head-row small {
+  color: var(--gos-faint) !important;
+  font-size: 8px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .stw-head-row strong {
+  color: var(--gos-text) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.google-os-shell .stw-head-name {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  text-align: left !important;
+  justify-items: start !important;
+}
+
+.google-os-shell .stw-head-name b {
+  width: 21px !important;
+  height: 21px !important;
+  border-radius: 7px !important;
+  background: rgba(66, 133, 244, 0.18) !important;
+  color: var(--google-blue) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 21px !important;
+}
+
+.google-os-shell .stw-head-name span {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 4px !important;
+}
+
+.google-os-shell .stw-head-name strong {
+  font-size: 13px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.google-os-shell .stw-head-name small {
+  color: var(--gos-muted) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.google-os-shell .stw-head-body {
+  border-top: 1px solid var(--gos-border) !important;
+  background: color-mix(in srgb, var(--gos-surface) 84%, transparent) !important;
+  padding: 12px !important;
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.google-os-shell .stw-head-action {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.google-os-shell .stw-head-action > div {
+  margin-right: auto !important;
+}
+
+.google-os-shell .stw-head-action span {
+  color: var(--gos-faint) !important;
+  font-size: 8px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .stw-head-action strong {
+  display: block !important;
+  margin-top: 4px !important;
+  color: var(--gos-text) !important;
+  font-size: 12px !important;
+}
+
+.google-os-shell .stw-head-table {
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 12px !important;
+  overflow-x: auto !important;
+}
+
+.google-os-shell .stw-head-table-header,
+.google-os-shell .stw-head-table-row {
+  display: grid !important;
+  grid-template-columns:
+    minmax(250px, 1.5fr)
+    minmax(220px, 1.2fr)
+    minmax(160px, 0.9fr)
+    minmax(85px, 0.5fr)
+    minmax(70px, 0.4fr)
+    minmax(80px, 0.45fr)
+    minmax(70px, 0.4fr)
+    minmax(70px, 0.4fr)
+    minmax(85px, 0.5fr)
+    minmax(70px, 0.4fr)
+    minmax(80px, 0.45fr)
+    minmax(150px, 0.9fr)
+    minmax(150px, 0.9fr);
+  gap: 8px !important;
+  align-items: center !important;
+  min-width: 1680px !important;
+}
+
+.google-os-shell .stw-head-table-header {
+  padding: 9px 10px !important;
+  background: rgba(66, 133, 244, 0.08) !important;
+  border-bottom: 1px solid rgba(66, 133, 244, 0.22) !important;
+}
+
+.google-os-shell .stw-head-table-header span {
+  color: var(--gos-faint) !important;
+  font-size: 8px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  text-align: right !important;
+}
+
+.google-os-shell .stw-head-table-header span:first-child,
+.google-os-shell .stw-head-table-header span:nth-child(2),
+.google-os-shell .stw-head-table-header span:nth-child(3) {
+  text-align: left !important;
+}
+
+.google-os-shell .stw-head-table-row {
+  padding: 9px 10px !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14) !important;
+}
+
+.google-os-shell .stw-head-table-row span {
+  color: var(--gos-muted) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-align: right !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.google-os-shell .stw-head-table-row span:first-child,
+.google-os-shell .stw-head-table-row span:nth-child(2),
+.google-os-shell .stw-head-table-row span:nth-child(3) {
+  text-align: left !important;
+}
+
+.google-os-shell .stw-head-table-row strong {
+  display: block !important;
+  color: var(--gos-text) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.google-os-shell .stw-head-table-row small {
+  display: block !important;
+  margin-top: 3px !important;
+  color: var(--gos-faint) !important;
+  font-size: 9px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+@media(max-width: 1500px) {
+  .google-os-shell .stw-dynamic-rules {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .google-os-shell .stw-dynamic-rules > div {
+    grid-column: 1 / -1 !important;
+  }
+
+  .google-os-shell .stw-head-row {
+    min-width: 1050px !important;
+  }
+
+  .google-os-shell .stw-head-card {
+    overflow-x: auto !important;
+  }
+}
+
+@media(max-width: 760px) {
+  .google-os-shell .stw-dynamic-rules {
+    grid-template-columns: 1fr !important;
+  }
+
+  .google-os-shell .stw-phrase-summary,
+  .google-os-shell .stw-head-action {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+}
