@@ -4667,3 +4667,179 @@ body {
 .campaign-segment-name strong {
   line-height: 1 !important;
 }
+
+/* =========================================================
+   ALL CAMPAIGNS DYNAMIC KPI CHART
+   ========================================================= */
+
+.gos-dynamic-chart-panel {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 14px !important;
+  padding: 12px !important;
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.gos-chart-control-row {
+  display: grid !important;
+  grid-template-columns: 1.2fr 1fr 0.9fr !important;
+  gap: 12px !important;
+  align-items: start !important;
+}
+
+.gos-chart-control-row > div {
+  display: grid !important;
+  gap: 7px !important;
+}
+
+.gos-chart-control-row span {
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+.gos-chart-button-group {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+.gos-chart-button-group button {
+  height: 28px !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface) !important;
+  color: var(--gos-muted) !important;
+  border-radius: 999px !important;
+  padding: 0 10px !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+.gos-chart-button-group button.active {
+  background: var(--gos-surface-3) !important;
+  color: var(--gos-text) !important;
+  border-color: rgba(66, 133, 244, 0.42) !important;
+  box-shadow: inset 0 0 0 1px rgba(66, 133, 244, 0.18) !important;
+}
+
+.gos-dynamic-chart-box {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface) !important;
+  border-radius: 13px !important;
+  padding: 12px !important;
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.gos-dynamic-chart-head {
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  align-items: flex-start !important;
+}
+
+.gos-dynamic-chart-head span {
+  display: block !important;
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+.gos-dynamic-chart-head strong {
+  display: block !important;
+  margin-top: 4px !important;
+  color: var(--gos-text) !important;
+  font-size: 14px !important;
+}
+
+.gos-dynamic-chart-head small {
+  display: block !important;
+  margin-top: 3px !important;
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+}
+
+.gos-dynamic-chart-legend {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 999px !important;
+  padding: 6px 9px !important;
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+}
+
+.gos-dynamic-chart-legend i {
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 999px !important;
+}
+
+.gos-dynamic-chart {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.gos-dynamic-chart-row {
+  display: grid !important;
+  grid-template-columns: 130px minmax(0, 1fr) 90px !important;
+  gap: 10px !important;
+  align-items: center !important;
+}
+
+.gos-dynamic-chart-label {
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.gos-dynamic-chart-track {
+  height: 12px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  background: rgba(148, 163, 184, 0.16) !important;
+}
+
+.gos-dynamic-chart-track b {
+  display: block !important;
+  height: 100% !important;
+  border-radius: 999px !important;
+  transition: width 180ms ease !important;
+}
+
+.gos-dynamic-chart-row > strong {
+  color: var(--gos-text) !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  text-align: right !important;
+}
+
+.gos-dynamic-chart-empty {
+  color: var(--gos-faint) !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  padding: 14px !important;
+  text-align: center !important;
+}
+
+@media(max-width: 1050px) {
+  .gos-chart-control-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gos-dynamic-chart-row {
+    grid-template-columns: 100px minmax(0, 1fr) 80px !important;
+  }
+}

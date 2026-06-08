@@ -272,8 +272,141 @@ function SegmentDot({ segment }: { segment: Segment }) {
   return <i className="gos-segment-dot" style={{ background: SEGMENT_COLORS[segment] }} />;
 }
 
+
+type ChartKpi = "spend" | "revenue" | "roas" | "cpa" | "purchases" | "ctr" | "cvr";
+
+const CHART_KPIS: { key: ChartKpi; label: string }[] = [
+  { key: "spend", label: "Spend" },
+  { key: "revenue", label: "Revenue" },
+  { key: "roas", label: "ROAS" },
+  { key: "cpa", label: "CPA" },
+  { key: "purchases", label: "Purchases" },
+  { key: "ctr", label: "CTR" },
+  { key: "cvr", label: "CVR" },
+];
+
+function formatChartValue(value: number, kpi: ChartKpi) {
+  if (kpi === "spend" || kpi === "revenue" || kpi === "cpa") return compactMoney(value);
+  if (kpi === "roas") return x(value);
+  if (kpi === "ctr" || kpi === "cvr") return pct(value);
+  return value.toFixed(0);
+}
+
+function getKpiValue(row: ReturnType<typeof aggregate>, kpi: ChartKpi) {
+  if (kpi === "spend") return row.spend;
+  if (kpi === "revenue") return row.revenue;
+  if (kpi === "roas") return row.roas;
+  if (kpi === "cpa") return row.cpa;
+  if (kpi === "purchases") return row.purchases;
+  if (kpi === "ctr") return row.ctr;
+  if (kpi === "cvr") return row.cvr;
+  return 0;
+}
+
+function buildChartRows(rows: GoogleOsRow[], periodMode: PeriodMode, segment: Segment, kpi: ChartKpi) {
+  const grouped = new Map<string, GoogleOsRow[]>();
+
+  rows
+    .filter((row) => getSegment(row) === segment)
+    .forEach((row) => {
+      const key = getPeriodKey(row, periodMode);
+      if (!key) return;
+
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)!.push(row);
+    });
+
+  const limit = periodMode === "daily" ? 30 : periodMode === "weekly" ? 12 : periodMode === "monthly" ? 12 : 8;
+
+  return Array.from(grouped.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-limit)
+    .map(([period, periodRows]) => {
+      const a = aggregate(periodRows);
+      return {
+        period,
+        label: getPeriodLabel(period, periodMode),
+        value: getKpiValue(a, kpi),
+        spend: a.spend,
+        revenue: a.revenue,
+        roas: a.roas,
+        cpa: a.cpa,
+        purchases: a.purchases,
+        ctr: a.ctr,
+        cvr: a.cvr,
+      };
+    });
+}
+
+function CampaignKpiChart({
+  rows,
+  segment,
+  kpi,
+  periodMode,
+}: {
+  rows: ReturnType<typeof buildChartRows>;
+  segment: Segment;
+  kpi: ChartKpi;
+  periodMode: PeriodMode;
+}) {
+  const maxValue = Math.max(...rows.map((row) => row.value), 1);
+
+  return (
+    <div className="gos-dynamic-chart-box">
+      <div className="gos-dynamic-chart-head">
+        <div>
+          <span>Live Chart</span>
+          <strong>{segment} · {CHART_KPIS.find((item) => item.key === kpi)?.label}</strong>
+          <small>{periodMode.charAt(0).toUpperCase() + periodMode.slice(1)} trend</small>
+        </div>
+
+        <div className="gos-dynamic-chart-legend">
+          <i style={{ background: SEGMENT_COLORS[segment] }} />
+          <span>{segment}</span>
+        </div>
+      </div>
+
+      <div className="gos-dynamic-chart">
+        {rows.length ? (
+          rows.map((row) => (
+            <div key={row.period} className="gos-dynamic-chart-row">
+              <span className="gos-dynamic-chart-label">{row.label}</span>
+
+              <div className="gos-dynamic-chart-track">
+                <b
+                  style={{
+                    width: `${Math.max((row.value / maxValue) * 100, row.value > 0 ? 3 : 0)}%`,
+                    background: SEGMENT_COLORS[segment],
+                  }}
+                  title={`${row.label}
+${CHART_KPIS.find((item) => item.key === kpi)?.label}: ${formatChartValue(row.value, kpi)}
+Spend: ${compactMoney(row.spend)}
+Revenue: ${compactMoney(row.revenue)}
+ROAS: ${x(row.roas)}
+CPA: ${compactMoney(row.cpa)}
+Purchases: ${row.purchases.toFixed(0)}
+CTR: ${pct(row.ctr)}
+CVR: ${pct(row.cvr)}`}
+                />
+              </div>
+
+              <strong>{formatChartValue(row.value, kpi)}</strong>
+            </div>
+          ))
+        ) : (
+          <div className="gos-dynamic-chart-empty">No chart data available for this selection.</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   const [periodMode, setPeriodMode] = useState<PeriodMode>("daily");
+  const [chartSegment, setChartSegment] = useState<Segment>("Search Brand");
+  const [chartKpi, setChartKpi] = useState<ChartKpi>("spend");
+  const [chartPeriodMode, setChartPeriodMode] = useState<PeriodMode>("daily");
   const periods = useMemo(() => getAvailablePeriods(model.rows, periodMode), [model.rows, periodMode]);
   const latestPeriod = periods[periods.length - 1] || "";
   const [selectedPeriod, setSelectedPeriod] = useState("");
@@ -291,6 +424,18 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   }, [model.rows, periodMode, activePeriod]);
 
   const segmentRows = useMemo(() => buildSegmentRows(periodRows), [periodRows]);
+
+  const availableChartSegments = useMemo(() => {
+    return segmentRows.map((row) => row.segment);
+  }, [segmentRows]);
+
+  const activeChartSegment = availableChartSegments.includes(chartSegment)
+    ? chartSegment
+    : availableChartSegments[0] || "Search Brand";
+
+  const chartRows = useMemo(() => {
+    return buildChartRows(model.rows, chartPeriodMode, activeChartSegment, chartKpi);
+  }, [model.rows, chartPeriodMode, activeChartSegment, chartKpi]);
 
   const totals = useMemo(() => aggregate(periodRows), [periodRows]);
 
@@ -396,6 +541,66 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
             <strong>{pct(totals.ctr)}</strong>
             <small>CVR {pct(totals.cvr)}</small>
           </div>
+        </div>
+
+
+        <div className="gos-dynamic-chart-panel">
+          <div className="gos-chart-control-row">
+            <div>
+              <span>Campaign Type</span>
+              <div className="gos-chart-button-group">
+                {availableChartSegments.map((segment) => (
+                  <button
+                    key={segment}
+                    type="button"
+                    className={activeChartSegment === segment ? "active" : ""}
+                    onClick={() => setChartSegment(segment)}
+                  >
+                    {segment}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <span>Key KPI</span>
+              <div className="gos-chart-button-group">
+                {CHART_KPIS.map((kpiItem) => (
+                  <button
+                    key={kpiItem.key}
+                    type="button"
+                    className={chartKpi === kpiItem.key ? "active" : ""}
+                    onClick={() => setChartKpi(kpiItem.key)}
+                  >
+                    {kpiItem.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <span>Time Metric</span>
+              <div className="gos-chart-button-group">
+                {(["daily", "weekly", "monthly", "quarterly"] as PeriodMode[]).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    className={chartPeriodMode === mode ? "active" : ""}
+                    onClick={() => setChartPeriodMode(mode)}
+                  >
+                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <CampaignKpiChart
+            rows={chartRows}
+            segment={activeChartSegment}
+            kpi={chartKpi}
+            periodMode={chartPeriodMode}
+          />
         </div>
 
         <div className="gos-campaign-type-table">
