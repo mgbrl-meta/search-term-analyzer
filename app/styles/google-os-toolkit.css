@@ -469,3 +469,194 @@ html.light {
     min-width: 160px !important;
   }
 }
+
+/* =========================================================
+   HEADER FOUNDATION — FINAL AUTHORITY
+   Fixes missing/cropped Google OS header and tabs.
+   Keep all future header changes here only.
+   ========================================================= */
+
+/* App shell reserves space for fixed header + fixed tabs */
+.google-os-shell {
+  position: relative !important;
+  min-height: 100vh !important;
+  padding-top: 150px !important;
+  overflow-x: hidden !important;
+}
+
+/* Main top header */
+.google-os-shell .gos-topbar {
+  position: fixed !important;
+  top: 8px !important;
+  left: var(--gos-page-x, 24px) !important;
+  right: var(--gos-page-x, 24px) !important;
+  width: auto !important;
+  max-width: none !important;
+
+  height: 58px !important;
+  min-height: 58px !important;
+
+  z-index: 2147483000 !important;
+
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+
+  padding: 10px 14px !important;
+  margin: 0 !important;
+
+  border: 1px solid var(--gos-border, rgba(148, 163, 184, 0.18)) !important;
+  border-radius: 16px !important;
+  background: rgba(8, 13, 26, 0.92) !important;
+  backdrop-filter: blur(16px) !important;
+  box-sizing: border-box !important;
+
+  transform: none !important;
+  overflow: visible !important;
+}
+
+/* Light mode top header */
+html.light .google-os-shell .gos-topbar {
+  background: rgba(255, 255, 255, 0.94) !important;
+}
+
+/* Tabs below header */
+.google-os-shell .gos-home-tabs {
+  position: fixed !important;
+  top: 78px !important;
+  left: var(--gos-page-x, 24px) !important;
+  right: var(--gos-page-x, 24px) !important;
+  width: auto !important;
+  max-width: none !important;
+
+  min-height: 54px !important;
+  height: auto !important;
+
+  z-index: 2147482999 !important;
+
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+
+  padding: 6px !important;
+  margin: 0 !important;
+
+  border: 1px solid var(--gos-border, rgba(148, 163, 184, 0.18)) !important;
+  border-radius: 16px !important;
+  background: rgba(8, 13, 26, 0.92) !important;
+  backdrop-filter: blur(16px) !important;
+  box-sizing: border-box !important;
+
+  transform: none !important;
+  overflow: visible !important;
+}
+
+html.light .google-os-shell .gos-home-tabs {
+  background: rgba(255, 255, 255, 0.94) !important;
+}
+
+/* Brand area */
+.google-os-shell .gos-brand,
+.google-os-shell .gos-logo-wrap {
+  display: flex !important;
+  align-items: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+}
+
+.google-os-shell .gos-brand {
+  gap: 10px !important;
+  min-width: 230px !important;
+  flex: 1 1 auto !important;
+}
+
+.google-os-shell .gos-brand h1 {
+  display: block !important;
+  margin: 0 !important;
+  color: var(--gos-text, #f8fafc) !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+.google-os-shell .gos-brand p {
+  display: block !important;
+  margin: 3px 0 0 !important;
+  color: var(--gos-muted, #cbd5e1) !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.16em !important;
+  white-space: nowrap !important;
+}
+
+/* Right-side pills */
+.google-os-shell .gos-header-pills {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  flex: 0 0 auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  max-width: none !important;
+}
+
+/* Page must start below fixed header/tabs */
+.google-os-shell .gos-page,
+.google-os-shell .all-campaigns-summary-page {
+  position: relative !important;
+  z-index: 1 !important;
+  margin-top: 18px !important;
+  margin-left: var(--gos-page-x, 24px) !important;
+  margin-right: var(--gos-page-x, 24px) !important;
+  width: auto !important;
+  max-width: none !important;
+}
+
+/* Prevent any earlier patch from hiding header */
+.google-os-shell .gos-topbar *,
+.google-os-shell .gos-home-tabs * {
+  visibility: visible !important;
+}
+
+/* Mobile */
+@media(max-width: 760px) {
+  .google-os-shell {
+    --gos-page-x: 12px;
+    padding-top: 150px !important;
+  }
+
+  .google-os-shell .gos-topbar {
+    top: 6px !important;
+    left: 12px !important;
+    right: 12px !important;
+    height: 54px !important;
+    min-height: 54px !important;
+  }
+
+  .google-os-shell .gos-home-tabs {
+    top: 70px !important;
+    left: 12px !important;
+    right: 12px !important;
+  }
+
+  .google-os-shell .gos-brand {
+    min-width: 160px !important;
+  }
+
+  .google-os-shell .gos-brand p {
+    display: none !important;
+  }
+}
