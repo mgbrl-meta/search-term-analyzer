@@ -999,3 +999,384 @@ body,
     width: 100%;
   }
 }
+
+/* =========================================================
+   GOOGLE OS COMPACT MINIMAL LAYOUT
+   Smaller cards, cleaner spacing, less visual weight
+   ========================================================= */
+
+:root {
+  --gos-shell: min(100% - 32px, 1440px);
+
+  --gos-font-xs: clamp(9px, 0.58vw, 10px);
+  --gos-font-sm: clamp(10px, 0.66vw, 11px);
+  --gos-font-md: clamp(11px, 0.74vw, 13px);
+  --gos-font-lg: clamp(14px, 0.95vw, 17px);
+  --gos-font-xl: clamp(18px, 1.25vw, 24px);
+
+  --gos-radius-sm: 8px;
+  --gos-radius-md: 11px;
+  --gos-radius-lg: 14px;
+
+  --gos-shadow: 0 10px 34px rgba(0, 0, 0, 0.18);
+}
+
+/* Overall page density */
+.google-os-shell {
+  padding-top: 8px !important;
+}
+
+.gos-page {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+/* Header smaller */
+.gos-topbar {
+  padding: 8px 10px !important;
+  margin-bottom: 6px !important;
+  border-radius: 13px !important;
+}
+
+.gos-logo {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+}
+
+.gos-brand {
+  gap: 8px !important;
+}
+
+.gos-brand h1 {
+  font-size: 15px !important;
+  line-height: 1.05 !important;
+}
+
+.gos-brand p {
+  font-size: 9px !important;
+  margin-top: 1px !important;
+}
+
+/* Tabs smaller */
+.gos-home-tabs {
+  padding: 6px !important;
+  gap: 5px !important;
+  margin-bottom: 8px !important;
+  border-radius: 12px !important;
+}
+
+.gos-home-tabs button {
+  padding: 7px 10px !important;
+  font-size: 11px !important;
+  border-radius: 9px !important;
+}
+
+/* Data source strip compact */
+.gos-source-strip {
+  padding: 9px 11px !important;
+  margin-bottom: 8px !important;
+  border-radius: 13px !important;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 2fr) !important;
+  gap: 10px !important;
+}
+
+.gos-source-main span {
+  font-size: 9px !important;
+  letter-spacing: 0.13em !important;
+}
+
+.gos-source-main strong {
+  font-size: 13px !important;
+  margin-top: 2px !important;
+}
+
+.gos-source-main small {
+  font-size: 10px !important;
+  margin-top: 1px !important;
+}
+
+.gos-source-actions {
+  gap: 6px !important;
+}
+
+.gos-source-actions input,
+.gos-source-actions button,
+.gos-source-actions label {
+  padding: 8px 9px !important;
+  font-size: 10.5px !important;
+  border-radius: 9px !important;
+}
+
+/* Date controls compact */
+.gos-date-control {
+  padding: 9px 11px !important;
+  margin-bottom: 8px !important;
+  border-radius: 13px !important;
+}
+
+.gos-date-left span {
+  font-size: 9px !important;
+  margin-bottom: 5px !important;
+}
+
+.gos-date-buttons {
+  gap: 5px !important;
+}
+
+.gos-date-buttons button,
+.gos-date-fields select,
+.gos-date-fields input {
+  padding: 7px 9px !important;
+  font-size: 10.5px !important;
+  border-radius: 9px !important;
+}
+
+/* Hero/header cards much smaller */
+.gos-hero {
+  padding: 14px 16px !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+
+.gos-hero span {
+  font-size: 9px !important;
+  letter-spacing: 0.14em !important;
+}
+
+.gos-hero h1 {
+  margin: 6px 0 0 !important;
+  font-size: 22px !important;
+  line-height: 1.08 !important;
+}
+
+.gos-hero p {
+  margin: 8px 0 0 !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+/* KPI grid compact: 4 columns on desktop */
+.gos-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.gos-kpi {
+  min-height: 72px !important;
+  padding: 11px 12px !important;
+  border-radius: 13px !important;
+  box-shadow: none !important;
+}
+
+.gos-kpi span {
+  font-size: 9px !important;
+  letter-spacing: 0.14em !important;
+}
+
+.gos-kpi strong {
+  margin-top: 8px !important;
+  font-size: 24px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+/* Panels compact */
+.gos-panel {
+  padding: 13px 14px !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+}
+
+.gos-panel-head {
+  margin-bottom: 10px !important;
+  gap: 10px !important;
+}
+
+.gos-panel-head span {
+  font-size: 9px !important;
+  letter-spacing: 0.14em !important;
+}
+
+.gos-panel-head h2 {
+  margin: 5px 0 0 !important;
+  font-size: 17px !important;
+  line-height: 1.15 !important;
+}
+
+.gos-panel-head p {
+  margin: 5px 0 0 !important;
+  font-size: 11.5px !important;
+  line-height: 1.4 !important;
+}
+
+/* Insight cards compact */
+.gos-insight-grid {
+  gap: 8px !important;
+}
+
+.gos-insight-card {
+  padding: 12px 13px !important;
+  border-radius: 13px !important;
+  box-shadow: none !important;
+}
+
+.gos-insight-card span {
+  font-size: 9px !important;
+}
+
+.gos-insight-card p {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+/* Charts compact and vertical */
+.gos-chart-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+.gos-chart-title-row {
+  margin-bottom: 4px !important;
+}
+
+.gos-chart-title-row h2 {
+  font-size: 16px !important;
+  line-height: 1.15 !important;
+}
+
+.gos-chart-title-row span {
+  font-size: 9px !important;
+}
+
+.gos-svg-chart,
+.gos-svg-chart.wide,
+.gos-responsive-svg {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  aspect-ratio: 1000 / 280 !important;
+}
+
+.monthly-summary-page .gos-svg-chart,
+.monthly-summary-page .gos-svg-chart.wide {
+  aspect-ratio: 1120 / 300 !important;
+}
+
+/* Tables compact */
+.gos-table-wrap {
+  border-radius: 12px !important;
+}
+
+.gos-table th {
+  padding: 9px 10px !important;
+  font-size: 9px !important;
+  letter-spacing: 0.11em !important;
+}
+
+.gos-table td {
+  padding: 9px 10px !important;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+
+.gos-table td:first-child,
+.gos-table th:first-child {
+  min-width: 190px !important;
+}
+
+/* Campaign filters compact */
+.campaign-filter-bar {
+  gap: 7px !important;
+}
+
+.campaign-filter-bar label {
+  font-size: 9px !important;
+}
+
+.campaign-filter-bar select {
+  padding: 7px 9px !important;
+  font-size: 10.5px !important;
+  border-radius: 9px !important;
+  min-width: 128px !important;
+}
+
+/* Monthly table compact */
+.monthly-table-panel .gos-table {
+  min-width: 1240px !important;
+}
+
+.monthly-table-panel .gos-table th,
+.monthly-table-panel .gos-table td {
+  padding: 8px 9px !important;
+  font-size: 10.5px !important;
+}
+
+.monthly-table-panel .gos-table th {
+  font-size: 8.8px !important;
+}
+
+/* Reduce excessive top sticky offsets after compaction */
+.gos-home-tabs {
+  top: 55px !important;
+}
+
+.gos-source-strip {
+  top: 108px !important;
+}
+
+.gos-date-control {
+  top: 168px !important;
+}
+
+/* Desktop medium screens */
+@media(max-width: 1280px) {
+  .gos-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .gos-kpi strong {
+    font-size: 21px !important;
+  }
+}
+
+/* Narrow screens */
+@media(max-width: 980px) {
+  .gos-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .gos-source-strip,
+  .gos-date-control {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gos-svg-chart,
+  .gos-svg-chart.wide,
+  .gos-responsive-svg {
+    aspect-ratio: 1000 / 360 !important;
+  }
+}
+
+@media(max-width: 640px) {
+  :root {
+    --gos-shell: min(100% - 18px, 1440px);
+  }
+
+  .gos-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gos-hero h1 {
+    font-size: 19px !important;
+  }
+
+  .gos-kpi strong {
+    font-size: 22px !important;
+  }
+}
