@@ -6329,3 +6329,149 @@ html.light .gos-axis-chart-caption {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+/* =========================================================
+   FINAL TABLE ALIGNMENT LOCK
+   Brand table + Campaign Type table must share identical columns.
+   This fixes CVR misalignment.
+   ========================================================= */
+
+:root {
+  --gos-unified-table-grid:
+    minmax(340px, 2.35fr)  /* Group / Campaign Type */
+    minmax(88px, 0.55fr)   /* Campaigns */
+    minmax(105px, 0.7fr)   /* Spend */
+    minmax(155px, 0.95fr)  /* % Share */
+    minmax(115px, 0.75fr)  /* Revenue */
+    minmax(80px, 0.55fr)   /* ROAS */
+    minmax(80px, 0.55fr)   /* Purch. */
+    minmax(90px, 0.6fr)    /* CPA */
+    minmax(80px, 0.55fr)   /* CTR */
+    minmax(80px, 0.55fr)   /* CVR */
+    minmax(96px, 0.65fr);  /* Reserved / Decision */
+}
+
+/* Force both parent tables to the same 11-column grid */
+.google-os-shell .gos-brand-table-header,
+.google-os-shell .gos-brand-parent-row,
+.google-os-shell .gos-brand-child-row,
+.google-os-shell .gos-campaign-table-header,
+.google-os-shell .gos-campaign-segment-row,
+.google-os-shell .gos-campaign-child-row {
+  display: grid !important;
+  grid-template-columns: var(--gos-unified-table-grid) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Both table headers have only 10 labels, so reserve the 11th column invisibly */
+.google-os-shell .gos-brand-table-header::after,
+.google-os-shell .gos-campaign-table-header::after {
+  content: "" !important;
+  display: block !important;
+}
+
+/* Brand rows have no decision column, so reserve the 11th column invisibly */
+.google-os-shell .gos-brand-parent-row::after,
+.google-os-shell .gos-brand-child-row::after,
+.google-os-shell .gos-campaign-segment-row::after {
+  content: "" !important;
+  display: block !important;
+}
+
+/* Equal padding across both tables */
+.google-os-shell .gos-brand-table-header,
+.google-os-shell .gos-campaign-table-header {
+  padding: 9px 14px !important;
+}
+
+.google-os-shell .gos-brand-parent-row,
+.google-os-shell .gos-brand-child-row,
+.google-os-shell .gos-campaign-segment-row,
+.google-os-shell .gos-campaign-child-row {
+  padding: 9px 14px !important;
+  min-height: 42px !important;
+}
+
+/* Numeric columns right aligned */
+.google-os-shell .gos-brand-table-header span,
+.google-os-shell .gos-brand-parent-row span,
+.google-os-shell .gos-brand-child-row span,
+.google-os-shell .gos-campaign-table-header span,
+.google-os-shell .gos-campaign-segment-row span,
+.google-os-shell .gos-campaign-child-row span {
+  text-align: right !important;
+  justify-self: stretch !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* First column left aligned */
+.google-os-shell .brand-col-main,
+.google-os-shell .campaign-col-main,
+.google-os-shell .brand-parent-name,
+.google-os-shell .brand-child-name,
+.google-os-shell .campaign-segment-name,
+.google-os-shell .campaign-child-name {
+  text-align: left !important;
+  justify-self: stretch !important;
+  min-width: 0 !important;
+}
+
+/* Keep names from pushing metric columns */
+.google-os-shell .brand-parent-name strong,
+.google-os-shell .brand-child-name strong,
+.google-os-shell .campaign-segment-name strong,
+.google-os-shell .campaign-child-name strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Child row visual indentation only; does not affect column math */
+.google-os-shell .brand-child-name,
+.google-os-shell .campaign-child-name {
+  padding-left: 30px !important;
+  box-sizing: border-box !important;
+}
+
+/* Decision pill uses the 11th column in campaign child rows */
+.google-os-shell .gos-campaign-child-row .campaign-decision {
+  grid-column: 11 !important;
+  justify-self: end !important;
+  align-self: center !important;
+  min-width: 64px !important;
+  width: fit-content !important;
+  text-align: center !important;
+}
+
+/* Make sure CVR is always column 10 in both tables */
+.google-os-shell .gos-brand-table-header span:nth-child(10),
+.google-os-shell .gos-brand-parent-row span:nth-child(10),
+.google-os-shell .gos-brand-child-row span:nth-child(10),
+.google-os-shell .gos-campaign-table-header span:nth-child(10),
+.google-os-shell .gos-campaign-segment-row span:nth-child(10),
+.google-os-shell .gos-campaign-child-row span:nth-child(10) {
+  grid-column: 10 !important;
+}
+
+/* Same overflow behavior for both table wrappers */
+.google-os-shell .gos-brand-summary-table,
+.google-os-shell .gos-campaign-type-table {
+  width: 100% !important;
+  overflow-x: auto !important;
+}
+
+/* Same min-width when screen is narrow */
+@media(max-width: 1300px) {
+  .google-os-shell .gos-brand-table-header,
+  .google-os-shell .gos-brand-parent-row,
+  .google-os-shell .gos-brand-child-row,
+  .google-os-shell .gos-campaign-table-header,
+  .google-os-shell .gos-campaign-segment-row,
+  .google-os-shell .gos-campaign-child-row {
+    min-width: 1380px !important;
+  }
+}
