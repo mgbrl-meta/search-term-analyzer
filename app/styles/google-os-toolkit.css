@@ -660,3 +660,85 @@ html.light .google-os-shell .gos-home-tabs {
     display: none !important;
   }
 }
+
+/* =========================================================
+   CONTAINER WIDTH SYSTEM — FINAL
+   Header, tabs, and content use one shared container width.
+   ========================================================= */
+
+.google-os-shell {
+  --gos-page-x: 24px;
+  --gos-container-max: 1680px;
+}
+
+/* Header width = same as content */
+.google-os-shell .gos-topbar,
+.google-os-shell .gos-home-tabs,
+.google-os-shell .gos-page,
+.google-os-shell .all-campaigns-summary-page {
+  width: min(
+    calc(100vw - (var(--gos-page-x) * 2)),
+    var(--gos-container-max)
+  ) !important;
+
+  max-width: var(--gos-container-max) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+
+  left: 0 !important;
+  right: 0 !important;
+
+  box-sizing: border-box !important;
+}
+
+/* Fixed header/tabs stay centered using the shared width */
+.google-os-shell .gos-topbar {
+  position: fixed !important;
+  top: 8px !important;
+}
+
+.google-os-shell .gos-home-tabs {
+  position: fixed !important;
+  top: 78px !important;
+}
+
+/* Content starts below fixed header/tabs and aligns exactly */
+.google-os-shell .gos-page,
+.google-os-shell .all-campaigns-summary-page {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* The main All Campaigns card should fill the aligned content width */
+.google-os-shell .all-campaigns-summary-page > .gos-panel,
+.google-os-shell .gos-campaign-accordion-panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Inner cards also fill the same parent width */
+.google-os-shell .gos-brand-summary-table,
+.google-os-shell .gos-campaign-type-table,
+.google-os-shell .gos-daily-performance-table,
+.google-os-shell .gos-dynamic-chart-panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Mobile */
+@media(max-width: 760px) {
+  .google-os-shell {
+    --gos-page-x: 12px;
+  }
+
+  .google-os-shell .gos-topbar,
+  .google-os-shell .gos-home-tabs,
+  .google-os-shell .gos-page,
+  .google-os-shell .all-campaigns-summary-page {
+    width: calc(100vw - 24px) !important;
+  }
+}
