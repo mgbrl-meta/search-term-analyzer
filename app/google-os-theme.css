@@ -6165,3 +6165,147 @@ html.light .gos-axis-chart-caption {
     max-width: calc(100vw - 64px) !important;
   }
 }
+
+/* =========================================================
+   CAMPAIGN TYPE TABLE — PARENT / CHILD COLUMN ALIGNMENT
+   Fixes submenu rows not aligning with main campaign type rows.
+   ========================================================= */
+
+/* 11-column campaign table:
+   1 Campaign Type / Campaign
+   2 Campaigns
+   3 Spend
+   4 % Share
+   5 Revenue
+   6 ROAS
+   7 Purch.
+   8 CPA
+   9 CTR
+   10 CVR
+   11 Decision / Action
+*/
+:root {
+  --gos-campaign-grid-11:
+    minmax(340px, 2.35fr)
+    minmax(88px, 0.55fr)
+    minmax(105px, 0.7fr)
+    minmax(155px, 0.95fr)
+    minmax(115px, 0.75fr)
+    minmax(80px, 0.55fr)
+    minmax(80px, 0.55fr)
+    minmax(90px, 0.6fr)
+    minmax(80px, 0.55fr)
+    minmax(80px, 0.55fr)
+    minmax(96px, 0.65fr);
+}
+
+/* Campaign Type table only */
+.gos-campaign-type-table .gos-campaign-table-header,
+.gos-campaign-type-table .gos-campaign-segment-row,
+.gos-campaign-type-table .gos-campaign-child-row {
+  display: grid !important;
+  grid-template-columns: var(--gos-campaign-grid-11) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+/* Header currently has 10 visible columns. Keep first 10 aligned;
+   11th column is reserved for child-row decision pill. */
+.gos-campaign-type-table .gos-campaign-table-header {
+  padding: 9px 14px !important;
+}
+
+.gos-campaign-type-table .gos-campaign-segment-row {
+  padding: 10px 14px !important;
+  min-height: 44px !important;
+}
+
+.gos-campaign-type-table .gos-campaign-child-row {
+  padding: 8px 14px !important;
+  min-height: 40px !important;
+}
+
+/* All numeric cells right aligned */
+.gos-campaign-type-table .gos-campaign-table-header span,
+.gos-campaign-type-table .gos-campaign-segment-row span,
+.gos-campaign-type-table .gos-campaign-child-row span {
+  text-align: right !important;
+  justify-self: stretch !important;
+}
+
+/* First column left aligned */
+.gos-campaign-type-table .campaign-col-main,
+.gos-campaign-type-table .campaign-segment-name,
+.gos-campaign-type-table .campaign-child-name {
+  text-align: left !important;
+  justify-self: stretch !important;
+}
+
+/* Make parent and child first column use same width; child is only visually indented */
+.gos-campaign-type-table .campaign-segment-name,
+.gos-campaign-type-table .campaign-child-name {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Child row visual indent without breaking grid */
+.gos-campaign-type-table .campaign-child-name {
+  padding-left: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* Campaign name should not push numeric columns */
+.gos-campaign-type-table .campaign-child-name strong,
+.gos-campaign-type-table .campaign-segment-name strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Keep dash connector small */
+.gos-campaign-type-table .campaign-child-name i {
+  width: 10px !important;
+  height: 1px !important;
+  flex: 0 0 10px !important;
+}
+
+/* Decision pill sits in the reserved 11th column */
+.gos-campaign-type-table .campaign-decision {
+  grid-column: auto !important;
+  justify-self: end !important;
+  align-self: center !important;
+  width: fit-content !important;
+  min-width: 64px !important;
+  text-align: center !important;
+}
+
+/* Parent rows do not have decision cell; the first 10 columns still align exactly */
+.gos-campaign-type-table .gos-campaign-segment-row span:nth-child(n + 2),
+.gos-campaign-type-table .gos-campaign-child-row span:nth-child(n + 2) {
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Header labels should not wrap and distort column widths */
+.gos-campaign-type-table .gos-campaign-table-header span {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Prevent previous overrides from giving child rows different min-width */
+@media(max-width: 1300px) {
+  .gos-campaign-type-table {
+    overflow-x: auto !important;
+  }
+
+  .gos-campaign-type-table .gos-campaign-table-header,
+  .gos-campaign-type-table .gos-campaign-segment-row,
+  .gos-campaign-type-table .gos-campaign-child-row {
+    min-width: 1380px !important;
+  }
+}
