@@ -6309,3 +6309,23 @@ html.light .gos-axis-chart-caption {
     min-width: 1380px !important;
   }
 }
+
+/* =========================================================
+   SUMMARY STRIP: SEPARATE CTR AND CVR CARDS
+   ========================================================= */
+
+.gos-campaign-summary-strip {
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+}
+
+@media(max-width: 1320px) {
+  .gos-campaign-summary-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media(max-width: 760px) {
+  .gos-campaign-summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

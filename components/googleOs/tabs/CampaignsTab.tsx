@@ -802,9 +802,12 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
             <strong>{compactMoney(totals.cpa)}</strong>
           </div>
           <div>
-            <span>CTR / CVR</span>
+            <span>CTR</span>
             <strong>{pct(totals.ctr)}</strong>
-            <small>CVR {pct(totals.cvr)}</small>
+          </div>
+          <div>
+            <span>CVR</span>
+            <strong>{pct(totals.cvr)}</strong>
           </div>
         </div>
 
