@@ -893,3 +893,56 @@ body,
     scroll-margin-top: 130px !important;
   }
 }
+
+/* Campaign tab filter controls */
+.campaign-filter-head {
+  align-items: flex-start !important;
+}
+
+.campaign-filter-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: flex-end;
+}
+
+.campaign-filter-bar label {
+  display: grid;
+  gap: 5px;
+  color: var(--gos-faint);
+  font-size: var(--gos-font-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.campaign-filter-bar select {
+  border: 1px solid var(--gos-border);
+  background: var(--gos-surface-2);
+  color: var(--gos-text);
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: var(--gos-font-sm);
+  font-weight: 800;
+  min-width: 150px;
+}
+
+@media(max-width: 900px) {
+  .campaign-filter-head {
+    flex-direction: column !important;
+  }
+
+  .campaign-filter-bar {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .campaign-filter-bar label {
+    width: 100%;
+  }
+
+  .campaign-filter-bar select {
+    width: 100%;
+  }
+}
