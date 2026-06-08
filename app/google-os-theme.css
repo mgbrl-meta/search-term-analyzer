@@ -1406,3 +1406,158 @@ body,
   r: 5;
   filter: drop-shadow(0 0 8px rgba(66, 133, 244, 0.55));
 }
+
+/* =========================================================
+   GOOGLE OS TRUE FIXED HEADER + FIXED SUB TABS
+   Uses position: fixed because sticky was being affected by parent layout.
+   ========================================================= */
+
+:root {
+  --gos-fixed-topbar-height: 52px;
+  --gos-fixed-tabs-height: 48px;
+  --gos-fixed-stack-gap: 8px;
+  --gos-fixed-total-offset: 124px;
+}
+
+/* Add top breathing room so content does not hide behind fixed header */
+.google-os-shell {
+  padding-top: var(--gos-fixed-total-offset) !important;
+}
+
+/* TRUE fixed header */
+.gos-topbar {
+  position: fixed !important;
+  top: 8px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+
+  width: var(--gos-shell) !important;
+  max-width: var(--gos-shell) !important;
+  height: var(--gos-fixed-topbar-height) !important;
+
+  z-index: 99999 !important;
+
+  margin: 0 !important;
+  padding: 8px 12px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  background: color-mix(in srgb, var(--gos-bg) 92%, transparent) !important;
+  backdrop-filter: blur(22px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(180%) !important;
+
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28) !important;
+}
+
+/* TRUE fixed tabs under header */
+.gos-home-tabs {
+  position: fixed !important;
+  top: calc(8px + var(--gos-fixed-topbar-height) + var(--gos-fixed-stack-gap)) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+
+  width: var(--gos-shell) !important;
+  max-width: var(--gos-shell) !important;
+  height: var(--gos-fixed-tabs-height) !important;
+
+  z-index: 99998 !important;
+
+  margin: 0 !important;
+  padding: 6px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+
+  background: color-mix(in srgb, var(--gos-bg) 92%, transparent) !important;
+  backdrop-filter: blur(22px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(180%) !important;
+
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 13px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22) !important;
+}
+
+.gos-home-tabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+.gos-home-tabs button {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+  height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 9px !important;
+}
+
+/* Keep source strip normal; it should not cover content */
+.gos-source-strip {
+  position: relative !important;
+  top: auto !important;
+  z-index: 10 !important;
+}
+
+/* Date filter can stay sticky below fixed header/tabs */
+.gos-date-control {
+  position: sticky !important;
+  top: calc(var(--gos-fixed-total-offset) + 8px) !important;
+  z-index: 9990 !important;
+
+  background: color-mix(in srgb, var(--gos-surface) 94%, transparent) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+}
+
+/* Table header sticky only inside table */
+.gos-table th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+}
+
+/* Prevent fixed header from creating horizontal movement */
+html,
+body {
+  overflow-x: hidden !important;
+}
+
+/* Anchor scrolling should not hide sections behind fixed header */
+.gos-panel,
+.gos-hero,
+.gos-source-strip,
+.gos-date-control {
+  scroll-margin-top: calc(var(--gos-fixed-total-offset) + 24px) !important;
+}
+
+/* Mobile: keep header/tabs fixed but make them smaller */
+@media(max-width: 760px) {
+  :root {
+    --gos-fixed-topbar-height: 50px;
+    --gos-fixed-tabs-height: 46px;
+    --gos-fixed-total-offset: 118px;
+  }
+
+  .gos-topbar {
+    top: 6px !important;
+    border-radius: 12px !important;
+  }
+
+  .gos-home-tabs {
+    top: calc(6px + var(--gos-fixed-topbar-height) + 6px) !important;
+    border-radius: 12px !important;
+  }
+
+  .gos-date-control {
+    position: relative !important;
+    top: auto !important;
+    z-index: auto !important;
+  }
+}
