@@ -4,6 +4,8 @@ import { useMemo } from "react";
 import type { GoogleOsModel, GoogleOsRow, GoogleOsStatus } from "../../../lib/googleOs/types";
 import { compactMoney, pct, pctChange, safeDiv, x } from "../../../lib/googleOs/format";
 import { GoogleOsTable } from "../shared/GoogleOsTable";
+import type { GoogleOsDateMode } from "../../../lib/googleOs/dateFilter";
+import { getDateLabel } from "../../../lib/googleOs/dateFilter";
 
 type AdGroupRow = {
   key: string;
@@ -25,22 +27,6 @@ type AdGroupRow = {
   reason: string;
 };
 
-function lastNDaysRows(rows: GoogleOsRow[], days: number) {
-  const dates = Array.from(new Set(rows.map((row) => row.date).filter(Boolean))).sort();
-  const maxDate = dates[dates.length - 1];
-
-  if (!maxDate) return [];
-
-  const end = new Date(`${maxDate}T00:00:00`);
-  const start = new Date(end);
-  start.setDate(start.getDate() - (days - 1));
-
-  return rows.filter((row) => {
-    const date = new Date(`${row.date}T00:00:00`);
-    return date >= start && date <= end;
-  });
-}
-
 function changePct(current: number, previous: number) {
   if (!previous && !current) return 0;
   if (!previous && current) return 100;
@@ -48,66 +34,24 @@ function changePct(current: number, previous: number) {
 }
 
 function decide(row: Omit<AdGroupRow, "status" | "action" | "reason">): Pick<AdGroupRow, "status" | "action" | "reason"> {
-  if (row.cost >= 2000 && row.conversions === 0) {
-    return {
-      status: "PAUSE",
-      action: "Pause or cut bid 70%",
-      reason: "Recent spend with zero purchases.",
-    };
-  }
-
-  if (row.roas < 1 && row.cost >= 2000) {
-    return {
-      status: "REDUCE",
-      action: "Cut bid 50–70%",
-      reason: "Last 30-day ROAS below 1x.",
-    };
-  }
-
-  if (row.roas >= 3 && row.conversions >= 2) {
-    return {
-      status: "SCALE",
-      action: "Increase bid 10%",
-      reason: "Strong recent ROAS and purchases.",
-    };
-  }
-
-  if (row.roas >= 2) {
-    return {
-      status: "KEEP",
-      action: "Hold",
-      reason: "Positive recent efficiency.",
-    };
-  }
-
-  if (row.cost >= 300) {
-    return {
-      status: "WATCH",
-      action: "Check search terms",
-      reason: "Recent spend but weak signal.",
-    };
-  }
-
-  return {
-    status: "INVESTIGATE",
-    action: "Collect more data",
-    reason: "Insufficient recent data.",
-  };
+  if (row.cost >= 2000 && row.conversions === 0) return { status: "PAUSE", action: "Pause / cut bid 70%", reason: "Spend with zero purchases." };
+  if (row.roas < 1 && row.cost >= 2000) return { status: "REDUCE", action: "Cut bid 50–70%", reason: "ROAS below 1x." };
+  if (row.roas >= 3 && row.conversions >= 2) return { status: "SCALE", action: "Increase bid 10%", reason: "Strong ROAS and purchases." };
+  if (row.roas >= 2) return { status: "KEEP", action: "Hold", reason: "Positive efficiency." };
+  if (row.cost >= 300) return { status: "WATCH", action: "Check search terms", reason: "Spend but weak signal." };
+  return { status: "INVESTIGATE", action: "Collect more data", reason: "Insufficient data." };
 }
 
 function buildAdGroupRows(rows: GoogleOsRow[]) {
-  const recentRows = lastNDaysRows(rows, 30);
-  const totalSpend = recentRows.reduce((sum, row) => sum + row.cost, 0);
-  const dates = Array.from(new Set(recentRows.map((row) => row.date).filter(Boolean))).sort();
+  const totalSpend = rows.reduce((sum, row) => sum + row.cost, 0);
+  const dates = Array.from(new Set(rows.map((row) => row.date).filter(Boolean))).sort();
   const yesterday = dates[dates.length - 1] || "";
   const previous = dates[dates.length - 2] || "";
-
   const groups = new Map<string, GoogleOsRow[]>();
 
-  recentRows.forEach((row) => {
+  rows.forEach((row) => {
     const key = `${row.campaignId || row.campaign}::${row.adGroupId || row.adGroup}`;
     if (!key) return;
-
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(row);
   });
@@ -130,7 +74,6 @@ function buildAdGroupRows(rows: GoogleOsRow[]) {
 
       const ydRoas = safeDiv(ydRevenue, ydSpend);
       const pdRoas = safeDiv(pdRevenue, pdSpend);
-
       const first = groupRows[0];
 
       const base = {
@@ -150,22 +93,13 @@ function buildAdGroupRows(rows: GoogleOsRow[]) {
         roasDodPct: changePct(ydRoas, pdRoas),
       };
 
-      return {
-        ...base,
-        ...decide(base),
-      };
+      return { ...base, ...decide(base) };
     })
     .sort((a, b) => b.cost - a.cost);
 }
 
-function Metric({
-  value,
-  tone,
-}: {
-  value: string;
-  tone?: "green" | "red" | "amber" | "neutral";
-}) {
-  return <span className={`gos-metric ${tone || "neutral"}`}>{value}</span>;
+function Metric({ value, tone = "neutral" }: { value: string; tone?: "green" | "red" | "amber" | "neutral" }) {
+  return <span className={`gos-metric ${tone}`}>{value}</span>;
 }
 
 function roasTone(value: number) {
@@ -182,9 +116,11 @@ function cpaTone(row: Record<string, unknown>) {
   return "amber";
 }
 
-function pctTone(value: number) {
+function deltaTone(value: number, goodWhenPositive = true) {
   if (value === 0) return "neutral";
-  return value > 0 ? "green" : "red";
+  return goodWhenPositive
+    ? value > 0 ? "green" : "red"
+    : value > 0 ? "red" : "green";
 }
 
 function statusTone(status: unknown) {
@@ -195,8 +131,46 @@ function statusTone(status: unknown) {
   return "neutral";
 }
 
-export function AdGroupsTab({ model }: { model: GoogleOsModel }) {
-  const rows = useMemo(() => buildAdGroupRows(model.rows), [model.rows]);
+export function AdGroupsTab({
+  model,
+  rows: inputRows,
+  compareRows = [],
+  dateMode = "last_30",
+  selectedMonth = "",
+  compareMonth = "",
+  customStart = "",
+  customEnd = "",
+}: {
+  model: GoogleOsModel;
+  rows?: GoogleOsRow[];
+  compareRows?: GoogleOsRow[];
+  dateMode?: GoogleOsDateMode;
+  selectedMonth?: string;
+  compareMonth?: string;
+  customStart?: string;
+  customEnd?: string;
+}) {
+  const rows = useMemo(() => buildAdGroupRows(inputRows || model.rows), [inputRows, model.rows]);
+  const compare = useMemo(() => buildAdGroupRows(compareRows), [compareRows]);
+
+  const compareMap = useMemo(() => {
+    const map = new Map<string, AdGroupRow>();
+    compare.forEach((row) => map.set(row.key, row));
+    return map;
+  }, [compare]);
+
+  const tableRows = useMemo(() => rows.map((row) => {
+    const prev = compareMap.get(row.key);
+    return {
+      ...row,
+      spendDelta: prev ? row.cost - prev.cost : 0,
+      revenueDelta: prev ? row.conversionValue - prev.conversionValue : 0,
+      roasDelta: prev ? row.roas - prev.roas : 0,
+      cpaDelta: prev ? row.cpa - prev.cpa : 0,
+    };
+  }), [rows, compareMap]);
+
+  const label = getDateLabel({ mode: dateMode, selectedMonth, compareMonth, customStart, customEnd });
 
   return (
     <section className="gos-page">
@@ -204,15 +178,13 @@ export function AdGroupsTab({ model }: { model: GoogleOsModel }) {
         <div className="gos-panel-head">
           <div>
             <span>Ad Groups</span>
-            <h2>Ad group / product diagnosis — last 30 days</h2>
-            <p>
-              Sorted by recent spend. Use this for bid cuts, holds, scale decisions, and search-term checks.
-            </p>
+            <h2>Ad group / product diagnosis</h2>
+            <p>Showing {label}. Use this for bid cuts, holds, scale decisions, and search-term checks.</p>
           </div>
         </div>
 
         <GoogleOsTable
-          rows={rows as unknown as Record<string, unknown>[]}
+          rows={tableRows as unknown as Record<string, unknown>[]}
           columns={[
             { key: "campaign", label: "Campaign" },
             { key: "label", label: "Ad Group" },
@@ -220,17 +192,23 @@ export function AdGroupsTab({ model }: { model: GoogleOsModel }) {
             { key: "cost", label: "Spend", right: true, render: (row) => <Metric value={compactMoney(row.cost)} tone="red" /> },
             { key: "spendShare", label: "Share", right: true, render: (row) => pct(row.spendShare) },
             { key: "conversionValue", label: "Revenue", right: true, render: (row) => <Metric value={compactMoney(row.conversionValue)} tone="green" /> },
+            ...(compareMonth ? [
+              { key: "spendDelta", label: "Spend Δ", right: true, render: (row: Record<string, unknown>) => <Metric value={compactMoney(row.spendDelta)} tone={deltaTone(Number(row.spendDelta || 0), false)} /> },
+              { key: "revenueDelta", label: "Revenue Δ", right: true, render: (row: Record<string, unknown>) => <Metric value={compactMoney(row.revenueDelta)} tone={deltaTone(Number(row.revenueDelta || 0), true)} /> },
+              { key: "roasDelta", label: "ROAS Δ", right: true, render: (row: Record<string, unknown>) => <Metric value={x(row.roasDelta)} tone={deltaTone(Number(row.roasDelta || 0), true)} /> },
+              { key: "cpaDelta", label: "CPA Δ", right: true, render: (row: Record<string, unknown>) => <Metric value={compactMoney(row.cpaDelta)} tone={deltaTone(Number(row.cpaDelta || 0), false)} /> },
+            ] : []),
             { key: "roas", label: "ROAS", right: true, render: (row) => <Metric value={x(row.roas)} tone={roasTone(Number(row.roas || 0))} /> },
             { key: "conversions", label: "Purch.", right: true, render: (row) => Number(row.conversions || 0).toFixed(0) },
             { key: "cpa", label: "CPA", right: true, render: (row) => <Metric value={compactMoney(row.cpa)} tone={cpaTone(row)} /> },
             { key: "ctr", label: "CTR", right: true, render: (row) => pct(row.ctr) },
             { key: "cvr", label: "CVR", right: true, render: (row) => <Metric value={pct(row.cvr)} tone={Number(row.cvr || 0) >= 0.02 ? "green" : "amber"} /> },
             { key: "avgCpc", label: "CPC", right: true, render: (row) => compactMoney(row.avgCpc) },
-            { key: "roasDodPct", label: "ROAS DoD", right: true, render: (row) => <Metric value={pctChange(row.roasDodPct)} tone={pctTone(Number(row.roasDodPct || 0))} /> },
+            { key: "roasDodPct", label: "ROAS DoD", right: true, render: (row) => <Metric value={pctChange(row.roasDodPct)} tone={deltaTone(Number(row.roasDodPct || 0), true)} /> },
             { key: "status", label: "Decision", render: (row) => <Metric value={String(row.status || "")} tone={statusTone(row.status)} /> },
             { key: "action", label: "Action" },
           ]}
-          empty="No ad group data available in the last 30 days."
+          empty="No ad group data available for this date range."
         />
       </div>
     </section>
