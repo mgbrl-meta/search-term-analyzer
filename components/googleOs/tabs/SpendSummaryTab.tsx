@@ -108,6 +108,22 @@ function dateLabel(date: string) {
   return `${parts[2]}/${parts[1]}`;
 }
 
+
+function chartTooltipText(row: DailyRow) {
+  return [
+    `Date: ${row.date}`,
+    `Spend: ${compactMoney(row.cost)}`,
+    `Revenue: ${compactMoney(row.revenue)}`,
+    `ROAS: ${x(row.roas)}`,
+    `CPA: ${compactMoney(row.cpa)}`,
+    `Purchases: ${compactInt(row.purchases)}`,
+    `Impressions: ${compactInt(row.impressions)}`,
+    `Clicks: ${compactInt(row.clicks)}`,
+    `CTR: ${pct(row.ctr)}`,
+    `CVR: ${pct(row.cvr)}`,
+  ].join("\\n");
+}
+
 function maxOf(rows: DailyRow[], key: keyof DailyRow) {
   return Math.max(...rows.map((row) => Number(row[key]) || 0), 1);
 }
@@ -213,6 +229,7 @@ function TrendChart({
 
   const areaPath = `${leftPath} L ${xScale(chartRows.length - 1)} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`;
   const barWidth = Math.max(6, innerW / Math.max(chartRows.length, 1) - 7);
+  const hoverWidth = Math.max(18, innerW / Math.max(chartRows.length, 1));
 
   return (
     <div className="gos-spend-chart">
@@ -291,6 +308,46 @@ function TrendChart({
             >
               {dateLabel(row.date)}
             </text>
+          );
+        })}
+
+        {chartRows.map((row, index) => {
+          const x = xScale(index);
+          const leftY = yLeft(Number(row[leftKey]) || 0);
+          const rightY = yRight(Number(row[rightKey]) || 0);
+
+          return (
+            <g key={`hover-${row.date}`}>
+              <rect
+                x={x - hoverWidth / 2}
+                y={padding.top}
+                width={hoverWidth}
+                height={innerH}
+                className="gos-chart-hover-zone"
+              >
+                <title>{chartTooltipText(row)}</title>
+              </rect>
+
+              {mode === "line-line" ? (
+                <circle
+                  cx={x}
+                  cy={leftY}
+                  r={3.2}
+                  className="gos-chart-point blue"
+                >
+                  <title>{chartTooltipText(row)}</title>
+                </circle>
+              ) : null}
+
+              <circle
+                cx={x}
+                cy={rightY}
+                r={3.2}
+                className={mode === "line-line" ? "gos-chart-point green" : "gos-chart-point blue"}
+              >
+                <title>{chartTooltipText(row)}</title>
+              </circle>
+            </g>
           );
         })}
       </svg>
