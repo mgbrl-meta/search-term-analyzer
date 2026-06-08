@@ -164,27 +164,6 @@ function parseDelimitedLine(line: string, delimiter: string) {
   return values.map((value) => value.trim());
 }
 
-function looksLikeSearchTermHeader(headers: string[]) {
-  const normalized = headers.map(normalizeHeader);
-
-  const hasSearchTerm = normalized.some((header) =>
-    ["search_term", "search_terms", "search_query", "query", "customer_search_term", "user_search_term"].includes(header)
-  );
-
-  const hasCampaign = normalized.some((header) =>
-    ["campaign", "campaign_name"].includes(header)
-  );
-
-  const hasCost = normalized.some((header) =>
-    ["cost", "spend", "amount_spent", "cost_inr"].includes(header)
-  );
-
-  const hasClicks = normalized.includes("clicks");
-  const hasImpressions = normalized.includes("impr") || normalized.includes("impressions");
-
-  return hasSearchTerm && hasCampaign && hasCost && (hasClicks || hasImpressions);
-}
-
 export function parseCsvText(csvText: string) {
   const lines = csvText
     .replace(/\r\n/g, "\n")
@@ -196,36 +175,16 @@ export function parseCsvText(csvText: string) {
     return [];
   }
 
-  let headerLineIndex = 0;
-  let delimiter = ",";
-  let originalHeaders: string[] = [];
-
-  for (let i = 0; i < Math.min(lines.length, 20); i += 1) {
-    const testDelimiter = detectDelimiter(lines[i]);
-    const candidateHeaders = parseDelimitedLine(lines[i], testDelimiter);
-
-    if (looksLikeSearchTermHeader(candidateHeaders)) {
-      headerLineIndex = i;
-      delimiter = testDelimiter;
-      originalHeaders = candidateHeaders;
-      break;
-    }
-  }
-
-  // Fallback: if no proper header detected, use first row.
-  if (!originalHeaders.length) {
-    delimiter = detectDelimiter(lines[0]);
-    originalHeaders = parseDelimitedLine(lines[0], delimiter);
-  }
-
+  // Google Ads exports are sometimes tab-separated even when saved as .csv.
+  const delimiter = detectDelimiter(lines[0]);
+  const originalHeaders = parseDelimitedLine(lines[0], delimiter);
   const headers = originalHeaders.map(normalizeHeader);
 
-  return lines.slice(headerLineIndex + 1).map((line) => {
+  return lines.slice(1).map((line) => {
     const values = parseDelimitedLine(line, delimiter);
     const row: Record<string, string> = {
       __detected_delimiter: delimiter === "\t" ? "tab" : delimiter,
       __detected_headers: originalHeaders.join(" | "),
-      __header_line_index: String(headerLineIndex),
     };
 
     headers.forEach((header, index) => {
