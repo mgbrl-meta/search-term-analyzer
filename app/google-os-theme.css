@@ -1561,3 +1561,72 @@ body {
     z-index: auto !important;
   }
 }
+
+/* Custom chart tooltip */
+.gos-chart-with-tooltip {
+  position: relative;
+}
+
+.gos-chart-tooltip {
+  position: absolute;
+  z-index: 30;
+  min-width: 190px;
+  pointer-events: none;
+  transform: translate(0, 0);
+  border: 1px solid var(--gos-border-strong);
+  background: color-mix(in srgb, var(--gos-surface) 96%, black);
+  color: var(--gos-text);
+  border-radius: 12px;
+  padding: 10px 11px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  font-size: 11px;
+}
+
+.gos-chart-tooltip strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  color: var(--gos-text);
+}
+
+.gos-chart-tooltip div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 3px 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.10);
+}
+
+.gos-chart-tooltip span {
+  color: var(--gos-faint);
+  font-weight: 800;
+}
+
+.gos-chart-tooltip b {
+  color: var(--gos-text);
+  font-weight: 900;
+}
+
+.gos-chart-hover-zone {
+  fill: transparent;
+  cursor: crosshair;
+  pointer-events: all;
+}
+
+.gos-chart-point {
+  stroke: var(--gos-surface);
+  stroke-width: 2;
+  pointer-events: all;
+}
+
+.gos-chart-point.blue {
+  fill: #1a73e8;
+}
+
+.gos-chart-point.green {
+  fill: #34d399;
+}
+
+.gos-chart-point:hover {
+  filter: drop-shadow(0 0 8px rgba(66, 133, 244, 0.55));
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { GoogleOsModel, GoogleOsRow } from "../../../lib/googleOs/types";
 import { compactInt, compactMoney, pct, safeDiv, x } from "../../../lib/googleOs/format";
 import { GoogleOsKpi } from "../shared/GoogleOsKpi";
@@ -20,7 +20,6 @@ type DailyRow = {
   cpa: number;
   roas: number;
   avgCpc: number;
-
   spendChangePct: number;
   revenueChangePct: number;
   purchasesChangePct: number;
@@ -31,10 +30,30 @@ type DailyRow = {
   cpcChangePct: number;
 };
 
+type TooltipState = {
+  x: number;
+  y: number;
+  row: DailyRow;
+} | null;
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 function changePct(current: number, previous: number) {
   if (!previous && !current) return 0;
   if (!previous && current) return 100;
   return ((current - previous) / previous) * 100;
+}
+
+function formatDateLabel(date: string) {
+  const [year, month, day] = date.split("-");
+  if (!year || !month || !day) return date;
+  return `${day}-${MONTHS[Number(month) - 1]}-${year.slice(2)}`;
+}
+
+function shortDateLabel(date: string) {
+  const [year, month, day] = date.split("-");
+  if (!year || !month || !day) return date;
+  return `${day}/${month}`;
 }
 
 function buildDailyRows(rows: GoogleOsRow[]): DailyRow[] {
@@ -66,7 +85,6 @@ function buildDailyRows(rows: GoogleOsRow[]): DailyRow[] {
         cpa: safeDiv(cost, purchases),
         roas: safeDiv(revenue, cost),
         avgCpc: safeDiv(cost, clicks),
-
         spendChangePct: 0,
         revenueChangePct: 0,
         purchasesChangePct: 0,
@@ -81,7 +99,6 @@ function buildDailyRows(rows: GoogleOsRow[]): DailyRow[] {
 
   return baseRows.map((row, index) => {
     const previous = baseRows[index - 1];
-
     if (!previous) return row;
 
     return {
@@ -100,28 +117,6 @@ function buildDailyRows(rows: GoogleOsRow[]): DailyRow[] {
 
 function last30DailyRows(rows: DailyRow[]) {
   return rows.slice(-30);
-}
-
-function dateLabel(date: string) {
-  const parts = date.split("-");
-  if (parts.length !== 3) return date;
-  return `${parts[2]}/${parts[1]}`;
-}
-
-
-function chartTooltipText(row: DailyRow) {
-  return [
-    `Date: ${row.date}`,
-    `Spend: ${compactMoney(row.cost)}`,
-    `Revenue: ${compactMoney(row.revenue)}`,
-    `ROAS: ${x(row.roas)}`,
-    `CPA: ${compactMoney(row.cpa)}`,
-    `Purchases: ${compactInt(row.purchases)}`,
-    `Impressions: ${compactInt(row.impressions)}`,
-    `Clicks: ${compactInt(row.clicks)}`,
-    `CTR: ${pct(row.ctr)}`,
-    `CVR: ${pct(row.cvr)}`,
-  ].join("\\n");
 }
 
 function maxOf(rows: DailyRow[], key: keyof DailyRow) {
@@ -175,6 +170,33 @@ function cpaTone(row: Record<string, unknown>) {
   return "amber";
 }
 
+function ChartTooltip({ tooltip }: { tooltip: TooltipState }) {
+  if (!tooltip) return null;
+
+  const row = tooltip.row;
+
+  return (
+    <div
+      className="gos-chart-tooltip"
+      style={{
+        left: tooltip.x,
+        top: tooltip.y,
+      }}
+    >
+      <strong>{formatDateLabel(row.date)}</strong>
+      <div><span>Spend</span><b>{compactMoney(row.cost)}</b></div>
+      <div><span>Revenue</span><b>{compactMoney(row.revenue)}</b></div>
+      <div><span>ROAS</span><b>{x(row.roas)}</b></div>
+      <div><span>CPA</span><b>{compactMoney(row.cpa)}</b></div>
+      <div><span>Purchases</span><b>{compactInt(row.purchases)}</b></div>
+      <div><span>Impr.</span><b>{compactInt(row.impressions)}</b></div>
+      <div><span>Clicks</span><b>{compactInt(row.clicks)}</b></div>
+      <div><span>CTR</span><b>{pct(row.ctr)}</b></div>
+      <div><span>CVR</span><b>{pct(row.cvr)}</b></div>
+    </div>
+  );
+}
+
 function TrendChart({
   rows,
   leftKey,
@@ -196,6 +218,8 @@ function TrendChart({
   rightFormatter: (value: number) => string;
   mode?: "line-line" | "bar-line";
 }) {
+  const [tooltip, setTooltip] = useState<TooltipState>(null);
+
   const chartRows = rows.slice(-30);
   const width = 1000;
   const height = 320;
@@ -229,10 +253,13 @@ function TrendChart({
 
   const areaPath = `${leftPath} L ${xScale(chartRows.length - 1)} ${height - padding.bottom} L ${padding.left} ${height - padding.bottom} Z`;
   const barWidth = Math.max(6, innerW / Math.max(chartRows.length, 1) - 7);
-  const hoverWidth = Math.max(18, innerW / Math.max(chartRows.length, 1));
+  const hoverWidth = Math.max(22, innerW / Math.max(chartRows.length, 1));
 
   return (
-    <div className="gos-spend-chart">
+    <div
+      className="gos-spend-chart gos-chart-with-tooltip"
+      onMouseLeave={() => setTooltip(null)}
+    >
       <div className="gos-chart-title-row">
         <h2>{title}</h2>
         <span>{leftLabel} / {rightLabel}</span>
@@ -278,11 +305,7 @@ function TrendChart({
                 height={h}
                 rx={4}
                 className="gos-chart-bar"
-              >
-                <title>
-                  {`${row.date}\n${leftLabel}: ${leftFormatter(value)}\n${rightLabel}: ${rightFormatter(Number(row[rightKey]) || 0)}`}
-                </title>
-              </rect>
+              />
             );
           })
         ) : (
@@ -306,51 +329,59 @@ function TrendChart({
               textAnchor="middle"
               className="gos-chart-axis"
             >
-              {dateLabel(row.date)}
+              {shortDateLabel(row.date)}
             </text>
           );
         })}
 
         {chartRows.map((row, index) => {
-          const x = xScale(index);
+          const xValue = xScale(index);
           const leftY = yLeft(Number(row[leftKey]) || 0);
           const rightY = yRight(Number(row[rightKey]) || 0);
 
           return (
-            <g key={`hover-${row.date}`}>
+            <g
+              key={`hover-${row.date}`}
+              onMouseMove={(event) => {
+                const rect = event.currentTarget.ownerSVGElement?.getBoundingClientRect();
+                if (!rect) return;
+
+                setTooltip({
+                  x: event.clientX - rect.left + 14,
+                  y: event.clientY - rect.top + 14,
+                  row,
+                });
+              }}
+            >
               <rect
-                x={x - hoverWidth / 2}
+                x={xValue - hoverWidth / 2}
                 y={padding.top}
                 width={hoverWidth}
                 height={innerH}
                 className="gos-chart-hover-zone"
-              >
-                <title>{chartTooltipText(row)}</title>
-              </rect>
+              />
 
               {mode === "line-line" ? (
                 <circle
-                  cx={x}
+                  cx={xValue}
                   cy={leftY}
-                  r={3.2}
+                  r={3.6}
                   className="gos-chart-point blue"
-                >
-                  <title>{chartTooltipText(row)}</title>
-                </circle>
+                />
               ) : null}
 
               <circle
-                cx={x}
+                cx={xValue}
                 cy={rightY}
-                r={3.2}
+                r={3.6}
                 className={mode === "line-line" ? "gos-chart-point green" : "gos-chart-point blue"}
-              >
-                <title>{chartTooltipText(row)}</title>
-              </circle>
+              />
             </g>
           );
         })}
       </svg>
+
+      <ChartTooltip tooltip={tooltip} />
     </div>
   );
 }
@@ -465,7 +496,7 @@ export function SpendSummaryTab({
         <GoogleOsTable
           rows={dailyRows.slice().reverse() as unknown as Record<string, unknown>[]}
           columns={[
-            { key: "date", label: "Date" },
+            { key: "date", label: "Date", render: (row) => formatDateLabel(String(row.date || "")) },
             { key: "cost", label: "Spend", right: true, render: (row) => <Metric value={compactMoney(row.cost)} tone="red" /> },
             { key: "spendChangePct", label: "Spend Δ", right: true, render: (row) => <Delta value={Number(row.spendChangePct || 0)} goodWhenPositive={false} /> },
             { key: "revenue", label: "Revenue", right: true, render: (row) => <Metric value={compactMoney(row.revenue)} tone="green" /> },

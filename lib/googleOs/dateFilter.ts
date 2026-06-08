@@ -67,8 +67,8 @@ export function getDateLabel({
 }) {
   if (mode === "month") {
     return compareMonth
-      ? `${selectedMonth || "Selected month"} vs ${compareMonth}`
-      : selectedMonth || "Selected month";
+      ? `${formatGoogleOsMonthLabel(selectedMonth || "Selected month")} vs ${formatGoogleOsMonthLabel(compareMonth)}`
+      : formatGoogleOsMonthLabel(selectedMonth || "Selected month");
   }
 
   if (mode === "custom") {
@@ -76,4 +76,13 @@ export function getDateLabel({
   }
 
   return "Last 30 days";
+}
+
+
+const GOOGLE_OS_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export function formatGoogleOsMonthLabel(month: string) {
+  const [year, monthNum] = month.split("-");
+  if (!year || !monthNum) return month;
+  return `${GOOGLE_OS_MONTHS[Number(monthNum) - 1]}-${year.slice(2)}`;
 }

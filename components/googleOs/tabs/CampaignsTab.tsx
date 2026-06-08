@@ -26,6 +26,15 @@ type CampaignRow = {
   reason: string;
 };
 
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatMonthLabel(month: string) {
+  const [year, monthNum] = month.split("-");
+  if (!year || !monthNum) return month;
+  return `${MONTHS[Number(monthNum) - 1]}-${year.slice(2)}`;
+}
+
 function getAvailableMonths(rows: GoogleOsRow[]) {
   return Array.from(
     new Set(rows.map((row) => row.date?.slice(0, 7)).filter(Boolean))
@@ -320,8 +329,8 @@ export function CampaignsTab({
     viewMode === "quarter"
       ? activeQuarter
       : viewMode === "month_compare"
-        ? `${activeMonth} vs ${activeCompareMonth}`
-        : activeMonth;
+        ? `${formatMonthLabel(activeMonth)} vs ${formatMonthLabel(activeCompareMonth)}`
+        : formatMonthLabel(activeMonth);
 
   return (
     <section className="gos-page">
@@ -357,7 +366,7 @@ export function CampaignsTab({
                 >
                   {months.slice().reverse().map((month) => (
                     <option key={month} value={month}>
-                      {month}
+                      {formatMonthLabel(month)}
                     </option>
                   ))}
                 </select>
@@ -373,7 +382,7 @@ export function CampaignsTab({
                 >
                   {months.slice().reverse().map((month) => (
                     <option key={month} value={month}>
-                      {month}
+                      {formatMonthLabel(month)}
                     </option>
                   ))}
                 </select>
