@@ -6624,3 +6624,40 @@ html.light .gos-axis-chart-caption {
     font-size: 14px !important;
   }
 }
+
+/* =========================================================
+   HEADER → CONTENT SPACING FIX
+   Adds breathing room between sticky tabs and page content.
+   ========================================================= */
+
+/* Main page content should not touch the sticky tab bar */
+.google-os-shell .gos-page {
+  padding-top: 22px !important;
+}
+
+/* Specifically ensure All Campaigns starts lower after tabs */
+.google-os-shell .all-campaigns-summary-page {
+  margin-top: 18px !important;
+}
+
+/* When top header/tabs are sticky/fixed, preserve visible content gap */
+.google-os-shell .gos-home-tabs + .gos-page,
+.google-os-shell .gos-source-toggle + .gos-page {
+  margin-top: 18px !important;
+}
+
+/* If section title is too close to tab border, push inner panel content slightly */
+.google-os-shell .gos-campaign-accordion-panel {
+  margin-top: 8px !important;
+}
+
+/* Keep spacing compact on smaller screens */
+@media(max-width: 760px) {
+  .google-os-shell .gos-page {
+    padding-top: 14px !important;
+  }
+
+  .google-os-shell .all-campaigns-summary-page {
+    margin-top: 12px !important;
+  }
+}
