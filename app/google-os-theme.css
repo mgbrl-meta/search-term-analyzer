@@ -336,3 +336,135 @@ body {
     max-width: 48%;
   }
 }
+
+/* =========================================================
+   GOOGLE OS FINAL CHART FIX
+   No horizontal scroll. Charts scale within vertical layout.
+   ========================================================= */
+
+html,
+body,
+.google-os-shell,
+.gos-page {
+  overflow-x: hidden !important;
+}
+
+.gos-chart-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 16px !important;
+  width: 100% !important;
+}
+
+.gos-chart-scroll,
+.gos-spend-chart,
+.chart-panel,
+.spend-summary-page .gos-panel,
+.monthly-summary-page .gos-panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  box-sizing: border-box !important;
+}
+
+.gos-svg-chart,
+.gos-svg-chart.wide,
+.gos-responsive-svg {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  aspect-ratio: 1000 / 320;
+  overflow: visible !important;
+}
+
+.monthly-summary-page .gos-svg-chart,
+.monthly-summary-page .gos-svg-chart.wide {
+  aspect-ratio: 1120 / 340;
+}
+
+.gos-chart-title-row,
+.gos-panel-head {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.gos-chart-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.gos-chart-title-row h2,
+.gos-panel-head h2 {
+  overflow-wrap: anywhere;
+}
+
+/* Keep KPI grids from overflowing at zoom */
+.gos-kpi-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.gos-kpi {
+  min-width: 0 !important;
+}
+
+.gos-kpi strong {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+/* At zoom/narrow desktop, move KPI into 2 columns instead of overflowing */
+@media(max-width: 1280px) {
+  .gos-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* On mobile, all cards become vertical */
+@media(max-width: 700px) {
+  .gos-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gos-svg-chart,
+  .gos-svg-chart.wide,
+  .gos-responsive-svg {
+    aspect-ratio: 1000 / 420;
+  }
+}
+
+/* Google OS shell zoom stability */
+:root {
+  --gos-shell: min(100% - 40px, 1440px);
+}
+
+.google-os-shell,
+.gos-page,
+.gos-topbar,
+.gos-home-tabs,
+.gos-source-strip {
+  width: var(--gos-shell) !important;
+  max-width: var(--gos-shell) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.gos-source-actions {
+  min-width: 0 !important;
+}
+
+.gos-source-actions input {
+  min-width: 0 !important;
+}
+
+@media(max-width: 900px) {
+  :root {
+    --gos-shell: min(100% - 20px, 1440px);
+  }
+}

@@ -753,7 +753,7 @@
   margin: 0 auto 12px;
   display: flex;
   gap: 7px;
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 .gos-home-tabs button {
@@ -948,7 +948,7 @@
   margin: 0 auto 12px;
   display: flex;
   gap: 7px;
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 .gos-home-tabs button {
@@ -1323,7 +1323,7 @@
 }
 
 .gos-svg-chart.wide {
-  min-width: 100%;
+  min-width: 0;
 }
 
 .gos-grid-line {
@@ -1521,8 +1521,8 @@
 
 .gos-chart-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  grid-template-columns: 1fr;
+  gap: 16px;
 }
 
 .gos-spend-chart {
@@ -1586,8 +1586,10 @@
 
 @media(max-width: 1180px) {
   .gos-chart-grid {
-    grid-template-columns: 1fr;
-  }
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
 }
 
 @media(max-width: 760px) {

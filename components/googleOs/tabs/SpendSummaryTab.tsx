@@ -127,7 +127,7 @@ function TrendChart({
         <span>{leftLabel} / {rightLabel}</span>
       </div>
 
-      <svg viewBox={`0 0 ${width} ${height}`} className="gos-svg-chart">
+      <svg viewBox={`0 0 ${width} ${height}`} className="gos-svg-chart gos-responsive-svg" preserveAspectRatio="xMidYMid meet">
         {yTicks.map((ratio) => {
           const leftValue = maxLeft * ratio;
           const rightValue = maxRight * ratio;

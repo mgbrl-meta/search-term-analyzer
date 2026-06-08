@@ -247,7 +247,7 @@ function ScatterChart({
 
   return (
     <div className="gos-chart-scroll">
-      <svg viewBox={`0 0 ${width} ${height}`} className="gos-svg-chart" role="img">
+      <svg viewBox={`0 0 ${width} ${height}`} className="gos-svg-chart gos-responsive-svg" preserveAspectRatio="xMidYMid meet" role="img">
         {yTicks.map((tick) => (
           <g key={`y-${tick}`}>
             <line
@@ -338,7 +338,7 @@ function WeeklyTrendChart({
 
   return (
     <div className="gos-chart-scroll">
-      <svg viewBox={`0 0 ${width} ${height}`} className="gos-svg-chart wide" role="img">
+      <svg viewBox={`0 0 ${width} ${height}`} className="gos-svg-chart gos-responsive-svg wide" preserveAspectRatio="xMidYMid meet" role="img">
         {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
           const cpaTick = maxCpa * ratio;
           return (
