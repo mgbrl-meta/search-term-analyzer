@@ -2885,7 +2885,7 @@ function PageContent({
 
       {activeTab === "campaigns" ? (
         googleOsModel ? (
-          <CampaignsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} />
+          <CampaignsTab model={googleOsModel} />
         ) : (
           <section className="gos-page">
             <div className="gos-panel">
@@ -2903,7 +2903,7 @@ function PageContent({
 
       {activeTab === "ad_groups" ? (
         googleOsModel ? (
-          <AdGroupsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} />
+          <AdGroupsTab model={googleOsModel} />
         ) : (
           <section className="gos-page">
             <div className="gos-panel">
@@ -3445,9 +3445,9 @@ export default function Page() {
       ) : googleOsModel ? (
         <>
           {googleOsHomeTab === "summary" ? <CommandCenterTab model={googleOsModel} /> : null}
-          {googleOsHomeTab === "spend_summary" ? <SpendSummaryTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} /> : null}
-          {googleOsHomeTab === "campaigns" ? <CampaignsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} /> : null}
-          {googleOsHomeTab === "ad_groups" ? <AdGroupsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} /> : null}
+          {googleOsHomeTab === "spend_summary" ? <SpendSummaryTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} customStart={googleOsCustomStart} customEnd={googleOsCustomEnd} /> : null}
+          {googleOsHomeTab === "campaigns" ? <CampaignsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} customStart={googleOsCustomStart} customEnd={googleOsCustomEnd} /> : null}
+          {googleOsHomeTab === "ad_groups" ? <AdGroupsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} customStart={googleOsCustomStart} customEnd={googleOsCustomEnd} /> : null}
           {googleOsHomeTab === "monthly_summary" ? <MonthlySummaryTab model={googleOsModel} /> : null}
           {googleOsHomeTab === "operator_report" ? <AiOperatorReportTab model={googleOsModel} /> : null}
         </>
