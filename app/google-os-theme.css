@@ -6726,3 +6726,60 @@ html.light .gos-axis-chart-caption {
     padding-right: 12px !important;
   }
 }
+
+/* =========================================================
+   FINAL WIDTH LOCK — CONTENT MATCHES HEADER/NAV WIDTH
+   ========================================================= */
+
+/* One global horizontal rhythm */
+.google-os-shell {
+  --gos-page-x: 24px;
+}
+
+/* Header/nav/source/content should all use same side spacing */
+.google-os-shell .gos-topbar,
+.google-os-shell .gos-home-tabs {
+  left: var(--gos-page-x) !important;
+  right: var(--gos-page-x) !important;
+  width: auto !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+}
+
+/* Main page container must align to the same edges as header/nav */
+.google-os-shell .gos-page,
+.google-os-shell .all-campaigns-summary-page {
+  width: auto !important;
+  max-width: none !important;
+  margin-left: var(--gos-page-x) !important;
+  margin-right: var(--gos-page-x) !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Direct cards should fill the aligned content container */
+.google-os-shell .all-campaigns-summary-page > .gos-panel,
+.google-os-shell .gos-campaign-accordion-panel,
+.google-os-shell .gos-brand-summary-table,
+.google-os-shell .gos-campaign-type-table,
+.google-os-shell .gos-daily-performance-table,
+.google-os-shell .gos-dynamic-chart-panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Prevent old margin/padding overrides from narrowing the first card */
+.google-os-shell .all-campaigns-summary-page {
+  padding-top: 22px !important;
+}
+
+/* Mobile */
+@media(max-width: 760px) {
+  .google-os-shell {
+    --gos-page-x: 12px;
+  }
+}

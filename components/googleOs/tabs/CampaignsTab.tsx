@@ -342,13 +342,13 @@ const CHART_KPIS: { key: ChartKpi; label: string }[] = [
 ];
 
 const CHART_KPI_COLORS: Record<ChartKpi, string> = {
-  spend: "#4285F4",
-  revenue: "#34A853",
-  roas: "#FBBC04",
-  cpa: "#EA4335",
-  purchases: "#8B5CF6",
-  ctr: "#06B6D4",
-  cvr: "#F97316",
+  spend: "#4285F4",      // Google Blue
+  revenue: "#34A853",    // Google Green
+  roas: "#FBBC04",       // Google Yellow
+  cpa: "#EA4335",        // Google Red
+  purchases: "#4285F4",  // Google Blue
+  ctr: "#34A853",        // Google Green
+  cvr: "#FBBC04",        // Google Yellow
 };
 
 function formatChartValue(value: number, kpi: ChartKpi) {
