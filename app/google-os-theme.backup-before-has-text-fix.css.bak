@@ -6614,6 +6614,11 @@ html.light .gos-axis-chart-caption {
   color: var(--gos-faint) !important;
 }
 
+/* Remove Spend Summary from UI even if old bundle/cache still has it */
+.gos-home-tabs button:has-text("Spend Summary") {
+  display: none !important;
+}
+
 @media(max-width: 900px) {
   .gos-daily-performance-head h2 {
     font-size: 14px !important;
