@@ -3,6 +3,7 @@
 import { CommandCenterTab } from "@/components/googleOs/tabs/CommandCenterTab";
 import { CampaignsTab } from "@/components/googleOs/tabs/CampaignsTab";
 import { AdGroupsTab } from "@/components/googleOs/tabs/AdGroupsTab";
+import { MonthlySummaryTab } from "@/components/googleOs/tabs/MonthlySummaryTab";
 import { AiOperatorReportTab } from "@/components/googleOs/tabs/AiOperatorReportTab";
 import { SettingsTab } from "@/components/googleOs/tabs/SettingsTab";
 import { CompactSearchTermUpload } from "@/components/googleOs/shared/CompactSearchTermUpload";
@@ -3132,7 +3133,7 @@ export default function Page() {
   const [googleOsError, setGoogleOsError] = useState("");
   const [googleOsLoading, setGoogleOsLoading] = useState(false);
   const [googleOsHomeTab, setGoogleOsHomeTab] = useState<
-    "summary" | "campaigns" | "ad_groups" | "search_terms" | "operator_report"
+    "summary" | "campaigns" | "ad_groups" | "monthly_summary" | "search_terms" | "operator_report"
   >("summary");
 
   async function loadGoogleOsCsvText(csvText: string, sourceName: string) {
@@ -3229,6 +3230,7 @@ export default function Page() {
     ["summary", "Command Center"],
     ["campaigns", "Campaigns"],
     ["ad_groups", "Ad Groups"],
+    ["monthly_summary", "Monthly Summary"],
     ["search_terms", "Search Terms"],
     ["operator_report", "Operator Report"],
   ] as const;
@@ -3329,6 +3331,7 @@ export default function Page() {
           {googleOsHomeTab === "summary" ? <CommandCenterTab model={googleOsModel} /> : null}
           {googleOsHomeTab === "campaigns" ? <CampaignsTab model={googleOsModel} /> : null}
           {googleOsHomeTab === "ad_groups" ? <AdGroupsTab model={googleOsModel} /> : null}
+          {googleOsHomeTab === "monthly_summary" ? <MonthlySummaryTab model={googleOsModel} /> : null}
           {googleOsHomeTab === "operator_report" ? <AiOperatorReportTab model={googleOsModel} /> : null}
         </>
       ) : (
