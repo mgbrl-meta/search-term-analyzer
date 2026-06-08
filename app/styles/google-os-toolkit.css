@@ -3453,3 +3453,26 @@ html.light {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* =========================================================
+   SEARCH TERM WASTER — SIMPLIFIED HEADS
+   Removes ROAS/CPA/CTR rule clutter from the main control area.
+   ========================================================= */
+
+.google-os-shell .stw2-control-panel {
+  grid-template-columns: minmax(240px, 1.6fr) repeat(2, minmax(140px, 0.7fr)) !important;
+}
+
+.google-os-shell .stw2-control-panel label {
+  max-width: 180px !important;
+}
+
+@media(max-width: 900px) {
+  .google-os-shell .stw2-control-panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  .google-os-shell .stw2-control-panel label {
+    max-width: none !important;
+  }
+}

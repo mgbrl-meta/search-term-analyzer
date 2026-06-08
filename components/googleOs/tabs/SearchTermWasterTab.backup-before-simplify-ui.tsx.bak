@@ -584,14 +584,8 @@ export function SearchTermWasterTab({ model }: { model: GoogleOsModel }) {
   }, [searchTermRows, mode, rules, contains, campaign, matchType]);
 
   const heads = useMemo(() => {
-    return buildSearchTermAnalysisHeads(baseFilteredRows, rules, settings).filter(
-      (head) =>
-        head.key !== "phrase_waster" &&
-        head.key !== "intent_mismatch" &&
-        head.key !== "high_spend_low_roas" &&
-        head.key !== "high_cpa" &&
-        head.key !== "high_impression_low_ctr"
-    );
+    return buildSearchTermAnalysisHeads(baseFilteredRows, rules, settings)
+      .filter((head) => head.key !== "phrase_waster");
   }, [baseFilteredRows, rules, settings]);
 
   const summary = useMemo(() => buildSearchTermSummary(searchTermRows), [searchTermRows]);
@@ -639,6 +633,11 @@ export function SearchTermWasterTab({ model }: { model: GoogleOsModel }) {
 
         <label>Clicks, 0 Purchase<input type="number" value={rules.clickWasteClicks} onChange={(e) => setRules(updateRule(rules, "clickWasteClicks", Number(e.target.value || 0)))} /></label>
         <label>Spend, 0 Purchase ₹<input type="number" value={rules.spendWasteAmount} onChange={(e) => setRules(updateRule(rules, "spendWasteAmount", Number(e.target.value || 0)))} /></label>
+        <label>Low ROAS Spend ₹<input type="number" value={rules.lowRoasSpend} onChange={(e) => setRules(updateRule(rules, "lowRoasSpend", Number(e.target.value || 0)))} /></label>
+        <label>Target ROAS<input type="number" step="0.1" value={rules.lowRoasTarget} onChange={(e) => setRules(updateRule(rules, "lowRoasTarget", Number(e.target.value || 0)))} /></label>
+        <label>High CPA ₹<input type="number" value={rules.highCpaAmount} onChange={(e) => setRules(updateRule(rules, "highCpaAmount", Number(e.target.value || 0)))} /></label>
+        <label>Low CTR Impr.<input type="number" value={rules.lowCtrImpressions} onChange={(e) => setRules(updateRule(rules, "lowCtrImpressions", Number(e.target.value || 0)))} /></label>
+        <label>Low CTR %<input type="number" step="0.1" value={rules.lowCtrPercent} onChange={(e) => setRules(updateRule(rules, "lowCtrPercent", Number(e.target.value || 0)))} /></label>
       </div>
 
       <div className="stw2-filter-panel">

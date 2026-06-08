@@ -894,49 +894,99 @@ export function buildSearchTermAnalysisHeads(
   rules: SearchTermDynamicRules,
   settings: SearchTermSettings
 ): SearchTermAnalysisHead[] {
+  const badIntentRows = rows.filter((row) => {
+    const term = row.searchTerm.toLowerCase();
+    return settings.badIntentWords.some((word) => term.includes(word.toLowerCase())) && !row.isProtected;
+  });
+
   const marketplaceRows = rows.filter((row) => {
     const term = row.searchTerm.toLowerCase();
     return settings.marketplaceWords.some((word) => term.includes(word.toLowerCase())) && !row.isProtected;
   });
+
+  const phraseGroups = buildPhraseWasterGroups(rows, rules);
+  const phraseRows = Array.from(
+    new Map(phraseGroups.flatMap((group) => group.rows).map((row) => [row.id, row])).values()
+  ).sort((a, b) => b.spend - a.spend);
 
   const heads: Omit<SearchTermAnalysisHead, "totalSpend" | "totalRevenue" | "purchases">[] = [
     {
       key: "click_zero_purchase",
       title: `More than ${rules.clickWasteClicks} clicks, 0 purchase`,
       subtitle: "Search terms consuming clicks without generating purchases.",
-      action: "Review and add as exact negative if the term is not strategically important.",
+      action: "Exact negative / investigate before adding negative if term is strategic.",
       risk: "Medium",
       rows: rows.filter((row) => row.clicks >= rules.clickWasteClicks && row.purchases === 0 && !row.isProtected),
     },
     {
       key: "spend_zero_purchase",
       title: `More than ₹${rules.spendWasteAmount}, 0 purchase`,
-      subtitle: "Search terms spending above threshold with no purchase.",
-      action: "Priority waste cut. Add exact negative. Use phrase negative only if repeated pattern is obvious.",
+      subtitle: "Search terms spending above threshold with no conversion output.",
+      action: "Exact negative. Phrase negative if repeated pattern appears.",
       risk: "High",
       rows: rows.filter((row) => row.spend >= rules.spendWasteAmount && row.purchases === 0 && !row.isProtected),
     },
     {
+      key: "high_spend_low_roas",
+      title: `Spend > ₹${rules.lowRoasSpend}, ROAS < ${rules.lowRoasTarget}x`,
+      subtitle: "Terms that convert but below efficiency threshold.",
+      action: "Bid down, isolate into exact campaign, or review landing-page intent.",
+      risk: "Medium",
+      rows: rows.filter((row) => row.spend >= rules.lowRoasSpend && row.purchases > 0 && row.roas < rules.lowRoasTarget && !row.isProtected),
+    },
+    {
+      key: "high_cpa",
+      title: `CPA above ₹${rules.highCpaAmount}`,
+      subtitle: "Converted terms with acquisition cost above target.",
+      action: "Bid down or isolate. Do not negative if strategically important.",
+      risk: "Medium",
+      rows: rows.filter((row) => row.purchases > 0 && row.cpa > rules.highCpaAmount && !row.isProtected),
+    },
+    {
+      key: "high_impression_low_ctr",
+      title: `Impressions > ${rules.lowCtrImpressions}, CTR < ${rules.lowCtrPercent}%`,
+      subtitle: "High visibility but poor search intent or weak relevance.",
+      action: "Review ad relevance. Negative if term is irrelevant.",
+      risk: "Low",
+      rows: rows.filter((row) => row.impressions >= rules.lowCtrImpressions && row.ctr < rules.lowCtrPercent / 100 && !row.isProtected),
+    },
+    {
+      key: "intent_mismatch",
+      title: "Intent mismatch terms",
+      subtitle: `Contains bad-intent words like ${settings.badIntentWords.slice(0, 6).join(", ")}.`,
+      action: "Phrase negative unless it has profitable conversion history.",
+      risk: "High",
+      rows: badIntentRows,
+    },
+    {
       key: "marketplace_leakage",
       title: "Marketplace leakage terms",
-      subtitle: `Terms containing marketplace words like ${settings.marketplaceWords.join(", ")}.`,
-      action: "Review and add phrase/exact negative unless marketplace comparison terms are profitable.",
+      subtitle: `Contains marketplace words like ${settings.marketplaceWords.join(", ")}.`,
+      action: "Phrase negative unless marketplace comparison terms are profitable.",
       risk: "Medium",
       rows: marketplaceRows,
+    },
+    {
+      key: "phrase_waster",
+      title: "Phrase wasters from n-gram analysis",
+      subtitle: `Repeated ${rules.phraseMinWords}-${rules.phraseMaxWords} word phrases across ${rules.phraseMinTerms}+ terms with ₹${rules.phraseMinSpend}+ wasted spend.`,
+      action: "Phrase negative candidate. Review rows before upload.",
+      risk: "High",
+      rows: phraseRows,
     },
     {
       key: "repeat_waster",
       title: `Repeat wasters across ${rules.repeatMinCampaigns}+ campaigns`,
       subtitle: "Same search term wasting spend across multiple campaigns/ad groups.",
-      action: "Account-level negative exact or phrase depending on the term pattern.",
+      action: "Account-level negative exact or phrase depending on pattern.",
       risk: "High",
       rows: buildRepeatWasterRows(rows, rules),
     },
     {
       key: "positive_keywords",
       title: `Positive keyword candidates: ${rules.positivePurchases}+ purchases, ROAS > ${rules.positiveRoas}x`,
-      subtitle: "Terms that are generating purchases efficiently.",
-      action: "Add as exact keyword or isolate into a high-intent ad group.",
+      subtitle: "Terms to promote into exact/phrase keywords.",
+      action: "Add as exact keyword or isolate into high-intent ad group.",
       risk: "Opportunity",
       rows: rows.filter((row) => row.purchases >= rules.positivePurchases && row.roas >= rules.positiveRoas),
     },
@@ -962,16 +1012,15 @@ export function buildSearchTermAnalysisHeads(
       const priority: Record<SearchTermHeadKey, number> = {
         spend_zero_purchase: 1,
         click_zero_purchase: 2,
-        repeat_waster: 3,
-        marketplace_leakage: 4,
-        positive_keywords: 5,
-        protected_terms: 6,
-
-        high_spend_low_roas: 99,
-        high_cpa: 99,
-        high_impression_low_ctr: 99,
-        intent_mismatch: 99,
-        phrase_waster: 99,
+        phrase_waster: 3,
+        repeat_waster: 4,
+        intent_mismatch: 5,
+        marketplace_leakage: 6,
+        high_spend_low_roas: 7,
+        high_cpa: 8,
+        high_impression_low_ctr: 9,
+        positive_keywords: 10,
+        protected_terms: 11,
       };
 
       return priority[a.key] - priority[b.key];
