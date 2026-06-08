@@ -2,6 +2,33 @@ import type { GoogleOsRow } from "./types";
 
 export type GoogleOsDateMode = "last_30" | "month" | "custom";
 
+const GOOGLE_OS_MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+];
+
+export function formatGoogleOsMonthLabel(month: string) {
+  const [year, monthNum] = String(month || "").split("-");
+
+  if (!year || !monthNum) return month || "";
+
+  const monthIndex = Number(monthNum) - 1;
+  const monthName = GOOGLE_OS_MONTHS[monthIndex] || monthNum;
+
+  return `${monthName}-${year.slice(2)}`;
+}
+
+export function formatGoogleOsDateLabel(date: string) {
+  const [year, monthNum, day] = String(date || "").split("-");
+
+  if (!year || !monthNum || !day) return date || "";
+
+  const monthIndex = Number(monthNum) - 1;
+  const monthName = GOOGLE_OS_MONTHS[monthIndex] || monthNum;
+
+  return `${day}-${monthName}-${year.slice(2)}`;
+}
+
 export function getAvailableMonths(rows: GoogleOsRow[]) {
   return Array.from(
     new Set(
@@ -72,17 +99,10 @@ export function getDateLabel({
   }
 
   if (mode === "custom") {
-    return customStart && customEnd ? `${customStart} → ${customEnd}` : "Custom date range";
+    return customStart && customEnd
+      ? `${formatGoogleOsDateLabel(customStart)} → ${formatGoogleOsDateLabel(customEnd)}`
+      : "Custom date range";
   }
 
   return "Last 30 days";
-}
-
-
-const GOOGLE_OS_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-export function formatGoogleOsMonthLabel(month: string) {
-  const [year, monthNum] = month.split("-");
-  if (!year || !monthNum) return month;
-  return `${GOOGLE_OS_MONTHS[Number(monthNum) - 1]}-${year.slice(2)}`;
 }
