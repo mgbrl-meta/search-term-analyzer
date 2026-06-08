@@ -351,11 +351,6 @@ export function CampaignTypeTab({
   }, [model.rows, viewMode, activeCompareMonth]);
 
   const campaignRows = useMemo(() => buildCampaignRows(selectedRows, type), [selectedRows, type]);
-
-  const summaryHeaderRows = useMemo(() => {
-    return selectedRows.filter((row) => getCampaignType(row) === type);
-  }, [selectedRows, type]);
-
   const compareCampaignRows = useMemo(() => buildCampaignRows(compareRows, type), [compareRows, type]);
 
   const last7Metrics = useMemo(() => {
@@ -410,7 +405,7 @@ export function CampaignTypeTab({
         kicker={type}
         title={`${type} campaign performance`}
         description={`Selected period summary for ${type} campaigns. Click any campaign to open ad groups inside it.`}
-        rows={summaryHeaderRows}
+        rows={selectedRows}
       />
 <div className="gos-panel">
         <div className="gos-panel-head campaign-filter-head">
