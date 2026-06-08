@@ -1064,3 +1064,235 @@ html.light {
     min-width: 1360px !important;
   }
 }
+
+/* =========================================================
+   GOOGLE OS GLOBAL TABLE ALIGNMENT SYSTEM
+   Applies across:
+   All Campaigns
+   Search
+   Shopping
+   Demand Gen
+   Video
+   Monthly Summary
+   Operator Report tables
+   ========================================================= */
+
+/* ------------------------------
+   A. Campaign Type Tabs
+   Parent campaign rows + expanded ad-group child table
+------------------------------ */
+
+.google-os-shell {
+  --gos-campaign-type-grid:
+    minmax(360px, 2.35fr)  /* Campaign / Ad Group */
+    minmax(100px, 0.65fr)  /* Status / Type */
+    minmax(110px, 0.72fr)  /* Spend */
+    minmax(120px, 0.75fr)  /* Revenue */
+    minmax(85px, 0.55fr)   /* ROAS */
+    minmax(85px, 0.55fr)   /* Purch. */
+    minmax(95px, 0.6fr)    /* CPA */
+    minmax(85px, 0.55fr)   /* CTR */
+    minmax(85px, 0.55fr)   /* CVR */
+    minmax(85px, 0.55fr)   /* CPC / Share */
+    minmax(96px, 0.65fr);  /* Decision */
+}
+
+/* Parent campaign card row in Search/Shopping/Demand/Video */
+.google-os-shell .campaign-type-row,
+.google-os-shell .campaign-type-campaign-row,
+.google-os-shell .campaign-type-card-row,
+.google-os-shell .campaign-row,
+.google-os-shell .google-campaign-row {
+  display: grid !important;
+  grid-template-columns: var(--gos-campaign-type-grid) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Expanded ad group table */
+.google-os-shell .campaign-type-adgroup-header,
+.google-os-shell .campaign-type-adgroup-row,
+.google-os-shell .adgroup-table-header,
+.google-os-shell .adgroup-table-row,
+.google-os-shell .campaign-adgroup-header,
+.google-os-shell .campaign-adgroup-row {
+  display: grid !important;
+  grid-template-columns: var(--gos-campaign-type-grid) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Generic fallback for any campaign type tab table row */
+.google-os-shell [class*="adgroup"][class*="header"],
+.google-os-shell [class*="adgroup"][class*="row"],
+.google-os-shell [class*="ad-group"][class*="header"],
+.google-os-shell [class*="ad-group"][class*="row"] {
+  display: grid !important;
+  grid-template-columns: var(--gos-campaign-type-grid) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Equal padding between campaign parent and child rows */
+.google-os-shell .campaign-type-row,
+.google-os-shell .campaign-type-campaign-row,
+.google-os-shell .campaign-type-card-row,
+.google-os-shell .campaign-row,
+.google-os-shell .google-campaign-row,
+.google-os-shell .campaign-type-adgroup-header,
+.google-os-shell .campaign-type-adgroup-row,
+.google-os-shell .adgroup-table-header,
+.google-os-shell .adgroup-table-row,
+.google-os-shell .campaign-adgroup-header,
+.google-os-shell .campaign-adgroup-row,
+.google-os-shell [class*="adgroup"][class*="header"],
+.google-os-shell [class*="adgroup"][class*="row"],
+.google-os-shell [class*="ad-group"][class*="header"],
+.google-os-shell [class*="ad-group"][class*="row"] {
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+}
+
+/* Header height */
+.google-os-shell .campaign-type-adgroup-header,
+.google-os-shell .adgroup-table-header,
+.google-os-shell .campaign-adgroup-header,
+.google-os-shell [class*="adgroup"][class*="header"],
+.google-os-shell [class*="ad-group"][class*="header"] {
+  min-height: 32px !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+/* Row height */
+.google-os-shell .campaign-type-adgroup-row,
+.google-os-shell .adgroup-table-row,
+.google-os-shell .campaign-adgroup-row,
+.google-os-shell [class*="adgroup"][class*="row"],
+.google-os-shell [class*="ad-group"][class*="row"] {
+  min-height: 36px !important;
+  padding-top: 7px !important;
+  padding-bottom: 7px !important;
+}
+
+/* ------------------------------
+   B. Cell alignment rules
+------------------------------ */
+
+/* First column left aligned */
+.google-os-shell .campaign-type-row > *:first-child,
+.google-os-shell .campaign-type-campaign-row > *:first-child,
+.google-os-shell .campaign-type-card-row > *:first-child,
+.google-os-shell .campaign-row > *:first-child,
+.google-os-shell .google-campaign-row > *:first-child,
+.google-os-shell .campaign-type-adgroup-header > *:first-child,
+.google-os-shell .campaign-type-adgroup-row > *:first-child,
+.google-os-shell .adgroup-table-header > *:first-child,
+.google-os-shell .adgroup-table-row > *:first-child,
+.google-os-shell .campaign-adgroup-header > *:first-child,
+.google-os-shell .campaign-adgroup-row > *:first-child,
+.google-os-shell [class*="adgroup"][class*="header"] > *:first-child,
+.google-os-shell [class*="adgroup"][class*="row"] > *:first-child,
+.google-os-shell [class*="ad-group"][class*="header"] > *:first-child,
+.google-os-shell [class*="ad-group"][class*="row"] > *:first-child {
+  text-align: left !important;
+  justify-self: stretch !important;
+  min-width: 0 !important;
+}
+
+/* All other metric columns right aligned */
+.google-os-shell .campaign-type-row > *:not(:first-child),
+.google-os-shell .campaign-type-campaign-row > *:not(:first-child),
+.google-os-shell .campaign-type-card-row > *:not(:first-child),
+.google-os-shell .campaign-row > *:not(:first-child),
+.google-os-shell .google-campaign-row > *:not(:first-child),
+.google-os-shell .campaign-type-adgroup-header > *:not(:first-child),
+.google-os-shell .campaign-type-adgroup-row > *:not(:first-child),
+.google-os-shell .adgroup-table-header > *:not(:first-child),
+.google-os-shell .adgroup-table-row > *:not(:first-child),
+.google-os-shell .campaign-adgroup-header > *:not(:first-child),
+.google-os-shell .campaign-adgroup-row > *:not(:first-child),
+.google-os-shell [class*="adgroup"][class*="header"] > *:not(:first-child),
+.google-os-shell [class*="adgroup"][class*="row"] > *:not(:first-child),
+.google-os-shell [class*="ad-group"][class*="header"] > *:not(:first-child),
+.google-os-shell [class*="ad-group"][class*="row"] > *:not(:first-child) {
+  text-align: right !important;
+  justify-self: stretch !important;
+  font-variant-numeric: tabular-nums !important;
+  min-width: 0 !important;
+}
+
+/* Prevent campaign / ad group names from pushing columns */
+.google-os-shell .campaign-type-row strong,
+.google-os-shell .campaign-type-campaign-row strong,
+.google-os-shell .campaign-type-card-row strong,
+.google-os-shell .campaign-row strong,
+.google-os-shell .google-campaign-row strong,
+.google-os-shell .campaign-type-adgroup-row strong,
+.google-os-shell .adgroup-table-row strong,
+.google-os-shell .campaign-adgroup-row strong,
+.google-os-shell [class*="adgroup"][class*="row"] strong,
+.google-os-shell [class*="ad-group"][class*="row"] strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Header labels should not wrap */
+.google-os-shell .campaign-type-adgroup-header *,
+.google-os-shell .adgroup-table-header *,
+.google-os-shell .campaign-adgroup-header *,
+.google-os-shell [class*="adgroup"][class*="header"] *,
+.google-os-shell [class*="ad-group"][class*="header"] * {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* ------------------------------
+   C. Expanded child section width
+------------------------------ */
+
+.google-os-shell .campaign-type-expanded,
+.google-os-shell .campaign-expanded,
+.google-os-shell .adgroup-expanded,
+.google-os-shell .ad-group-expanded,
+.google-os-shell .campaign-type-adgroup-table,
+.google-os-shell .adgroup-table,
+.google-os-shell .campaign-adgroup-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+  overflow-x: auto !important;
+}
+
+/* Inner row min width for small screens only */
+@media(max-width: 1300px) {
+  .google-os-shell .campaign-type-row,
+  .google-os-shell .campaign-type-campaign-row,
+  .google-os-shell .campaign-type-card-row,
+  .google-os-shell .campaign-row,
+  .google-os-shell .google-campaign-row,
+  .google-os-shell .campaign-type-adgroup-header,
+  .google-os-shell .campaign-type-adgroup-row,
+  .google-os-shell .adgroup-table-header,
+  .google-os-shell .adgroup-table-row,
+  .google-os-shell .campaign-adgroup-header,
+  .google-os-shell .campaign-adgroup-row,
+  .google-os-shell [class*="adgroup"][class*="header"],
+  .google-os-shell [class*="adgroup"][class*="row"],
+  .google-os-shell [class*="ad-group"][class*="header"],
+  .google-os-shell [class*="ad-group"][class*="row"] {
+    min-width: 1360px !important;
+  }
+}
