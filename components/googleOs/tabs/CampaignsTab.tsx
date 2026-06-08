@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { GoogleOsModel, GoogleOsRow, GoogleOsStatus } from "../../../lib/googleOs/types";
 import { compactMoney, pct, safeDiv, x } from "../../../lib/googleOs/format";
 import { GoogleOsTable } from "../shared/GoogleOsTable";
+import { formatGoogleOsMonthLabel } from "../../../lib/googleOs/dateFilter";
 
 type CampaignViewMode = "latest_month" | "month_compare" | "quarter";
 
@@ -27,13 +28,7 @@ type CampaignRow = {
 };
 
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-function formatMonthLabel(month: string) {
-  const [year, monthNum] = month.split("-");
-  if (!year || !monthNum) return month;
-  return `${MONTHS[Number(monthNum) - 1]}-${year.slice(2)}`;
-}
 
 function getAvailableMonths(rows: GoogleOsRow[]) {
   return Array.from(
@@ -329,8 +324,8 @@ export function CampaignsTab({
     viewMode === "quarter"
       ? activeQuarter
       : viewMode === "month_compare"
-        ? `${formatMonthLabel(activeMonth)} vs ${formatMonthLabel(activeCompareMonth)}`
-        : formatMonthLabel(activeMonth);
+        ? `${formatGoogleOsMonthLabel(activeMonth)} vs ${formatGoogleOsMonthLabel(activeCompareMonth)}`
+        : formatGoogleOsMonthLabel(activeMonth);
 
   return (
     <section className="gos-page">
@@ -366,7 +361,7 @@ export function CampaignsTab({
                 >
                   {months.slice().reverse().map((month) => (
                     <option key={month} value={month}>
-                      {formatMonthLabel(month)}
+                      {formatGoogleOsMonthLabel(month)}
                     </option>
                   ))}
                 </select>
@@ -382,7 +377,7 @@ export function CampaignsTab({
                 >
                   {months.slice().reverse().map((month) => (
                     <option key={month} value={month}>
-                      {formatMonthLabel(month)}
+                      {formatGoogleOsMonthLabel(month)}
                     </option>
                   ))}
                 </select>
