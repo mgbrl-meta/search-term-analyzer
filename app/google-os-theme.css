@@ -468,3 +468,45 @@ body,
     --gos-shell: min(100% - 20px, 1440px);
   }
 }
+
+/* Google OS metric color coding */
+.gos-metric {
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.gos-metric.green {
+  color: var(--gos-green) !important;
+}
+
+.gos-metric.red {
+  color: var(--gos-red) !important;
+}
+
+.gos-metric.amber {
+  color: var(--gos-amber) !important;
+}
+
+.gos-metric.neutral {
+  color: var(--gos-muted) !important;
+}
+
+/* Recent operator tables should stay readable */
+.gos-table td {
+  max-width: 260px;
+}
+
+.gos-table td:first-child,
+.gos-table th:first-child {
+  min-width: 230px;
+}
+
+.gos-table td:nth-child(2),
+.gos-table th:nth-child(2) {
+  min-width: 110px;
+}
+
+/* Prevent ugly floating decimal conversions */
+.gos-table td.right {
+  font-variant-numeric: tabular-nums;
+}
