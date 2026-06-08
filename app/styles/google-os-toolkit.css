@@ -1545,3 +1545,70 @@ html.light {
     overflow-x: auto !important;
   }
 }
+
+/* =========================================================
+   CAMPAIGN TYPE TABS — REMOVE OLD LOWER DATE FILTER
+   JSX should be removed above. This is a fallback guard.
+   ========================================================= */
+
+.google-os-shell .campaign-type-main-tab .campaign-type-head-controls,
+.google-os-shell .campaign-type-main-tab .campaign-type-view-controls,
+.google-os-shell .campaign-type-main-tab .campaign-type-date-controls,
+.google-os-shell .campaign-type-main-tab .campaign-type-controls,
+.google-os-shell .campaign-type-main-tab .campaign-type-filter-row {
+  display: none !important;
+}
+
+/* Hide old lower filter if it is the only block containing selects inside campaign type panel header */
+.google-os-shell .campaign-type-main-tab .campaign-type-panel select {
+  display: none !important;
+}
+
+.google-os-shell .campaign-type-main-tab .campaign-type-panel label:has(select) {
+  display: none !important;
+}
+
+/* =========================================================
+   SAFETY: HIDE LOWER CAMPAIGN TYPE FILTER
+   Top shared summary header is now the only date/period filter.
+   ========================================================= */
+
+.google-os-shell .campaign-type-main-tab .campaign-filter-bar,
+.google-os-shell .campaign-type-main-tab .campaign-type-head-controls,
+.google-os-shell .campaign-type-main-tab .campaign-type-view-controls,
+.google-os-shell .campaign-type-main-tab .campaign-type-date-controls,
+.google-os-shell .campaign-type-main-tab .campaign-type-controls,
+.google-os-shell .campaign-type-main-tab .campaign-type-filter-row {
+  display: none !important;
+}
+
+/* =========================================================
+   CAMPAIGN TYPE LOWER FILTER REMOVAL — TOOLKIT ONLY
+   Do not edit JSX for this. Top shared summary header is source of truth.
+   Applies to Search, Shopping, Demand Gen, Video tabs.
+   ========================================================= */
+
+.google-os-shell .campaign-type-main-tab .campaign-filter-bar,
+.google-os-shell .campaign-type-main-tab .campaign-type-head-controls,
+.google-os-shell .campaign-type-main-tab .campaign-type-view-controls,
+.google-os-shell .campaign-type-main-tab .campaign-type-date-controls,
+.google-os-shell .campaign-type-main-tab .campaign-type-controls,
+.google-os-shell .campaign-type-main-tab .campaign-type-filter-row {
+  display: none !important;
+}
+
+/* Hide old lower View / Month filter block if it exists inside campaign type panel */
+.google-os-shell .campaign-type-main-tab .campaign-type-panel label:has(select),
+.google-os-shell .campaign-type-main-tab .campaign-type-panel select {
+  display: none !important;
+}
+
+/* Keep campaign list directly under shared summary header */
+.google-os-shell .campaign-type-main-tab .campaign-type-panel {
+  margin-top: 14px !important;
+}
+
+/* Hide duplicate old KPI strip if top shared summary header exists */
+.google-os-shell .campaign-type-main-tab .campaign-type-summary-strip {
+  display: none !important;
+}
