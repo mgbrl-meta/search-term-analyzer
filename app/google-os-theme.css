@@ -5144,3 +5144,143 @@ body {
     min-width: 1180px !important;
   }
 }
+
+/* =========================================================
+   GOOGLE OS TABLE COLUMN ALIGNMENT FIX
+   Same column grid for Brand table + Campaign Type table
+   ========================================================= */
+
+:root {
+  --gos-campaign-grid:
+    minmax(310px, 2.2fr)
+    minmax(88px, 0.55fr)
+    minmax(105px, 0.7fr)
+    minmax(155px, 0.9fr)
+    minmax(115px, 0.75fr)
+    minmax(80px, 0.55fr)
+    minmax(80px, 0.55fr)
+    minmax(90px, 0.6fr)
+    minmax(80px, 0.55fr)
+    minmax(80px, 0.55fr);
+}
+
+/* Force both summary tables to use identical columns */
+.gos-brand-table-header,
+.gos-brand-parent-row,
+.gos-brand-child-row,
+.gos-campaign-table-header,
+.gos-campaign-segment-row {
+  grid-template-columns: var(--gos-campaign-grid) !important;
+}
+
+/* Campaign child rows have one extra Decision column, so align first 10 columns and append decision */
+.gos-campaign-child-row {
+  grid-template-columns:
+    minmax(310px, 2.2fr)
+    minmax(88px, 0.55fr)
+    minmax(105px, 0.7fr)
+    minmax(155px, 0.9fr)
+    minmax(115px, 0.75fr)
+    minmax(80px, 0.55fr)
+    minmax(80px, 0.55fr)
+    minmax(90px, 0.6fr)
+    minmax(80px, 0.55fr)
+    minmax(80px, 0.55fr)
+    minmax(90px, 0.6fr) !important;
+}
+
+/* Keep all numeric columns aligned right */
+.gos-brand-table-header span,
+.gos-brand-parent-row span,
+.gos-brand-child-row span,
+.gos-campaign-table-header span,
+.gos-campaign-segment-row span,
+.gos-campaign-child-row span {
+  text-align: right !important;
+}
+
+/* First column left aligned */
+.gos-brand-table-header .brand-col-main,
+.gos-brand-parent-row .brand-col-main,
+.gos-brand-child-row .brand-col-main,
+.gos-campaign-table-header .campaign-col-main,
+.gos-campaign-segment-row .campaign-col-main,
+.gos-campaign-child-row .campaign-col-main {
+  text-align: left !important;
+}
+
+/* Remove inconsistent padding between the two table types */
+.gos-brand-table-header,
+.gos-campaign-table-header {
+  padding: 9px 14px !important;
+}
+
+.gos-brand-parent-row,
+.gos-campaign-segment-row {
+  padding: 10px 14px !important;
+  min-height: 44px !important;
+}
+
+.gos-brand-child-row,
+.gos-campaign-child-row {
+  padding: 8px 14px !important;
+  min-height: 40px !important;
+}
+
+/* Make first-column label widths visually consistent */
+.brand-parent-name,
+.brand-child-name,
+.campaign-segment-name,
+.campaign-child-name {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Brand child indentation should match campaign child indentation */
+.brand-child-name,
+.campaign-child-name {
+  padding-left: 28px !important;
+}
+
+/* Table containers same width and behavior */
+.gos-brand-summary-table,
+.gos-campaign-type-table {
+  width: 100% !important;
+}
+
+/* Prevent one table from appearing visually narrower due to internal overflow */
+.gos-brand-summary-table,
+.gos-campaign-type-table {
+  overflow-x: auto !important;
+}
+
+/* Same minimum width for both tables on smaller screens */
+@media(max-width: 1300px) {
+  .gos-brand-table-header,
+  .gos-brand-parent-row,
+  .gos-brand-child-row,
+  .gos-campaign-table-header,
+  .gos-campaign-segment-row {
+    min-width: 1220px !important;
+  }
+
+  .gos-campaign-child-row {
+    min-width: 1320px !important;
+  }
+}
+
+/* Better header readability */
+.gos-brand-table-header span,
+.gos-campaign-table-header span {
+  white-space: nowrap !important;
+}
+
+/* Ensure long first column does not push numeric columns */
+.brand-parent-name strong,
+.brand-child-name strong,
+.campaign-segment-name strong,
+.campaign-child-name strong {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
