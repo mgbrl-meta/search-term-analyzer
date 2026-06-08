@@ -1,0 +1,471 @@
+/* =========================================================
+   GOOGLE OS THEME TOOLKIT
+   Single source of truth for layout, theme, charts, tables.
+   Keep future UI fixes here instead of random patch CSS.
+   ========================================================= */
+
+/* ------------------------------
+   1. Core Tokens
+------------------------------ */
+
+html.dark,
+html:not(.light) {
+  --gos-page-x: 24px;
+
+  --gos-bg: #050914;
+  --gos-surface: #0b1220;
+  --gos-surface-2: #111827;
+  --gos-surface-3: #17233a;
+
+  --gos-border: rgba(148, 163, 184, 0.18);
+  --gos-border-strong: rgba(148, 163, 184, 0.28);
+
+  --gos-text: #f8fafc;
+  --gos-muted: #cbd5e1;
+  --gos-faint: #94a3b8;
+
+  --gos-green: #22c55e;
+  --gos-red: #ef4444;
+  --gos-amber: #fbbc04;
+
+  --google-blue: #4285f4;
+  --google-green: #34a853;
+  --google-yellow: #fbbc04;
+  --google-red: #ea4335;
+
+  --gos-chart-axis: #f8fafc;
+  --gos-chart-axis-muted: #cbd5e1;
+  --gos-chart-grid: rgba(148, 163, 184, 0.24);
+}
+
+html.light {
+  --gos-page-x: 24px;
+
+  --gos-bg: #f7f9fc;
+  --gos-surface: #ffffff;
+  --gos-surface-2: #f8fafc;
+  --gos-surface-3: #eef4ff;
+
+  --gos-border: rgba(15, 23, 42, 0.12);
+  --gos-border-strong: rgba(15, 23, 42, 0.18);
+
+  --gos-text: #020617;
+  --gos-muted: #334155;
+  --gos-faint: #64748b;
+
+  --gos-green: #16a34a;
+  --gos-red: #dc2626;
+  --gos-amber: #d97706;
+
+  --google-blue: #4285f4;
+  --google-green: #34a853;
+  --google-yellow: #fbbc04;
+  --google-red: #ea4335;
+
+  --gos-chart-axis: #020617;
+  --gos-chart-axis-muted: #334155;
+  --gos-chart-grid: rgba(15, 23, 42, 0.14);
+}
+
+/* ------------------------------
+   2. App Shell Layout
+------------------------------ */
+
+.google-os-shell {
+  min-height: 100vh !important;
+  padding-top: 154px !important;
+  background:
+    radial-gradient(circle at top left, rgba(66, 133, 244, 0.08), transparent 34%),
+    radial-gradient(circle at top right, rgba(52, 168, 83, 0.06), transparent 30%),
+    var(--gos-bg) !important;
+  color: var(--gos-text) !important;
+  box-sizing: border-box !important;
+}
+
+.google-os-shell .gos-topbar {
+  position: fixed !important;
+  top: 8px !important;
+  left: var(--gos-page-x) !important;
+  right: var(--gos-page-x) !important;
+  width: auto !important;
+  height: 58px !important;
+  min-height: 58px !important;
+  z-index: 99990 !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+
+  padding: 10px 14px !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 16px !important;
+  background: color-mix(in srgb, var(--gos-surface) 92%, transparent) !important;
+  backdrop-filter: blur(16px) !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.google-os-shell .gos-home-tabs {
+  position: fixed !important;
+  top: 78px !important;
+  left: var(--gos-page-x) !important;
+  right: var(--gos-page-x) !important;
+  width: auto !important;
+  min-height: 54px !important;
+  z-index: 99980 !important;
+
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 6px !important;
+
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 16px !important;
+  background: color-mix(in srgb, var(--gos-surface) 92%, transparent) !important;
+  backdrop-filter: blur(16px) !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.google-os-shell .gos-page,
+.google-os-shell .all-campaigns-summary-page {
+  width: auto !important;
+  max-width: none !important;
+  margin-left: var(--gos-page-x) !important;
+  margin-right: var(--gos-page-x) !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.google-os-shell .all-campaigns-summary-page {
+  margin-top: 22px !important;
+}
+
+/* ------------------------------
+   3. Header Elements
+------------------------------ */
+
+.google-os-shell .gos-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 220px !important;
+  overflow: visible !important;
+}
+
+.google-os-shell .gos-brand h1,
+.google-os-shell .gos-brand p {
+  white-space: nowrap !important;
+  color: var(--gos-text) !important;
+}
+
+.google-os-shell .gos-header-pills {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+}
+
+.google-os-shell .gos-header-date-pill,
+.google-os-shell .gos-header-source-pill,
+.google-os-shell .gos-theme-toggle {
+  min-height: 30px !important;
+  border-radius: 999px !important;
+  padding: 6px 11px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+}
+
+.google-os-shell .gos-header-date-pill {
+  border: 1px solid rgba(66, 133, 244, 0.34) !important;
+  background: rgba(66, 133, 244, 0.10) !important;
+}
+
+.google-os-shell .gos-theme-toggle {
+  border: 1px solid rgba(251, 188, 4, 0.36) !important;
+  background: rgba(251, 188, 4, 0.10) !important;
+  color: var(--gos-text) !important;
+  cursor: pointer !important;
+}
+
+/* ------------------------------
+   4. Tabs
+------------------------------ */
+
+.google-os-shell .gos-home-tabs button {
+  position: relative !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+
+  padding: 0 14px !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 10px !important;
+
+  background: var(--gos-surface-2) !important;
+  color: var(--gos-muted) !important;
+
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  overflow: hidden !important;
+  cursor: pointer !important;
+}
+
+.google-os-shell .gos-home-tabs button.active {
+  color: var(--gos-text) !important;
+  background: var(--gos-surface-3) !important;
+  border-color: rgba(66, 133, 244, 0.44) !important;
+}
+
+.google-os-shell .gos-home-tabs button.active::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 12px !important;
+  right: 12px !important;
+  top: 0 !important;
+  height: 3px !important;
+  border-radius: 0 0 999px 999px !important;
+  background: linear-gradient(
+    90deg,
+    var(--google-blue) 0%,
+    var(--google-blue) 28%,
+    var(--google-green) 28%,
+    var(--google-green) 54%,
+    var(--google-yellow) 54%,
+    var(--google-yellow) 76%,
+    var(--google-red) 76%,
+    var(--google-red) 100%
+  ) !important;
+}
+
+/* ------------------------------
+   5. Cards / Panels
+------------------------------ */
+
+.google-os-shell .gos-panel,
+.google-os-shell .gos-campaign-accordion-panel,
+.google-os-shell .gos-brand-summary-table,
+.google-os-shell .gos-campaign-type-table,
+.google-os-shell .gos-daily-performance-table,
+.google-os-shell .gos-dynamic-chart-panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+  border-color: var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+}
+
+/* ------------------------------
+   6. Chart Toolkit
+------------------------------ */
+
+.google-os-shell svg text,
+.google-os-shell svg tspan,
+.google-os-shell .recharts-wrapper text,
+.google-os-shell .recharts-wrapper tspan,
+.google-os-shell .recharts-cartesian-axis text,
+.google-os-shell .recharts-cartesian-axis-tick-value,
+.google-os-shell .recharts-label {
+  fill: var(--gos-chart-axis) !important;
+  color: var(--gos-chart-axis) !important;
+  opacity: 1 !important;
+  font-weight: 900 !important;
+}
+
+.google-os-shell .recharts-cartesian-grid line,
+.google-os-shell .recharts-cartesian-axis-line,
+.google-os-shell .recharts-cartesian-axis-tick-line,
+.google-os-shell .gos-axis-chart-grid,
+.google-os-shell .gos-timeseries-grid {
+  stroke: var(--gos-chart-grid) !important;
+  opacity: 1 !important;
+}
+
+.google-os-shell .gos-axis-chart-text,
+.google-os-shell .gos-axis-chart-text.x,
+.google-os-shell .gos-axis-chart-caption,
+.google-os-shell .gos-timeseries-axis,
+.google-os-shell .gos-timeseries-axis.x {
+  fill: var(--gos-chart-axis) !important;
+  color: var(--gos-chart-axis) !important;
+  opacity: 1 !important;
+  font-weight: 900 !important;
+}
+
+.google-os-shell .gos-axis-chart-axis {
+  stroke: var(--gos-chart-axis-muted) !important;
+  opacity: 0.55 !important;
+}
+
+/* Chart control buttons */
+.google-os-shell .gos-chart-control-row {
+  grid-template-columns: minmax(620px, 1.5fr) minmax(360px, 1fr) minmax(260px, 0.65fr) !important;
+  align-items: start !important;
+}
+
+.google-os-shell .gos-chart-control-row > div:first-child .gos-chart-button-group {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  white-space: nowrap !important;
+  gap: 6px !important;
+  padding-bottom: 3px !important;
+}
+
+.google-os-shell .gos-chart-control-row > div:first-child .gos-chart-button-group button {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+
+/* ------------------------------
+   7. Table Toolkit
+------------------------------ */
+
+.google-os-shell {
+  --gos-unified-table-grid:
+    minmax(340px, 2.35fr)
+    minmax(88px, 0.55fr)
+    minmax(105px, 0.7fr)
+    minmax(155px, 0.95fr)
+    minmax(115px, 0.75fr)
+    minmax(80px, 0.55fr)
+    minmax(80px, 0.55fr)
+    minmax(90px, 0.6fr)
+    minmax(80px, 0.55fr)
+    minmax(80px, 0.55fr)
+    minmax(96px, 0.65fr);
+}
+
+.google-os-shell .gos-brand-table-header,
+.google-os-shell .gos-brand-parent-row,
+.google-os-shell .gos-brand-child-row,
+.google-os-shell .gos-campaign-table-header,
+.google-os-shell .gos-campaign-segment-row,
+.google-os-shell .gos-campaign-child-row {
+  display: grid !important;
+  grid-template-columns: var(--gos-unified-table-grid) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.google-os-shell .gos-brand-table-header::after,
+.google-os-shell .gos-campaign-table-header::after,
+.google-os-shell .gos-brand-parent-row::after,
+.google-os-shell .gos-brand-child-row::after,
+.google-os-shell .gos-campaign-segment-row::after {
+  content: "" !important;
+  display: block !important;
+}
+
+.google-os-shell .gos-brand-table-header,
+.google-os-shell .gos-campaign-table-header {
+  padding: 9px 14px !important;
+}
+
+.google-os-shell .gos-brand-parent-row,
+.google-os-shell .gos-brand-child-row,
+.google-os-shell .gos-campaign-segment-row,
+.google-os-shell .gos-campaign-child-row {
+  padding: 9px 14px !important;
+  min-height: 42px !important;
+}
+
+.google-os-shell .gos-brand-table-header span,
+.google-os-shell .gos-brand-parent-row span,
+.google-os-shell .gos-brand-child-row span,
+.google-os-shell .gos-campaign-table-header span,
+.google-os-shell .gos-campaign-segment-row span,
+.google-os-shell .gos-campaign-child-row span {
+  text-align: right !important;
+  justify-self: stretch !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.google-os-shell .brand-col-main,
+.google-os-shell .campaign-col-main,
+.google-os-shell .brand-parent-name,
+.google-os-shell .brand-child-name,
+.google-os-shell .campaign-segment-name,
+.google-os-shell .campaign-child-name {
+  text-align: left !important;
+  justify-self: stretch !important;
+  min-width: 0 !important;
+}
+
+.google-os-shell .brand-parent-name strong,
+.google-os-shell .brand-child-name strong,
+.google-os-shell .campaign-segment-name strong,
+.google-os-shell .campaign-child-name strong {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.google-os-shell .brand-child-name,
+.google-os-shell .campaign-child-name {
+  padding-left: 30px !important;
+  box-sizing: border-box !important;
+}
+
+.google-os-shell .gos-campaign-child-row .campaign-decision {
+  grid-column: 11 !important;
+  justify-self: end !important;
+  align-self: center !important;
+  min-width: 64px !important;
+  width: fit-content !important;
+  text-align: center !important;
+}
+
+/* ------------------------------
+   8. Responsive Rules
+------------------------------ */
+
+@media(max-width: 1100px) {
+  .google-os-shell .gos-chart-control-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media(max-width: 760px) {
+  html.dark,
+  html:not(.light),
+  html.light {
+    --gos-page-x: 12px;
+  }
+
+  .google-os-shell {
+    padding-top: 146px !important;
+  }
+
+  .google-os-shell .gos-topbar {
+    top: 6px !important;
+    height: 54px !important;
+    min-height: 54px !important;
+  }
+
+  .google-os-shell .gos-home-tabs {
+    top: 70px !important;
+  }
+
+  .google-os-shell .gos-header-date-pill {
+    display: none !important;
+  }
+
+  .google-os-shell .gos-brand {
+    min-width: 160px !important;
+  }
+}
