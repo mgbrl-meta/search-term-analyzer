@@ -4,56 +4,86 @@ import { useMemo, useState } from "react";
 import type { GoogleOsModel, GoogleOsRow, GoogleOsStatus } from "../../../lib/googleOs/types";
 import { compactMoney, pct, safeDiv, x } from "../../../lib/googleOs/format";
 import { GoogleOsTable } from "../shared/GoogleOsTable";
-import { formatGoogleOsDateLabel } from "../../../lib/googleOs/dateFilter";
+import { formatGoogleOsDateLabel, formatGoogleOsMonthLabel } from "../../../lib/googleOs/dateFilter";
 
-type CampaignType = "All" | "Search" | "Shopping" | "Demand Gen" | "Video" | "Other";
+type PeriodMode = "daily" | "weekly" | "monthly" | "quarterly";
 
-type TypeSummaryRow = {
-  type: CampaignType;
-  ySpend: number;
-  yRevenue: number;
-  yPurchases: number;
-  yRoas: number;
-  yCpa: number;
-  l7Spend: number;
-  l7Revenue: number;
-  l7Purchases: number;
-  l7Roas: number;
-  l7Cpa: number;
-  spendShare: number;
-  campaignCount: number;
+type Segment =
+  | "All"
+  | "Search Brand"
+  | "Search Non Brand"
+  | "Shopping Brand"
+  | "Shopping Non Brand"
+  | "Demand Gen"
+  | "Video"
+  | "Other";
+
+type SegmentRow = {
+  segment: Segment;
+  campaigns: number;
+  spend: number;
+  revenue: number;
+  purchases: number;
+  roas: number;
+  cpa: number;
+  ctr: number;
+  cvr: number;
+  share: number;
 };
 
 type CampaignRow = {
   key: string;
   campaign: string;
-  campaignType: CampaignType;
-  campaignStatus: string;
-  cost: number;
-  conversionValue: number;
-  conversions: number;
+  segment: Segment;
+  statusText: string;
+  spend: number;
+  revenue: number;
+  purchases: number;
   roas: number;
   cpa: number;
   ctr: number;
   cvr: number;
   avgCpc: number;
-  spendShare: number;
-  status: GoogleOsStatus;
+  share: number;
+  decision: GoogleOsStatus;
   action: string;
 };
 
-const TYPE_ORDER: CampaignType[] = ["Search", "Shopping", "Demand Gen", "Video", "Other"];
-const TYPE_COLORS: Record<CampaignType, string> = {
+const SEGMENTS: Segment[] = [
+  "Search Brand",
+  "Search Non Brand",
+  "Shopping Brand",
+  "Shopping Non Brand",
+  "Demand Gen",
+  "Video",
+  "Other",
+];
+
+const SEGMENT_COLORS: Record<Segment, string> = {
   All: "#94A3B8",
-  Search: "#4285F4",
-  Shopping: "#34A853",
+  "Search Brand": "#4285F4",
+  "Search Non Brand": "#7BAAF7",
+  "Shopping Brand": "#34A853",
+  "Shopping Non Brand": "#81C995",
   "Demand Gen": "#FBBC04",
   Video: "#EA4335",
   Other: "#A855F7",
 };
 
-function getCampaignType(row: GoogleOsRow): CampaignType {
-  const raw = String(row.campaignType || row.campaign || "").trim().toLowerCase();
+function isBrandCampaign(row: GoogleOsRow) {
+  const text = `${row.campaign || ""} ${row.adGroup || ""}`.toLowerCase();
+
+  return (
+    text.includes("brand") ||
+    text.includes("branded") ||
+    text.includes("bof") ||
+    text.includes("brillare") ||
+    text.includes("root deep")
+  );
+}
+
+function getBaseType(row: GoogleOsRow) {
+  const raw = `${row.campaignType || ""} ${row.campaign || ""}`.toLowerCase();
 
   if (raw.includes("search")) return "Search";
   if (raw.includes("shopping")) return "Shopping";
@@ -63,29 +93,62 @@ function getCampaignType(row: GoogleOsRow): CampaignType {
   return "Other";
 }
 
-function getMaxDate(rows: GoogleOsRow[]) {
-  const dates = Array.from(new Set(rows.map((row) => row.date).filter(Boolean))).sort();
-  return dates[dates.length - 1] || "";
+function getSegment(row: GoogleOsRow): Segment {
+  const type = getBaseType(row);
+
+  if (type === "Search") {
+    return isBrandCampaign(row) ? "Search Brand" : "Search Non Brand";
+  }
+
+  if (type === "Shopping") {
+    return isBrandCampaign(row) ? "Shopping Brand" : "Shopping Non Brand";
+  }
+
+  if (type === "Demand Gen") return "Demand Gen";
+  if (type === "Video") return "Video";
+
+  return "Other";
 }
 
-function getLast7Rows(rows: GoogleOsRow[]) {
-  const maxDate = getMaxDate(rows);
-  if (!maxDate) return [];
-
-  const end = new Date(`${maxDate}T00:00:00`);
-  const start = new Date(end);
-  start.setDate(start.getDate() - 6);
-
-  return rows.filter((row) => {
-    const d = new Date(`${row.date}T00:00:00`);
-    return d >= start && d <= end;
-  });
+function startOfWeek(date: Date) {
+  const d = new Date(date);
+  const day = d.getDay() || 7;
+  d.setDate(d.getDate() - day + 1);
+  return d;
 }
 
-function getYesterdayRows(rows: GoogleOsRow[]) {
-  const maxDate = getMaxDate(rows);
-  if (!maxDate) return [];
-  return rows.filter((row) => row.date === maxDate);
+function dateToKey(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function getPeriodKey(row: GoogleOsRow, mode: PeriodMode) {
+  const date = new Date(`${row.date}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) return row.date || "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+
+  if (mode === "daily") return row.date;
+  if (mode === "monthly") return `${year}-${month}`;
+
+  if (mode === "quarterly") {
+    return `${year}-Q${Math.ceil((date.getMonth() + 1) / 3)}`;
+  }
+
+  return dateToKey(startOfWeek(date));
+}
+
+function getPeriodLabel(period: string, mode: PeriodMode) {
+  if (mode === "daily") return formatGoogleOsDateLabel(period);
+  if (mode === "monthly") return formatGoogleOsMonthLabel(period);
+  if (mode === "quarterly") return period;
+
+  return `Week of ${formatGoogleOsDateLabel(period)}`;
+}
+
+function getAvailablePeriods(rows: GoogleOsRow[], mode: PeriodMode) {
+  return Array.from(new Set(rows.map((row) => getPeriodKey(row, mode)).filter(Boolean))).sort();
 }
 
 function aggregate(rows: GoogleOsRow[]) {
@@ -109,72 +172,54 @@ function aggregate(rows: GoogleOsRow[]) {
   };
 }
 
-function decide(row: {
-  cost: number;
-  conversionValue: number;
-  conversions: number;
-  roas: number;
-}): Pick<CampaignRow, "status" | "action"> {
-  if (row.cost >= 2000 && row.conversions === 0) {
-    return { status: "PAUSE", action: "Pause / cut hard" };
+function decide(row: { spend: number; purchases: number; roas: number }): Pick<CampaignRow, "decision" | "action"> {
+  if (row.spend >= 2000 && row.purchases === 0) {
+    return { decision: "PAUSE", action: "Pause / cut hard" };
   }
 
-  if (row.roas < 1 && row.cost >= 5000) {
-    return { status: "REDUCE", action: "Reduce budget / bids" };
+  if (row.roas < 1 && row.spend >= 5000) {
+    return { decision: "REDUCE", action: "Reduce budget / bids" };
   }
 
-  if (row.roas >= 3 && row.conversions >= 2) {
-    return { status: "SCALE", action: "Protect / scale carefully" };
+  if (row.roas >= 3 && row.purchases >= 2) {
+    return { decision: "SCALE", action: "Protect / scale carefully" };
   }
 
   if (row.roas >= 2) {
-    return { status: "KEEP", action: "Hold and monitor" };
+    return { decision: "KEEP", action: "Hold and monitor" };
   }
 
-  if (row.cost >= 300) {
-    return { status: "WATCH", action: "Watch search terms" };
-  }
-
-  return { status: "INVESTIGATE", action: "Collect more data" };
+  return { decision: "WATCH", action: "Watch performance" };
 }
 
-function buildTypeSummary(rows: GoogleOsRow[]): TypeSummaryRow[] {
-  const yesterdayRows = getYesterdayRows(rows);
-  const last7Rows = getLast7Rows(rows);
-  const totalLast7Spend = last7Rows.reduce((sum, row) => sum + row.cost, 0);
+function buildSegmentRows(rows: GoogleOsRow[]) {
+  const totalSpend = rows.reduce((sum, row) => sum + row.cost, 0);
 
-  return TYPE_ORDER.map((type) => {
-    const yRows = yesterdayRows.filter((row) => getCampaignType(row) === type);
-    const l7Rows = last7Rows.filter((row) => getCampaignType(row) === type);
-
-    const y = aggregate(yRows);
-    const l7 = aggregate(l7Rows);
-    const campaignCount = new Set(l7Rows.map((row) => row.campaignId || row.campaign).filter(Boolean)).size;
+  return SEGMENTS.map((segment) => {
+    const segmentRows = rows.filter((row) => getSegment(row) === segment);
+    const a = aggregate(segmentRows);
+    const campaigns = new Set(segmentRows.map((row) => row.campaignId || row.campaign).filter(Boolean)).size;
 
     return {
-      type,
-      ySpend: y.spend,
-      yRevenue: y.revenue,
-      yPurchases: y.purchases,
-      yRoas: y.roas,
-      yCpa: y.cpa,
-      l7Spend: l7.spend,
-      l7Revenue: l7.revenue,
-      l7Purchases: l7.purchases,
-      l7Roas: l7.roas,
-      l7Cpa: l7.cpa,
-      spendShare: safeDiv(l7.spend, totalLast7Spend),
-      campaignCount,
+      segment,
+      campaigns,
+      spend: a.spend,
+      revenue: a.revenue,
+      purchases: a.purchases,
+      roas: a.roas,
+      cpa: a.cpa,
+      ctr: a.ctr,
+      cvr: a.cvr,
+      share: safeDiv(a.spend, totalSpend),
     };
-  }).filter((row) => row.l7Spend > 0 || row.campaignCount > 0);
+  }).filter((row) => row.spend > 0 || row.campaigns > 0);
 }
 
-function buildCampaignRows(rows: GoogleOsRow[], selectedType: CampaignType): CampaignRow[] {
-  const last7Rows = getLast7Rows(rows);
+function buildCampaignRows(rows: GoogleOsRow[], selectedSegment: Segment) {
   const filteredRows =
-    selectedType === "All"
-      ? last7Rows
-      : last7Rows.filter((row) => getCampaignType(row) === selectedType);
+    selectedSegment === "All"
+      ? rows
+      : rows.filter((row) => getSegment(row) === selectedSegment);
 
   const totalSpend = filteredRows.reduce((sum, row) => sum + row.cost, 0);
   const groups = new Map<string, GoogleOsRow[]>();
@@ -194,17 +239,17 @@ function buildCampaignRows(rows: GoogleOsRow[], selectedType: CampaignType): Cam
       const base = {
         key,
         campaign: first.campaign,
-        campaignType: getCampaignType(first),
-        campaignStatus: first.campaignStatus || "-",
-        cost: a.spend,
-        conversionValue: a.revenue,
-        conversions: a.purchases,
+        segment: getSegment(first),
+        statusText: first.campaignStatus || "-",
+        spend: a.spend,
+        revenue: a.revenue,
+        purchases: a.purchases,
         roas: a.roas,
         cpa: a.cpa,
         ctr: a.ctr,
         cvr: a.cvr,
         avgCpc: a.avgCpc,
-        spendShare: safeDiv(a.spend, totalSpend),
+        share: safeDiv(a.spend, totalSpend),
       };
 
       return {
@@ -212,7 +257,7 @@ function buildCampaignRows(rows: GoogleOsRow[], selectedType: CampaignType): Cam
         ...decide(base),
       };
     })
-    .sort((a, b) => b.cost - a.cost);
+    .sort((a, b) => b.spend - a.spend);
 }
 
 function Metric({
@@ -232,46 +277,41 @@ function roasTone(value: number) {
   return "neutral";
 }
 
-function cpaTone(row: Record<string, unknown>) {
-  const roas = Number(row.roas || 0);
-  if (roas >= 3) return "green";
-  if (roas < 1) return "red";
-  return "amber";
-}
+function statusTone(value: unknown) {
+  const s = String(value || "");
 
-function statusTone(status: unknown) {
-  const s = String(status || "");
   if (s === "SCALE" || s === "KEEP") return "green";
   if (s === "PAUSE" || s === "REDUCE") return "red";
   if (s === "WATCH") return "amber";
+
   return "neutral";
 }
 
-function TypeDot({ type }: { type: CampaignType }) {
-  return <i className="all-campaign-type-dot" style={{ background: TYPE_COLORS[type] }} />;
+function SegmentDot({ segment }: { segment: Segment }) {
+  return <i className="all-campaign-type-dot" style={{ background: SEGMENT_COLORS[segment] }} />;
 }
 
-function CampaignTypeKpiChart({ rows }: { rows: TypeSummaryRow[] }) {
-  const maxSpend = Math.max(...rows.map((row) => row.l7Spend), 1);
-  const maxRevenue = Math.max(...rows.map((row) => row.l7Revenue), 1);
+function SegmentVisual({ rows }: { rows: SegmentRow[] }) {
+  const maxSpend = Math.max(...rows.map((row) => row.spend), 1);
+  const maxRevenue = Math.max(...rows.map((row) => row.revenue), 1);
 
   return (
     <div className="all-campaign-type-chart">
       <div className="all-campaign-type-chart-head">
         <div>
           <span>Visualisation</span>
-          <h2>Campaign type KPI comparison</h2>
-          <p>Last 7 days spend share with yesterday performance context.</p>
+          <h2>Segment KPI comparison</h2>
+          <p>Spend share, revenue, ROAS, CPA and purchases by campaign segment.</p>
         </div>
       </div>
 
       <div className="all-campaign-type-bars">
         {rows.map((row) => (
-          <div key={row.type} className="all-campaign-type-bar-row">
+          <div key={row.segment} className="all-campaign-type-bar-row">
             <div className="all-campaign-type-label">
-              <TypeDot type={row.type} />
-              <strong>{row.type}</strong>
-              <small>{row.campaignCount} campaigns</small>
+              <SegmentDot segment={row.segment} />
+              <strong>{row.segment}</strong>
+              <small>{row.campaigns} campaigns</small>
             </div>
 
             <div className="all-campaign-type-bar-metric">
@@ -279,12 +319,12 @@ function CampaignTypeKpiChart({ rows }: { rows: TypeSummaryRow[] }) {
               <div className="all-campaign-type-bar-track">
                 <b
                   style={{
-                    width: `${Math.max((row.l7Spend / maxSpend) * 100, row.l7Spend > 0 ? 3 : 0)}%`,
-                    background: TYPE_COLORS[row.type],
+                    width: `${Math.max((row.spend / maxSpend) * 100, row.spend > 0 ? 3 : 0)}%`,
+                    background: SEGMENT_COLORS[row.segment],
                   }}
                 />
               </div>
-              <em>{compactMoney(row.l7Spend)} · {pct(row.spendShare)}</em>
+              <em>{compactMoney(row.spend)} · {pct(row.share)}</em>
             </div>
 
             <div className="all-campaign-type-bar-metric">
@@ -292,18 +332,18 @@ function CampaignTypeKpiChart({ rows }: { rows: TypeSummaryRow[] }) {
               <div className="all-campaign-type-bar-track muted">
                 <b
                   style={{
-                    width: `${Math.max((row.l7Revenue / maxRevenue) * 100, row.l7Revenue > 0 ? 3 : 0)}%`,
-                    background: TYPE_COLORS[row.type],
+                    width: `${Math.max((row.revenue / maxRevenue) * 100, row.revenue > 0 ? 3 : 0)}%`,
+                    background: SEGMENT_COLORS[row.segment],
                   }}
                 />
               </div>
-              <em>{compactMoney(row.l7Revenue)}</em>
+              <em>{compactMoney(row.revenue)}</em>
             </div>
 
             <div className="all-campaign-type-mini-kpis">
-              <strong className={roasTone(row.l7Roas)}>ROAS {x(row.l7Roas)}</strong>
-              <strong>CPA {compactMoney(row.l7Cpa)}</strong>
-              <strong>{row.l7Purchases.toFixed(0)} Purch.</strong>
+              <strong className={roasTone(row.roas)}>ROAS {x(row.roas)}</strong>
+              <strong>CPA {compactMoney(row.cpa)}</strong>
+              <strong>{row.purchases.toFixed(0)} Purch.</strong>
             </div>
           </div>
         ))}
@@ -312,53 +352,43 @@ function CampaignTypeKpiChart({ rows }: { rows: TypeSummaryRow[] }) {
   );
 }
 
-export function CampaignsTab({
-  model,
-}: {
-  model: GoogleOsModel;
-  rows?: GoogleOsRow[];
-  compareRows?: GoogleOsRow[];
-  dateMode?: "last_30" | "month" | "custom";
-  selectedMonth?: string;
-  compareMonth?: string;
-  customStart?: string;
-  customEnd?: string;
-}) {
-  const [selectedType, setSelectedType] = useState<CampaignType>("All");
+export function CampaignsTab({ model }: { model: GoogleOsModel }) {
+  const [periodMode, setPeriodMode] = useState<PeriodMode>("daily");
+  const periods = useMemo(() => getAvailablePeriods(model.rows, periodMode), [model.rows, periodMode]);
+  const latestPeriod = periods[periods.length - 1] || "";
+  const [selectedPeriod, setSelectedPeriod] = useState("");
+  const [selectedSegment, setSelectedSegment] = useState<Segment>("All");
 
-  const maxDate = useMemo(() => getMaxDate(model.rows), [model.rows]);
-  const typeSummaryRows = useMemo(() => buildTypeSummary(model.rows), [model.rows]);
-  const campaignRows = useMemo(() => buildCampaignRows(model.rows, selectedType), [model.rows, selectedType]);
+  const activePeriod = selectedPeriod && periods.includes(selectedPeriod) ? selectedPeriod : latestPeriod;
+
+  const periodRows = useMemo(() => {
+    return model.rows.filter((row) => getPeriodKey(row, periodMode) === activePeriod);
+  }, [model.rows, periodMode, activePeriod]);
+
+  const segmentRows = useMemo(() => buildSegmentRows(periodRows), [periodRows]);
+  const campaignRows = useMemo(() => buildCampaignRows(periodRows, selectedSegment), [periodRows, selectedSegment]);
 
   const selectedSummary = useMemo(() => {
-    if (selectedType === "All") {
-      const totalYSpend = typeSummaryRows.reduce((sum, row) => sum + row.ySpend, 0);
-      const totalYRevenue = typeSummaryRows.reduce((sum, row) => sum + row.yRevenue, 0);
-      const totalYPurchases = typeSummaryRows.reduce((sum, row) => sum + row.yPurchases, 0);
-      const totalL7Spend = typeSummaryRows.reduce((sum, row) => sum + row.l7Spend, 0);
-      const totalL7Revenue = typeSummaryRows.reduce((sum, row) => sum + row.l7Revenue, 0);
-      const totalL7Purchases = typeSummaryRows.reduce((sum, row) => sum + row.l7Purchases, 0);
-      const totalCampaigns = typeSummaryRows.reduce((sum, row) => sum + row.campaignCount, 0);
+    if (selectedSegment === "All") {
+      const a = aggregate(periodRows);
+      const campaigns = new Set(periodRows.map((row) => row.campaignId || row.campaign).filter(Boolean)).size;
 
       return {
-        type: "All" as CampaignType,
-        ySpend: totalYSpend,
-        yRevenue: totalYRevenue,
-        yPurchases: totalYPurchases,
-        yRoas: safeDiv(totalYRevenue, totalYSpend),
-        yCpa: safeDiv(totalYSpend, totalYPurchases),
-        l7Spend: totalL7Spend,
-        l7Revenue: totalL7Revenue,
-        l7Purchases: totalL7Purchases,
-        l7Roas: safeDiv(totalL7Revenue, totalL7Spend),
-        l7Cpa: safeDiv(totalL7Spend, totalL7Purchases),
-        spendShare: 1,
-        campaignCount: totalCampaigns,
+        segment: "All" as Segment,
+        campaigns,
+        spend: a.spend,
+        revenue: a.revenue,
+        purchases: a.purchases,
+        roas: a.roas,
+        cpa: a.cpa,
+        ctr: a.ctr,
+        cvr: a.cvr,
+        share: 1,
       };
     }
 
-    return typeSummaryRows.find((row) => row.type === selectedType);
-  }, [selectedType, typeSummaryRows]);
+    return segmentRows.find((row) => row.segment === selectedSegment);
+  }, [periodRows, selectedSegment, segmentRows]);
 
   return (
     <section className="gos-page all-campaigns-summary-page">
@@ -366,101 +396,123 @@ export function CampaignsTab({
         <div className="gos-panel-head all-campaigns-head">
           <div>
             <span>All Campaigns</span>
-            <h2>Campaign type spend, share and efficiency</h2>
+            <h2>Campaign segment spend, share and efficiency</h2>
             <p>
-              Yesterday = {maxDate ? formatGoogleOsDateLabel(maxDate) : "-"}.
-              Last 7 days powers campaign type share and campaign dropdown below.
+              Showing {getPeriodLabel(activePeriod, periodMode)}. Search and Shopping are split into Brand and Non Brand.
             </p>
           </div>
 
-          <label className="all-campaign-type-select">
-            Campaign Type
-            <select
-              value={selectedType}
-              onChange={(event) => setSelectedType(event.target.value as CampaignType)}
-            >
-              <option value="All">All Campaign Types</option>
-              {typeSummaryRows.map((row) => (
-                <option key={row.type} value={row.type}>
-                  {row.type}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="all-campaign-filter-row">
+            <label>
+              View
+              <select
+                value={periodMode}
+                onChange={(event) => {
+                  setPeriodMode(event.target.value as PeriodMode);
+                  setSelectedPeriod("");
+                }}
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+              </select>
+            </label>
+
+            <label>
+              Period
+              <select value={activePeriod} onChange={(event) => setSelectedPeriod(event.target.value)}>
+                {periods.slice().reverse().map((period) => (
+                  <option key={period} value={period}>
+                    {getPeriodLabel(period, periodMode)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Segment
+              <select value={selectedSegment} onChange={(event) => setSelectedSegment(event.target.value as Segment)}>
+                <option value="All">All Segments</option>
+                {segmentRows.map((row) => (
+                  <option key={row.segment} value={row.segment}>
+                    {row.segment}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
 
         <div className="all-campaign-selected-summary">
           <div>
             <span>Selected View</span>
-            <strong>{selectedSummary?.type || selectedType}</strong>
-            <small>{selectedSummary?.campaignCount || 0} campaigns</small>
+            <strong>{selectedSummary?.segment || selectedSegment}</strong>
+            <small>{selectedSummary?.campaigns || 0} campaigns</small>
           </div>
 
           <div>
-            <span>Yesterday Spend</span>
-            <strong className="red">{compactMoney(selectedSummary?.ySpend || 0)}</strong>
-            <small>ROAS {x(selectedSummary?.yRoas || 0)} · CPA {compactMoney(selectedSummary?.yCpa || 0)}</small>
+            <span>Spend</span>
+            <strong className="red">{compactMoney(selectedSummary?.spend || 0)}</strong>
+            <small>{pct(selectedSummary?.share || 0)} share</small>
           </div>
 
           <div>
-            <span>Yesterday Revenue</span>
-            <strong className="green">{compactMoney(selectedSummary?.yRevenue || 0)}</strong>
-            <small>{(selectedSummary?.yPurchases || 0).toFixed(0)} purchases</small>
+            <span>Revenue</span>
+            <strong className="green">{compactMoney(selectedSummary?.revenue || 0)}</strong>
+            <small>{(selectedSummary?.purchases || 0).toFixed(0)} purchases</small>
           </div>
 
           <div>
-            <span>Last 7 Days Spend</span>
-            <strong className="red">{compactMoney(selectedSummary?.l7Spend || 0)}</strong>
-            <small>{pct(selectedSummary?.spendShare || 0)} share of spend</small>
+            <span>ROAS</span>
+            <strong>{x(selectedSummary?.roas || 0)}</strong>
+            <small>CPA {compactMoney(selectedSummary?.cpa || 0)}</small>
           </div>
 
           <div>
-            <span>Last 7 Days Revenue</span>
-            <strong className="green">{compactMoney(selectedSummary?.l7Revenue || 0)}</strong>
-            <small>ROAS {x(selectedSummary?.l7Roas || 0)} · CPA {compactMoney(selectedSummary?.l7Cpa || 0)}</small>
+            <span>CTR / CVR</span>
+            <strong>{pct(selectedSummary?.ctr || 0)}</strong>
+            <small>CVR {pct(selectedSummary?.cvr || 0)}</small>
           </div>
         </div>
 
         <GoogleOsTable
-          rows={typeSummaryRows as unknown as Record<string, unknown>[]}
+          rows={segmentRows as unknown as Record<string, unknown>[]}
           columns={[
             {
-              key: "type",
-              label: "Campaign Type",
+              key: "segment",
+              label: "Segment",
               render: (row) => (
                 <span className="all-campaign-type-name">
-                  <TypeDot type={String(row.type || "Other") as CampaignType} />
-                  {String(row.type || "")}
+                  <SegmentDot segment={String(row.segment || "Other") as Segment} />
+                  {String(row.segment || "")}
                 </span>
               ),
             },
-            { key: "campaignCount", label: "Campaigns", right: true },
-            { key: "ySpend", label: "Yest. Spend", right: true, render: (row) => <Metric value={compactMoney(row.ySpend)} tone="red" /> },
-            { key: "yRevenue", label: "Yest. Revenue", right: true, render: (row) => <Metric value={compactMoney(row.yRevenue)} tone="green" /> },
-            { key: "yRoas", label: "Yest. ROAS", right: true, render: (row) => <Metric value={x(row.yRoas)} tone={roasTone(Number(row.yRoas || 0))} /> },
-            { key: "yPurchases", label: "Yest. Purch.", right: true, render: (row) => Number(row.yPurchases || 0).toFixed(0) },
-            { key: "yCpa", label: "Yest. CPA", right: true, render: (row) => compactMoney(row.yCpa) },
-            { key: "l7Spend", label: "L7 Spend", right: true, render: (row) => <Metric value={compactMoney(row.l7Spend)} tone="red" /> },
-            { key: "spendShare", label: "L7 Share", right: true, render: (row) => pct(row.spendShare) },
-            { key: "l7Revenue", label: "L7 Revenue", right: true, render: (row) => <Metric value={compactMoney(row.l7Revenue)} tone="green" /> },
-            { key: "l7Roas", label: "L7 ROAS", right: true, render: (row) => <Metric value={x(row.l7Roas)} tone={roasTone(Number(row.l7Roas || 0))} /> },
-            { key: "l7Purchases", label: "L7 Purch.", right: true, render: (row) => Number(row.l7Purchases || 0).toFixed(0) },
-            { key: "l7Cpa", label: "L7 CPA", right: true, render: (row) => compactMoney(row.l7Cpa) },
+            { key: "campaigns", label: "Campaigns", right: true },
+            { key: "spend", label: "Spend", right: true, render: (row) => <Metric value={compactMoney(row.spend)} tone="red" /> },
+            { key: "share", label: "Share", right: true, render: (row) => pct(row.share) },
+            { key: "revenue", label: "Revenue", right: true, render: (row) => <Metric value={compactMoney(row.revenue)} tone="green" /> },
+            { key: "roas", label: "ROAS", right: true, render: (row) => <Metric value={x(row.roas)} tone={roasTone(Number(row.roas || 0))} /> },
+            { key: "purchases", label: "Purch.", right: true, render: (row) => Number(row.purchases || 0).toFixed(0) },
+            { key: "cpa", label: "CPA", right: true, render: (row) => compactMoney(row.cpa) },
+            { key: "ctr", label: "CTR", right: true, render: (row) => pct(row.ctr) },
+            { key: "cvr", label: "CVR", right: true, render: (row) => pct(row.cvr) },
           ]}
-          empty="No campaign type data available."
+          empty="No segment data available."
         />
       </div>
 
       <div className="gos-panel">
-        <CampaignTypeKpiChart rows={typeSummaryRows} />
+        <SegmentVisual rows={segmentRows} />
       </div>
 
       <div className="gos-panel">
         <div className="gos-panel-head">
           <div>
             <span>Campaign Dropdown</span>
-            <h2>{selectedType === "All" ? "All campaigns" : `${selectedType} campaigns`} — last 7 days</h2>
-            <p>No ad group expansion in this view. Use specific Search / Shopping / Demand Gen tabs for deeper drilldowns.</p>
+            <h2>{selectedSegment === "All" ? "All campaigns" : `${selectedSegment} campaigns`}</h2>
+            <p>Campaign list for selected segment and period. Ad groups are intentionally excluded here.</p>
           </div>
         </div>
 
@@ -468,20 +520,20 @@ export function CampaignsTab({
           rows={campaignRows as unknown as Record<string, unknown>[]}
           columns={[
             { key: "campaign", label: "Campaign" },
-            { key: "campaignType", label: "Type" },
-            { key: "campaignStatus", label: "Status" },
-            { key: "cost", label: "Spend", right: true, render: (row) => <Metric value={compactMoney(row.cost)} tone="red" /> },
-            { key: "spendShare", label: "Share", right: true, render: (row) => pct(row.spendShare) },
-            { key: "conversionValue", label: "Revenue", right: true, render: (row) => <Metric value={compactMoney(row.conversionValue)} tone="green" /> },
+            { key: "segment", label: "Segment" },
+            { key: "statusText", label: "Status" },
+            { key: "spend", label: "Spend", right: true, render: (row) => <Metric value={compactMoney(row.spend)} tone="red" /> },
+            { key: "share", label: "Share", right: true, render: (row) => pct(row.share) },
+            { key: "revenue", label: "Revenue", right: true, render: (row) => <Metric value={compactMoney(row.revenue)} tone="green" /> },
             { key: "roas", label: "ROAS", right: true, render: (row) => <Metric value={x(row.roas)} tone={roasTone(Number(row.roas || 0))} /> },
-            { key: "conversions", label: "Purch.", right: true, render: (row) => Number(row.conversions || 0).toFixed(0) },
-            { key: "cpa", label: "CPA", right: true, render: (row) => <Metric value={compactMoney(row.cpa)} tone={cpaTone(row)} /> },
+            { key: "purchases", label: "Purch.", right: true, render: (row) => Number(row.purchases || 0).toFixed(0) },
+            { key: "cpa", label: "CPA", right: true, render: (row) => compactMoney(row.cpa) },
             { key: "ctr", label: "CTR", right: true, render: (row) => pct(row.ctr) },
             { key: "cvr", label: "CVR", right: true, render: (row) => pct(row.cvr) },
-            { key: "status", label: "Decision", render: (row) => <Metric value={String(row.status || "")} tone={statusTone(row.status)} /> },
+            { key: "decision", label: "Decision", render: (row) => <Metric value={String(row.decision || "")} tone={statusTone(row.decision)} /> },
             { key: "action", label: "Action" },
           ]}
-          empty="No campaigns available for selected campaign type."
+          empty="No campaigns available for selected segment."
         />
       </div>
     </section>

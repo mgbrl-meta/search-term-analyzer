@@ -3774,3 +3774,66 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* All Campaigns segmented period controls */
+.all-campaign-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+  justify-content: flex-end;
+}
+
+.all-campaign-filter-row label {
+  display: grid;
+  gap: 5px;
+  color: var(--gos-faint);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.all-campaign-filter-row select {
+  height: 34px;
+  min-width: 150px;
+  border: 1px solid var(--gos-border);
+  background: var(--gos-surface-2);
+  color: var(--gos-text);
+  border-radius: 10px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.all-campaigns-summary-page .gos-panel {
+  padding: 12px 14px !important;
+}
+
+.all-campaign-selected-summary {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+
+@media(max-width: 980px) {
+  .all-campaign-filter-row {
+    justify-content: stretch;
+  }
+
+  .all-campaign-filter-row label {
+    width: 100%;
+  }
+
+  .all-campaign-filter-row select {
+    width: 100%;
+  }
+
+  .all-campaign-selected-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media(max-width: 640px) {
+  .all-campaign-selected-summary {
+    grid-template-columns: 1fr !important;
+  }
+}
