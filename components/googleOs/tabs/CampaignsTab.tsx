@@ -210,6 +210,60 @@ function buildSegmentRows(rows: GoogleOsRow[]) {
   }).filter((row) => row.spend > 0 || row.campaigns > 0);
 }
 
+type BrandGroup = "Brand" | "Non Brand";
+
+type BrandSummaryRow = {
+  group: BrandGroup;
+  rows: SegmentRow[];
+  campaigns: number;
+  spend: number;
+  revenue: number;
+  purchases: number;
+  roas: number;
+  cpa: number;
+  ctr: number;
+  cvr: number;
+  share: number;
+};
+
+function buildBrandSummaryRows(segmentRows: SegmentRow[]): BrandSummaryRow[] {
+  const totalSpend = segmentRows.reduce((sum, row) => sum + row.spend, 0);
+
+  const groups: { group: BrandGroup; segments: Segment[] }[] = [
+    { group: "Brand", segments: ["Search Brand", "Shopping Brand"] },
+    { group: "Non Brand", segments: ["Search Non Brand", "Shopping Non Brand"] },
+  ];
+
+  return groups
+    .map(({ group, segments }) => {
+      const rows = segmentRows.filter((row) => segments.includes(row.segment));
+
+      const campaigns = rows.reduce((sum, row) => sum + row.campaigns, 0);
+      const spend = rows.reduce((sum, row) => sum + row.spend, 0);
+      const revenue = rows.reduce((sum, row) => sum + row.revenue, 0);
+      const purchases = rows.reduce((sum, row) => sum + row.purchases, 0);
+
+      const weightedCtrNumerator = rows.reduce((sum, row) => sum + row.ctr * row.spend, 0);
+      const weightedCvrNumerator = rows.reduce((sum, row) => sum + row.cvr * row.spend, 0);
+
+      return {
+        group,
+        rows,
+        campaigns,
+        spend,
+        revenue,
+        purchases,
+        roas: safeDiv(revenue, spend),
+        cpa: safeDiv(spend, purchases),
+        ctr: safeDiv(weightedCtrNumerator, spend),
+        cvr: safeDiv(weightedCvrNumerator, spend),
+        share: safeDiv(spend, totalSpend),
+      };
+    })
+    .filter((row) => row.spend > 0 || row.campaigns > 0);
+}
+
+
 function buildCampaignRows(rows: GoogleOsRow[], segment: Segment) {
   const filteredRows = rows.filter((row) => getSegment(row) === segment);
   const totalSegmentSpend = filteredRows.reduce((sum, row) => sum + row.cost, 0);
@@ -349,12 +403,12 @@ function CampaignKpiChart({
   kpi: ChartKpi;
   periodMode: PeriodMode;
 }) {
-  const width = 920;
-  const height = 260;
-  const padLeft = 54;
-  const padRight = 24;
+  const width = 1080;
+  const height = 300;
+  const padLeft = 62;
+  const padRight = 28;
   const padTop = 24;
-  const padBottom = 46;
+  const padBottom = 54;
 
   const chartWidth = width - padLeft - padRight;
   const chartHeight = height - padTop - padBottom;
@@ -362,6 +416,8 @@ function CampaignKpiChart({
   const maxValue = Math.max(...rows.map((row) => row.value), 1);
   const minValue = Math.min(...rows.map((row) => row.value), 0);
   const range = Math.max(maxValue - minValue, 1);
+  const color = SEGMENT_COLORS[segment];
+  const kpiLabel = CHART_KPIS.find((item) => item.key === kpi)?.label || "KPI";
 
   const points = rows.map((row, index) => {
     const xPos =
@@ -379,41 +435,77 @@ function CampaignKpiChart({
   });
 
   const polyline = points.map((point) => `${point.x},${point.y}`).join(" ");
+
   const areaPath = points.length
-    ? `M ${points[0].x} ${padTop + chartHeight} L ${points.map((point) => `${point.x} ${point.y}`).join(" L ")} L ${points[points.length - 1].x} ${padTop + chartHeight} Z`
+    ? `M ${points[0].x} ${padTop + chartHeight} L ${points
+        .map((point) => `${point.x} ${point.y}`)
+        .join(" L ")} L ${points[points.length - 1].x} ${padTop + chartHeight} Z`
     : "";
 
   const yTicks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
     const value = minValue + range * (1 - ratio);
     const y = padTop + chartHeight * ratio;
+
     return { value, y };
   });
 
-  const xTickEvery = rows.length <= 10 ? 1 : Math.ceil(rows.length / 8);
-  const color = SEGMENT_COLORS[segment];
+  function getShortXAxisLabel(label: string) {
+    const clean = label.replace("Week of ", "");
+
+    if (periodMode === "daily") {
+      const parts = clean.split("-");
+      if (parts.length === 3) {
+        return `${parts[0]}-${parts[1]}`;
+      }
+      return clean;
+    }
+
+    return clean;
+  }
+
+  function shouldShowXAxisLabel(index: number) {
+    if (rows.length <= 8) return true;
+
+    const first = index === 0;
+    const last = index === rows.length - 1;
+
+    if (first || last) return true;
+
+    if (periodMode === "daily") {
+      return index % Math.ceil(rows.length / 6) === 0;
+    }
+
+    if (periodMode === "weekly") {
+      return index % Math.ceil(rows.length / 8) === 0;
+    }
+
+    return true;
+  }
 
   return (
-    <div className="gos-dynamic-chart-box timeseries">
-      <div className="gos-dynamic-chart-head">
+    <div className="gos-axis-chart-box">
+      <div className="gos-axis-chart-head">
         <div>
-          <span>Live Chart</span>
-          <strong>{segment} · {CHART_KPIS.find((item) => item.key === kpi)?.label}</strong>
-          <small>{periodMode.charAt(0).toUpperCase() + periodMode.slice(1)} trend · Date on X-axis</small>
+          <span>Axis Chart</span>
+          <strong>{segment} · {kpiLabel}</strong>
+          <small>
+            X-axis = {periodMode}. Y-axis = {kpiLabel}. Hover points for full details.
+          </small>
         </div>
 
-        <div className="gos-dynamic-chart-legend">
+        <div className="gos-axis-chart-legend">
           <i style={{ background: color }} />
           <span>{segment}</span>
         </div>
       </div>
 
       {rows.length ? (
-        <div className="gos-timeseries-wrap">
+        <div className="gos-axis-chart-wrap">
           <svg
-            className="gos-timeseries-svg"
+            className="gos-axis-chart-svg"
             viewBox={`0 0 ${width} ${height}`}
             role="img"
-            aria-label={`${segment} ${kpi} trend`}
+            aria-label={`${segment} ${kpiLabel} trend`}
           >
             {yTicks.map((tick, index) => (
               <g key={index}>
@@ -422,25 +514,49 @@ function CampaignKpiChart({
                   y1={tick.y}
                   x2={width - padRight}
                   y2={tick.y}
-                  className="gos-timeseries-grid"
+                  className="gos-axis-chart-grid"
                 />
-                <text x={padLeft - 10} y={tick.y + 4} textAnchor="end" className="gos-timeseries-axis">
+                <text
+                  x={padLeft - 12}
+                  y={tick.y + 4}
+                  textAnchor="end"
+                  className="gos-axis-chart-text"
+                >
                   {formatChartValue(tick.value, kpi)}
                 </text>
               </g>
             ))}
 
+            <line
+              x1={padLeft}
+              y1={padTop}
+              x2={padLeft}
+              y2={padTop + chartHeight}
+              className="gos-axis-chart-axis"
+            />
+
+            <line
+              x1={padLeft}
+              y1={padTop + chartHeight}
+              x2={width - padRight}
+              y2={padTop + chartHeight}
+              className="gos-axis-chart-axis"
+            />
+
             {areaPath ? (
-              <path d={areaPath} className="gos-timeseries-area" style={{ fill: color }} />
+              <path d={areaPath} className="gos-axis-chart-area" style={{ fill: color }} />
             ) : null}
 
-            <polyline points={polyline} className="gos-timeseries-line" style={{ stroke: color }} />
+            {polyline ? (
+              <polyline points={polyline} className="gos-axis-chart-line" style={{ stroke: color }} />
+            ) : null}
 
             {points.map((point, index) => (
-              <g key={point.period} className="gos-timeseries-point">
+              <g key={point.period} className="gos-axis-chart-point">
                 <circle cx={point.x} cy={point.y} r="4.5" style={{ fill: color }} />
+
                 <title>{`${point.label}
-${CHART_KPIS.find((item) => item.key === kpi)?.label}: ${formatChartValue(point.value, kpi)}
+${kpiLabel}: ${formatChartValue(point.value, kpi)}
 Spend: ${compactMoney(point.spend)}
 Revenue: ${compactMoney(point.revenue)}
 ROAS: ${x(point.roas)}
@@ -449,18 +565,37 @@ Purchases: ${point.purchases.toFixed(0)}
 CTR: ${pct(point.ctr)}
 CVR: ${pct(point.cvr)}`}</title>
 
-                {index % xTickEvery === 0 || index === points.length - 1 ? (
+                {shouldShowXAxisLabel(index) ? (
                   <text
                     x={point.x}
-                    y={height - 14}
+                    y={height - 18}
                     textAnchor="middle"
-                    className="gos-timeseries-axis x"
+                    className="gos-axis-chart-text x"
                   >
-                    {point.label.replace("Week of ", "")}
+                    {getShortXAxisLabel(point.label)}
                   </text>
                 ) : null}
               </g>
             ))}
+
+            <text
+              x={padLeft + chartWidth / 2}
+              y={height - 4}
+              textAnchor="middle"
+              className="gos-axis-chart-caption"
+            >
+              {periodMode.toUpperCase()}
+            </text>
+
+            <text
+              x="14"
+              y={padTop + chartHeight / 2}
+              textAnchor="middle"
+              className="gos-axis-chart-caption"
+              transform={`rotate(-90 14 ${padTop + chartHeight / 2})`}
+            >
+              {kpiLabel.toUpperCase()}
+            </text>
           </svg>
         </div>
       ) : (
@@ -468,59 +603,6 @@ CVR: ${pct(point.cvr)}`}</title>
       )}
     </div>
   );
-}
-
-
-
-type BrandGroup = "Brand" | "Non Brand";
-
-type BrandSummaryRow = {
-  group: BrandGroup;
-  rows: SegmentRow[];
-  campaigns: number;
-  spend: number;
-  revenue: number;
-  purchases: number;
-  roas: number;
-  cpa: number;
-  ctr: number;
-  cvr: number;
-  share: number;
-};
-
-function buildBrandSummaryRows(segmentRows: SegmentRow[]) {
-  const totalSpend = segmentRows.reduce((sum, row) => sum + row.spend, 0);
-
-  const groups: { group: BrandGroup; segments: Segment[] }[] = [
-    { group: "Brand", segments: ["Search Brand", "Shopping Brand"] },
-    { group: "Non Brand", segments: ["Search Non Brand", "Shopping Non Brand"] },
-  ];
-
-  return groups
-    .map(({ group, segments }) => {
-      const rows = segmentRows.filter((row) => segments.includes(row.segment));
-      const spend = rows.reduce((sum, row) => sum + row.spend, 0);
-      const revenue = rows.reduce((sum, row) => sum + row.revenue, 0);
-      const purchases = rows.reduce((sum, row) => sum + row.purchases, 0);
-
-      const weightedCtrNumerator = rows.reduce((sum, row) => sum + row.ctr * row.spend, 0);
-      const weightedCvrNumerator = rows.reduce((sum, row) => sum + row.cvr * row.spend, 0);
-
-      return {
-        group,
-        rows,
-        campaigns: rows.reduce((sum, row) => sum + row.campaigns, 0),
-        spend,
-        revenue,
-        purchases,
-        roas: safeDiv(revenue, spend),
-        cpa: safeDiv(spend, purchases),
-        ctr: safeDiv(weightedCtrNumerator, spend),
-        cvr: safeDiv(weightedCvrNumerator, spend),
-        share: safeDiv(spend, totalSpend),
-      };
-    })
-    .filter((row) => row.spend > 0 || row.campaigns > 0);
 }
 
 
@@ -682,7 +764,7 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
         <div className="gos-dynamic-chart-panel">
           <div className="gos-chart-control-row">
             <div>
-              <span>Campaign Type</span>
+              <span>Dimension</span>
               <div className="gos-chart-button-group">
                 {availableChartSegments.map((segment) => (
                   <button
@@ -698,7 +780,7 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
             </div>
 
             <div>
-              <span>Key KPI</span>
+              <span>Key Metric</span>
               <div className="gos-chart-button-group">
                 {CHART_KPIS.map((kpiItem) => (
                   <button
@@ -714,9 +796,9 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
             </div>
 
             <div>
-              <span>Time Metric</span>
+              <span>Time Grain</span>
               <div className="gos-chart-button-group">
-                {(["daily", "weekly", "monthly", "quarterly"] as PeriodMode[]).map((mode) => (
+                {(["daily", "weekly", "monthly"] as PeriodMode[]).map((mode) => (
                   <button
                     key={mode}
                     type="button"
