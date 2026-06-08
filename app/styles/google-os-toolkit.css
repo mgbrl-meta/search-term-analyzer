@@ -707,3 +707,128 @@ html.light {
   }
 }
 
+
+/* =========================================================
+   DAILY TABLE ALIGNMENT SYSTEM
+   Aligns header + rows across Date, Spend, Revenue, ROAS, etc.
+   Applies to All Campaigns bottom daily table.
+   ========================================================= */
+
+.google-os-shell {
+  --gos-daily-table-grid:
+    minmax(120px, 0.75fr)  /* Date */
+    minmax(110px, 0.7fr)   /* Spend */
+    minmax(120px, 0.75fr)  /* Revenue */
+    minmax(90px, 0.55fr)   /* ROAS */
+    minmax(105px, 0.6fr)   /* Purchases */
+    minmax(95px, 0.6fr)    /* CPA */
+    minmax(85px, 0.55fr)   /* CTR */
+    minmax(85px, 0.55fr)   /* CVR */
+    minmax(100px, 0.6fr)   /* Impr. */
+    minmax(100px, 0.6fr);  /* Clicks */
+}
+
+/* Daily table wrapper */
+.google-os-shell .gos-daily-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Header and rows must use identical grid */
+.google-os-shell .gos-daily-table-header,
+.google-os-shell .gos-daily-table-row {
+  display: grid !important;
+  grid-template-columns: var(--gos-daily-table-grid) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-width: 1120px !important;
+  box-sizing: border-box !important;
+}
+
+/* Same padding on header and body */
+.google-os-shell .gos-daily-table-header {
+  padding: 9px 14px !important;
+}
+
+.google-os-shell .gos-daily-table-row {
+  padding: 9px 14px !important;
+  min-height: 44px !important;
+}
+
+/* Every cell follows the same column placement */
+.google-os-shell .gos-daily-table-header > span,
+.google-os-shell .gos-daily-table-row > span {
+  min-width: 0 !important;
+  width: 100% !important;
+  justify-self: stretch !important;
+  box-sizing: border-box !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Date column: left aligned in both header and rows */
+.google-os-shell .gos-daily-table-header > span:first-child,
+.google-os-shell .gos-daily-table-row > span:first-child,
+.google-os-shell .gos-daily-date {
+  text-align: left !important;
+  justify-self: stretch !important;
+}
+
+/* All metric columns: right aligned in both header and rows */
+.google-os-shell .gos-daily-table-header > span:not(:first-child),
+.google-os-shell .gos-daily-table-row > span:not(:first-child) {
+  text-align: right !important;
+}
+
+/* Nested value + delta cells should align right inside their grid column */
+.google-os-shell .gos-daily-cell {
+  display: grid !important;
+  justify-items: end !important;
+  align-items: center !important;
+  gap: 2px !important;
+  text-align: right !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* Value and movement alignment */
+.google-os-shell .gos-daily-cell strong,
+.google-os-shell .gos-daily-cell small,
+.google-os-shell .gos-daily-move {
+  display: block !important;
+  text-align: right !important;
+  width: 100% !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Header text should not wrap and shift columns */
+.google-os-shell .gos-daily-table-header > span {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Body text should stay compact */
+.google-os-shell .gos-daily-table-row > span {
+  white-space: nowrap !important;
+}
+
+/* Make daily table card match parent width */
+.google-os-shell .gos-daily-performance-table {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Mobile keeps internal scroll, not broken layout */
+@media(max-width: 900px) {
+  .google-os-shell .gos-daily-table-header,
+  .google-os-shell .gos-daily-table-row {
+    min-width: 1120px !important;
+  }
+}
