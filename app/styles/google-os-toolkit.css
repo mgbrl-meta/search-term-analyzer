@@ -2117,3 +2117,220 @@ html.light {
     height: 320px !important;
   }
 }
+
+/* =========================================================
+   GOOGLE OS MONTHLY CHART TOOLKIT
+   Multi-month selection + readable hover tooltip.
+   ========================================================= */
+
+.google-os-shell .gos-monthly-chart-toolkit {
+  display: grid !important;
+  gap: 14px !important;
+}
+
+.google-os-shell .gos-month-selector {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 9px !important;
+  padding: 14px !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 16px !important;
+}
+
+.google-os-shell .gos-month-selector button {
+  height: 32px !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 999px !important;
+  background: var(--gos-surface) !important;
+  color: var(--gos-muted) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  cursor: pointer !important;
+}
+
+.google-os-shell .gos-month-selector button.active {
+  color: var(--gos-text) !important;
+  background: var(--gos-surface-3) !important;
+  border-color: rgba(66, 133, 244, 0.44) !important;
+  box-shadow: inset 0 0 0 1px rgba(66, 133, 244, 0.20) !important;
+}
+
+.google-os-shell .gos-month-selector button i {
+  width: 14px !important;
+  height: 7px !important;
+  border-radius: 999px !important;
+}
+
+.google-os-shell .gos-chart-card {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 16px !important;
+  padding: 14px !important;
+  box-sizing: border-box !important;
+}
+
+.google-os-shell .gos-chart-card-head {
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  align-items: flex-start !important;
+  margin-bottom: 12px !important;
+}
+
+.google-os-shell .gos-chart-card-head span {
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .gos-chart-card-head h3 {
+  margin: 6px 0 0 !important;
+  color: var(--gos-text) !important;
+  font-size: 18px !important;
+}
+
+.google-os-shell .gos-chart-card-head p {
+  margin: 6px 0 0 !important;
+  color: var(--gos-muted) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.google-os-shell .gos-chart-card-head > strong {
+  color: var(--gos-text) !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .gos-chart-stage {
+  position: relative !important;
+  width: 100% !important;
+  overflow: hidden !important;
+}
+
+.google-os-shell .gos-chart-svg {
+  display: block !important;
+  width: 100% !important;
+  height: 390px !important;
+}
+
+.google-os-shell .gos-chart-grid {
+  stroke: var(--gos-chart-grid) !important;
+  stroke-width: 1 !important;
+  stroke-dasharray: 4 7 !important;
+}
+
+.google-os-shell .gos-chart-axis {
+  stroke: var(--gos-chart-axis-muted) !important;
+  stroke-width: 1.2 !important;
+}
+
+.google-os-shell .gos-chart-axis-text {
+  fill: var(--gos-chart-axis) !important;
+  color: var(--gos-chart-axis) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  opacity: 1 !important;
+}
+
+.google-os-shell .gos-chart-axis-text.x {
+  fill: var(--gos-chart-axis-muted) !important;
+}
+
+.google-os-shell .gos-chart-bar {
+  opacity: 0.92 !important;
+  cursor: pointer !important;
+}
+
+.google-os-shell .gos-chart-bar:hover,
+.google-os-shell .gos-chart-scatter-dot:hover,
+.google-os-shell .gos-chart-dot:hover {
+  opacity: 1 !important;
+  filter: brightness(1.15) drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35)) !important;
+}
+
+.google-os-shell .gos-chart-line {
+  fill: none !important;
+  stroke-width: 2.8 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+.google-os-shell .gos-chart-line.red {
+  stroke: var(--google-red) !important;
+}
+
+.google-os-shell .gos-chart-dot.red {
+  fill: var(--google-red) !important;
+  stroke: var(--gos-surface-2) !important;
+  stroke-width: 2 !important;
+  cursor: pointer !important;
+}
+
+.google-os-shell .gos-chart-scatter-dot {
+  stroke: var(--gos-surface-2) !important;
+  stroke-width: 2 !important;
+  cursor: pointer !important;
+}
+
+.google-os-shell .gos-chart-tooltip {
+  position: absolute !important;
+  z-index: 50 !important;
+  min-width: 220px !important;
+  pointer-events: none !important;
+  border: 1px solid var(--gos-border-strong) !important;
+  background: color-mix(in srgb, var(--gos-surface) 96%, transparent) !important;
+  color: var(--gos-text) !important;
+  border-radius: 13px !important;
+  padding: 11px !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.38) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+.google-os-shell .gos-chart-tooltip > strong {
+  display: block !important;
+  margin-bottom: 8px !important;
+  color: var(--gos-text) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+.google-os-shell .gos-chart-tooltip div {
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  padding: 4px 0 !important;
+  border-top: 1px solid rgba(148, 163, 184, 0.12) !important;
+  font-size: 11px !important;
+}
+
+.google-os-shell .gos-chart-tooltip span {
+  color: var(--gos-muted) !important;
+  font-weight: 800 !important;
+}
+
+.google-os-shell .gos-chart-tooltip b {
+  color: var(--gos-text) !important;
+  font-weight: 900 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+@media(max-width: 900px) {
+  .google-os-shell .gos-chart-card-head {
+    flex-direction: column !important;
+  }
+
+  .google-os-shell .gos-chart-svg {
+    height: 320px !important;
+  }
+}
