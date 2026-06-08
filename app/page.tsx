@@ -2326,7 +2326,8 @@ function PageContent({
   const [googleOsLoading, setGoogleOsLoading] = useState(false);
 
   async function loadGoogleOsSheetUrl(urlInput?: string) {
-    const url = (urlInput || googleOsSheetUrl).trim();
+    const rawUrl = (urlInput || googleOsSheetUrl).trim();
+    const url = normalizeGoogleSheetCsvUrl(rawUrl);
 
     if (!url) {
       setGoogleOsUploadError("Paste your published Google Sheet CSV URL first.");
@@ -3095,6 +3096,32 @@ function PageContent({
   );
 }
 
+
+function normalizeGoogleSheetCsvUrl(input: string) {
+  const url = input.trim();
+
+  if (!url) return "";
+
+  // Already a CSV/export URL
+  if (url.includes("output=csv") || url.includes("format=csv")) {
+    return url;
+  }
+
+  // Normal Google Sheet URL:
+  // https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit#gid=123
+  const idMatch = url.match(/\/spreadsheets\/d\/([^/]+)/);
+  const gidMatch = url.match(/[?#&]gid=(\d+)/);
+
+  if (idMatch?.[1]) {
+    const spreadsheetId = idMatch[1];
+    const gid = gidMatch?.[1] || "0";
+    return `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=${gid}`;
+  }
+
+  return url;
+}
+
+
 export default function Page() {
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [fileName, setFileName] = useState("");
@@ -3146,7 +3173,11 @@ export default function Page() {
       await loadGoogleOsCsvText(csvText, "Connected Google Sheet");
       localStorage.setItem("google_os_sheet_csv_url", url);
     } catch (error) {
-      setGoogleOsError(error instanceof Error ? error.message : "Could not load Google Sheet CSV.");
+      setGoogleOsError(
+        error instanceof Error
+          ? `${error.message}. Make sure the sheet is shared/published and the selected tab is accessible as CSV.`
+          : "Could not load Google Sheet CSV. Make sure the sheet is shared/published and accessible as CSV."
+      );
       if (!googleOsModel) setGoogleOsModel(null);
     } finally {
       setGoogleOsLoading(false);
