@@ -2898,3 +2898,879 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+/* =========================================================
+   ALL CAMPAIGNS — CAMPAIGN TYPE SUMMARY VIEW
+   ========================================================= */
+
+.all-campaigns-summary-page {
+  gap: 10px !important;
+}
+
+.all-campaigns-head {
+  align-items: flex-start !important;
+}
+
+.all-campaign-type-select {
+  display: grid;
+  gap: 5px;
+  color: var(--gos-faint);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.all-campaign-type-select select {
+  height: 32px;
+  min-width: 180px;
+  border: 1px solid var(--gos-border);
+  background: var(--gos-surface-2);
+  color: var(--gos-text);
+  border-radius: 9px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.all-campaign-selected-summary {
+  display: grid;
+  grid-template-columns: 1.1fr repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+
+.all-campaign-selected-summary > div {
+  border: 1px solid var(--gos-border);
+  background: var(--gos-surface-2);
+  border-radius: 12px;
+  padding: 10px 11px;
+  display: grid;
+  gap: 5px;
+}
+
+.all-campaign-selected-summary span {
+  color: var(--gos-faint);
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.all-campaign-selected-summary strong {
+  color: var(--gos-text);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.all-campaign-selected-summary strong.green {
+  color: var(--gos-green);
+}
+
+.all-campaign-selected-summary strong.red {
+  color: var(--gos-red);
+}
+
+.all-campaign-selected-summary small {
+  color: var(--gos-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.all-campaign-type-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+}
+
+.all-campaign-type-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.all-campaign-type-chart {
+  display: grid;
+  gap: 12px;
+}
+
+.all-campaign-type-chart-head span {
+  display: block;
+  color: var(--gos-faint);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.all-campaign-type-chart-head h2 {
+  margin: 5px 0 0;
+  color: var(--gos-text);
+  font-size: 17px;
+}
+
+.all-campaign-type-chart-head p {
+  margin: 4px 0 0;
+  color: var(--gos-muted);
+  font-size: 11px;
+}
+
+.all-campaign-type-bars {
+  display: grid;
+  gap: 8px;
+}
+
+.all-campaign-type-bar-row {
+  border: 1px solid var(--gos-border);
+  background: var(--gos-surface-2);
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 170px 1.4fr 1.4fr 230px;
+  gap: 12px;
+  align-items: center;
+}
+
+.all-campaign-type-label {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: center;
+}
+
+.all-campaign-type-label i {
+  grid-row: 1 / 3;
+}
+
+.all-campaign-type-label strong {
+  color: var(--gos-text);
+  font-size: 12px;
+}
+
+.all-campaign-type-label small {
+  color: var(--gos-faint);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.all-campaign-type-bar-metric {
+  display: grid;
+  gap: 5px;
+}
+
+.all-campaign-type-bar-metric span {
+  color: var(--gos-faint);
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.all-campaign-type-bar-track {
+  height: 9px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.all-campaign-type-bar-track.muted {
+  opacity: 0.72;
+}
+
+.all-campaign-type-bar-track b {
+  height: 100%;
+  display: block;
+  border-radius: 999px;
+}
+
+.all-campaign-type-bar-metric em {
+  color: var(--gos-muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.all-campaign-type-mini-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.all-campaign-type-mini-kpis strong {
+  border: 1px solid var(--gos-border);
+  border-radius: 9px;
+  padding: 6px 7px;
+  color: var(--gos-text);
+  font-size: 10px;
+  text-align: center;
+}
+
+.all-campaign-type-mini-kpis .green {
+  color: var(--gos-green);
+}
+
+.all-campaign-type-mini-kpis .red {
+  color: var(--gos-red);
+}
+
+.all-campaign-type-mini-kpis .amber {
+  color: var(--gos-amber);
+}
+
+@media(max-width: 1150px) {
+  .all-campaign-selected-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .all-campaign-type-bar-row {
+    grid-template-columns: 1fr;
+  }
+
+  .all-campaign-type-mini-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media(max-width: 680px) {
+  .all-campaign-selected-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .all-campaign-type-select {
+    width: 100%;
+  }
+
+  .all-campaign-type-select select {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   GOOGLE OS SOURCE DRAWER + REMOVE VIEW BLOCKING
+   Source sheet controls are hidden by default and open only when needed.
+   ========================================================= */
+
+/* Floating small data source pill */
+.gos-source-toggle {
+  position: fixed !important;
+  right: 22px !important;
+  bottom: 22px !important;
+  z-index: 99997 !important;
+
+  border: 1px solid rgba(52, 168, 83, 0.32) !important;
+  background: color-mix(in srgb, var(--gos-surface) 92%, transparent) !important;
+  color: var(--gos-text) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+
+  border-radius: 999px !important;
+  padding: 8px 12px !important;
+
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+
+  cursor: pointer !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.25) !important;
+}
+
+.gos-source-toggle span {
+  color: var(--google-green, #34a853) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+.gos-source-toggle b {
+  color: var(--gos-text) !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+/* Hide source strip from main layout by default */
+.gos-source-drawer.collapsed {
+  display: none !important;
+}
+
+/* Open as bottom drawer, not in page content */
+.gos-source-drawer.open {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: 74px !important;
+  transform: translateX(-50%) !important;
+
+  width: min(920px, calc(100vw - 36px)) !important;
+  max-width: min(920px, calc(100vw - 36px)) !important;
+
+  z-index: 99996 !important;
+
+  margin: 0 !important;
+  padding: 12px !important;
+
+  background: color-mix(in srgb, var(--gos-surface) 96%, transparent) !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 16px !important;
+
+  backdrop-filter: blur(22px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(170%) !important;
+
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45) !important;
+
+  display: grid !important;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(0, 2fr) !important;
+  gap: 10px !important;
+}
+
+/* Make controls inside drawer compact */
+.gos-source-drawer.open .gos-source-main span {
+  font-size: 9px !important;
+  letter-spacing: 0.13em !important;
+}
+
+.gos-source-drawer.open .gos-source-main strong {
+  font-size: 14px !important;
+}
+
+.gos-source-drawer.open .gos-source-main small {
+  font-size: 10.5px !important;
+}
+
+.gos-source-drawer.open .gos-source-actions {
+  display: flex !important;
+  gap: 7px !important;
+  align-items: center !important;
+}
+
+.gos-source-drawer.open .gos-source-actions input {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  height: 34px !important;
+  font-size: 11px !important;
+}
+
+.gos-source-drawer.open .gos-source-actions button,
+.gos-source-drawer.open .gos-source-actions label {
+  height: 34px !important;
+  padding: 0 10px !important;
+  font-size: 10.5px !important;
+  border-radius: 9px !important;
+  white-space: nowrap !important;
+}
+
+/* Remove excess blank space that source strip previously created */
+.google-os-shell .gos-source-strip:not(.gos-source-drawer) {
+  margin-bottom: 0 !important;
+}
+
+/* Since source strip no longer consumes space, reduce page top breathing */
+.google-os-shell {
+  padding-top: 106px !important;
+}
+
+/* Header tabs can use full width after removing Command Center */
+.gos-home-tabs {
+  gap: 6px !important;
+}
+
+.gos-home-tabs button {
+  padding-inline: 12px !important;
+}
+
+/* Mobile drawer */
+@media(max-width: 760px) {
+  .gos-source-toggle {
+    right: 12px !important;
+    bottom: 14px !important;
+    padding: 7px 10px !important;
+  }
+
+  .gos-source-toggle span {
+    display: none !important;
+  }
+
+  .gos-source-drawer.open {
+    bottom: 58px !important;
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .gos-source-drawer.open .gos-source-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .gos-source-drawer.open .gos-source-actions input {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* Clean Google OS recovery shell */
+.gos-topbar-meta {
+  color: var(--gos-faint);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.gos-error-text {
+  color: var(--gos-red) !important;
+}
+
+.gos-source-toggle {
+  position: fixed !important;
+  right: 22px !important;
+  bottom: 22px !important;
+  z-index: 99997 !important;
+  border: 1px solid rgba(52, 168, 83, 0.32) !important;
+  background: color-mix(in srgb, var(--gos-surface) 92%, transparent) !important;
+  color: var(--gos-text) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+  border-radius: 999px !important;
+  padding: 8px 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.25) !important;
+}
+
+.gos-source-toggle span {
+  color: var(--google-green, #34a853) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+.gos-source-toggle b {
+  color: var(--gos-text) !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+.gos-source-drawer.open {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: 74px !important;
+  transform: translateX(-50%) !important;
+  width: min(920px, calc(100vw - 36px)) !important;
+  max-width: min(920px, calc(100vw - 36px)) !important;
+  z-index: 99996 !important;
+  margin: 0 !important;
+  padding: 12px !important;
+  background: color-mix(in srgb, var(--gos-surface) 96%, transparent) !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(22px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(170%) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45) !important;
+  display: grid !important;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(0, 2fr) !important;
+  gap: 10px !important;
+}
+
+:root {
+  --google-blue: #4285f4;
+  --google-red: #ea4335;
+  --google-yellow: #fbbc04;
+  --google-green: #34a853;
+  --google-accent-border: rgba(66, 133, 244, 0.38);
+  --google-accent-shadow: 0 8px 24px rgba(66, 133, 244, 0.14);
+}
+
+.gos-home-tabs button.active,
+.gos-date-buttons button.active,
+.gos-mini-tabs button.active {
+  position: relative !important;
+  background: var(--gos-surface-3) !important;
+  color: var(--gos-text) !important;
+  border-color: var(--google-accent-border) !important;
+  box-shadow: var(--google-accent-shadow) !important;
+  overflow: hidden !important;
+}
+
+.gos-home-tabs button.active::before,
+.gos-date-buttons button.active::before,
+.gos-mini-tabs button.active::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 10px !important;
+  right: 10px !important;
+  top: 0 !important;
+  height: 3px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(
+    90deg,
+    var(--google-blue) 0%,
+    var(--google-blue) 28%,
+    var(--google-green) 28%,
+    var(--google-green) 54%,
+    var(--google-yellow) 54%,
+    var(--google-yellow) 76%,
+    var(--google-red) 76%,
+    var(--google-red) 100%
+  ) !important;
+}
+
+@media(max-width: 760px) {
+  .gos-source-drawer.open {
+    bottom: 58px !important;
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* =========================================================
+   CLEAN GOOGLE OS UI FIX — HEADER, SOURCE, ALL CAMPAIGNS
+   ========================================================= */
+
+/* Hide any old source strip that appears in the top layout */
+.google-os-shell > .gos-source-strip:not(.gos-source-drawer) {
+  display: none !important;
+}
+
+/* Better compact shell spacing */
+.google-os-shell {
+  padding-top: 104px !important;
+  max-width: none !important;
+}
+
+/* Header compact */
+.gos-topbar {
+  height: 46px !important;
+  padding: 7px 12px !important;
+}
+
+.gos-brand h1 {
+  font-size: 14px !important;
+}
+
+.gos-brand p {
+  font-size: 9px !important;
+}
+
+.gos-logo {
+  width: 28px !important;
+  height: 28px !important;
+  font-size: 12px !important;
+}
+
+/* Hide long URL from top; show only status pill */
+.gos-header-source-pill {
+  border: 1px solid rgba(52, 168, 83, 0.34);
+  background: rgba(52, 168, 83, 0.08);
+  color: var(--gos-text);
+  border-radius: 999px;
+  padding: 6px 10px;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.gos-header-source-pill span {
+  color: var(--google-green, #34a853);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.gos-header-source-pill b {
+  color: var(--gos-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* Tabs compact and remove old Command/AdGroup if cached via CSS fallback */
+.gos-home-tabs {
+  height: 42px !important;
+  padding: 5px !important;
+  gap: 6px !important;
+}
+
+.gos-home-tabs button {
+  height: 30px !important;
+  padding: 0 11px !important;
+  font-size: 10.5px !important;
+}
+
+/* Source drawer only bottom */
+.gos-source-toggle {
+  position: fixed !important;
+  right: 20px !important;
+  bottom: 20px !important;
+  z-index: 99997 !important;
+}
+
+.gos-source-drawer.open {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: 70px !important;
+  transform: translateX(-50%) !important;
+  width: min(900px, calc(100vw - 36px)) !important;
+  z-index: 99996 !important;
+}
+
+/* All Campaigns clean visual layout */
+.all-campaigns-summary-page .gos-panel {
+  padding: 12px 14px !important;
+  border-radius: 14px !important;
+}
+
+.all-campaigns-head {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  gap: 16px !important;
+  margin-bottom: 10px !important;
+}
+
+.all-campaigns-head h2 {
+  font-size: 18px !important;
+  margin-top: 5px !important;
+}
+
+.all-campaigns-head p {
+  font-size: 11.5px !important;
+  margin-top: 5px !important;
+}
+
+/* Fix selected summary: card grid instead of broken inline text */
+.all-campaign-selected-summary {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin: 10px 0 12px !important;
+}
+
+.all-campaign-selected-summary > div {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 12px !important;
+  padding: 10px !important;
+  display: grid !important;
+  gap: 5px !important;
+  min-height: 68px !important;
+}
+
+.all-campaign-selected-summary span {
+  display: block !important;
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.all-campaign-selected-summary strong {
+  display: block !important;
+  color: var(--gos-text) !important;
+  font-size: 17px !important;
+  line-height: 1 !important;
+}
+
+.all-campaign-selected-summary strong.green {
+  color: var(--gos-green) !important;
+}
+
+.all-campaign-selected-summary strong.red {
+  color: var(--gos-red) !important;
+}
+
+.all-campaign-selected-summary small {
+  display: block !important;
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+}
+
+/* Select dropdown clean */
+.all-campaign-type-select {
+  display: grid !important;
+  gap: 5px !important;
+  min-width: 190px !important;
+  color: var(--gos-faint) !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
+}
+
+.all-campaign-type-select select {
+  height: 32px !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  color: var(--gos-text) !important;
+  border-radius: 9px !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+/* Visualization proper bars */
+.all-campaign-type-chart {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.all-campaign-type-chart-head span {
+  display: block !important;
+  color: var(--gos-faint) !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+.all-campaign-type-chart-head h2 {
+  margin: 5px 0 0 !important;
+  color: var(--gos-text) !important;
+  font-size: 17px !important;
+}
+
+.all-campaign-type-chart-head p {
+  margin: 4px 0 0 !important;
+  color: var(--gos-muted) !important;
+  font-size: 11px !important;
+}
+
+.all-campaign-type-bars {
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.all-campaign-type-bar-row {
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 12px !important;
+  padding: 10px !important;
+  display: grid !important;
+  grid-template-columns: 170px 1.35fr 1.35fr 230px !important;
+  gap: 12px !important;
+  align-items: center !important;
+}
+
+.all-campaign-type-label {
+  display: grid !important;
+  grid-template-columns: 10px 1fr !important;
+  grid-template-rows: auto auto !important;
+  column-gap: 8px !important;
+  align-items: center !important;
+}
+
+.all-campaign-type-label i {
+  grid-row: 1 / 3 !important;
+}
+
+.all-campaign-type-label strong {
+  color: var(--gos-text) !important;
+  font-size: 12px !important;
+}
+
+.all-campaign-type-label small {
+  color: var(--gos-faint) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+}
+
+.all-campaign-type-bar-metric {
+  display: grid !important;
+  gap: 5px !important;
+}
+
+.all-campaign-type-bar-metric span {
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+}
+
+.all-campaign-type-bar-track {
+  height: 10px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  background: rgba(148, 163, 184, 0.14) !important;
+}
+
+.all-campaign-type-bar-track b {
+  height: 100% !important;
+  display: block !important;
+  border-radius: 999px !important;
+}
+
+.all-campaign-type-bar-metric em {
+  color: var(--gos-muted) !important;
+  font-size: 10px !important;
+  font-style: normal !important;
+  font-weight: 800 !important;
+}
+
+.all-campaign-type-mini-kpis {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+
+.all-campaign-type-mini-kpis strong {
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 9px !important;
+  padding: 6px 7px !important;
+  color: var(--gos-text) !important;
+  font-size: 10px !important;
+  text-align: center !important;
+}
+
+.all-campaign-type-mini-kpis .green {
+  color: var(--gos-green) !important;
+}
+
+.all-campaign-type-mini-kpis .red {
+  color: var(--gos-red) !important;
+}
+
+.all-campaign-type-mini-kpis .amber {
+  color: var(--gos-amber) !important;
+}
+
+/* Table compact */
+.all-campaigns-summary-page .gos-table th {
+  padding: 8px 9px !important;
+  font-size: 8.5px !important;
+}
+
+.all-campaigns-summary-page .gos-table td {
+  padding: 8px 9px !important;
+  font-size: 10.5px !important;
+}
+
+@media(max-width: 1150px) {
+  .all-campaign-selected-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .all-campaign-type-bar-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media(max-width: 760px) {
+  .all-campaigns-head {
+    flex-direction: column !important;
+  }
+
+  .all-campaign-type-select {
+    width: 100% !important;
+  }
+
+  .all-campaign-selected-summary {
+    grid-template-columns: 1fr !important;
+  }
+}

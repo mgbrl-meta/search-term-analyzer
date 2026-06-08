@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { GoogleOsModel, GoogleOsRow } from "../../../lib/googleOs/types";
 import { compactInt, compactMoney, money, pct, safeDiv, x } from "../../../lib/googleOs/format";
 import { GoogleOsKpi } from "../shared/GoogleOsKpi";
+import { formatGoogleOsMonthLabel } from "../../../lib/googleOs/dateFilter";
 import { GoogleOsTable } from "../shared/GoogleOsTable";
 
 type MonthlyRow = {
@@ -393,13 +394,13 @@ function WeeklyTrendChart({
 
         {filtered[0] ? (
           <text x={padding.left} y={height - 18} className="gos-chart-axis">
-            {filtered[0].month}
+            {formatGoogleOsMonthLabel(filtered[0].month)}
           </text>
         ) : null}
 
         {filtered[filtered.length - 1] ? (
           <text x={width - padding.right} y={height - 18} textAnchor="end" className="gos-chart-axis">
-            {filtered[filtered.length - 1].month}
+            {formatGoogleOsMonthLabel(filtered[filtered.length - 1].month)}
           </text>
         ) : null}
       </svg>
@@ -428,13 +429,13 @@ function MonthChips({
 
       {months.map((month) => (
         <button
-          key={month}
+          key={formatGoogleOsMonthLabel(month)}
           type="button"
           className={selectedMonth === month ? "active" : ""}
           onClick={() => onSelect(month)}
         >
           <span style={{ background: getMonthColor(month, months) }} />
-          {month}
+          {formatGoogleOsMonthLabel(month)}
         </button>
       ))}
     </div>
@@ -483,7 +484,7 @@ export function MonthlySummaryTab({ model }: { model: GoogleOsModel }) {
 
       {latest ? (
         <div className="gos-kpi-grid">
-          <GoogleOsKpi label="Latest Month" value={latest.month} />
+          <GoogleOsKpi label="Latest Month" value={formatGoogleOsMonthLabel(latest.month)} />
           <GoogleOsKpi label="Spend" value={compactMoney(latest.cost)} tone="red" />
           <GoogleOsKpi label="Revenue" value={compactMoney(latest.revenue)} tone="green" />
           <GoogleOsKpi label="ROAS" value={x(latest.roas)} tone={latest.roas >= 3 ? "green" : latest.roas < 1 ? "red" : "amber"} />
@@ -499,7 +500,7 @@ export function MonthlySummaryTab({ model }: { model: GoogleOsModel }) {
           <div className="gos-insight-card">
             <span>Incremental Revenue</span>
             <p>
-              {latest.month} generated <b>{money(latest.incrementalRevenue)}</b> incremental revenue versus {previous.month}.
+              {formatGoogleOsMonthLabel(latest.month)} generated <b>{money(latest.incrementalRevenue)}</b> incremental revenue versus {formatGoogleOsMonthLabel(previous.month)}.
             </p>
           </div>
 
@@ -534,7 +535,7 @@ export function MonthlySummaryTab({ model }: { model: GoogleOsModel }) {
           className="monthly-wide-table"
           rows={monthlyRows.slice().reverse() as unknown as Record<string, unknown>[]}
           columns={[
-            { key: "month", label: "Month" },
+            { key: "month", label: "Month", render: (row) => formatGoogleOsMonthLabel(String(row.month || "")) },
             { key: "cost", label: "Spend", right: true, render: (row) => compactMoney(row.cost) },
             { key: "impressions", label: "Impr.", right: true, render: (row) => compactInt(row.impressions) },
             { key: "clicks", label: "Clicks", right: true, render: (row) => compactInt(row.clicks) },

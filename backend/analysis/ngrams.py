@@ -1,27 +1,33 @@
 """
-ngrams.py — N-gram frequency analysis for Google Shopping search terms.
+ngrams.py — N-gram waste analysis for Google Shopping search terms.
 
-Generates unigram, bigram, and trigram frequency tables weighted by
-performance metrics (impressions, clicks, cost, conversions, revenue).
-
-IMPORTANT: All boolean-derived flag columns use int(bool(...)) instead of
-bool() to guarantee JSON serialisation safety (True/False are not
-JSON-native in all serialisation paths; 1/0 are always safe).
+The table aggregates cost, conversions, and conversion value for 1/2/3-grams.
+Waste is ranked by aggregate_wasted_spend × term_count because repeated bad
+phrases are usually the highest-leverage negative-keyword cuts.
 """
 
 from __future__ import annotations
 
 from itertools import islice
-from typing import Iterator
+from typing import Any, Iterator
 
 import pandas as pd
 
-from .cleaner import clean_term, get_all_tokens, get_meaningful_tokens, ALL_STOPWORDS
+from .cleaner import clean_term, get_all_tokens, get_meaningful_tokens
+from .config import DEFAULT_THRESHOLDS
 
 
-# ---------------------------------------------------------------------------
-# N-gram generation helpers
-# ---------------------------------------------------------------------------
+_METRIC_COLS = ["impressions", "clicks", "cost", "conversions", "conv_value"]
+
+
+def _get_thresholds(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
+    cfg = DEFAULT_THRESHOLDS.copy()
+    if overrides:
+        cfg.update({k: v for k, v in overrides.items() if v is not None})
+    gross_margin = float(cfg.get("gross_margin", 0.40) or 0.40)
+    cfg["break_even_roas"] = 1.0 / gross_margin if gross_margin > 0 else 2.5
+    return cfg
+
 
 def _ngrams(tokens: list[str], n: int) -> Iterator[str]:
     """Yield space-joined n-grams from a token list."""
@@ -35,18 +41,11 @@ def _ngrams(tokens: list[str], n: int) -> Iterator[str]:
 
 
 def extract_ngrams(term: str, n: int, remove_stopwords: bool = False) -> list[str]:
-    """Return all n-grams of length n from a single search term."""
+    """Return all unique n-grams of length n from a single search term."""
     tokens = get_meaningful_tokens(term) if remove_stopwords else get_all_tokens(term)
     if len(tokens) < n:
         return []
-    return list(_ngrams(tokens, n))
-
-
-# ---------------------------------------------------------------------------
-# Aggregate ngram table
-# ---------------------------------------------------------------------------
-
-_METRIC_COLS = ["impressions", "clicks", "cost", "conversions", "conv_value"]
+    return list(dict.fromkeys(_ngrams(tokens, n)))
 
 
 def build_ngram_table(
@@ -55,55 +54,40 @@ def build_ngram_table(
     remove_stopwords: bool = True,
     min_occurrences: int = 2,
     top_k: int = 200,
+    thresholds: dict[str, Any] | None = None,
 ) -> list[dict]:
-    """
-    Build a frequency + performance table for n-grams across all search terms.
+    """Build an n-gram performance table with break-even waste fields.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Enriched DataFrame with at least search_term + metric columns.
-    n : int
-        N-gram length (1, 2, or 3).
-    remove_stopwords : bool
-        Whether to strip stop-words before generating n-grams.
-    min_occurrences : int
-        Drop n-grams seen in fewer than this many search terms.
-    top_k : int
-        Maximum rows to return (sorted by impressions desc).
-
-    Returns
-    -------
-    list[dict]
-        Each dict is one n-gram row, JSON-serialisation safe.
+    Each n-gram receives the full metrics of every source term where it appears.
+    This intentionally measures how much total spend is touched by a phrase,
+    which is more useful for negative-keyword decisions than fractional credit.
     """
-    # Explode each row into (ngram, metrics) pairs
+    cfg = _get_thresholds(thresholds)
+    break_even_roas = float(cfg["break_even_roas"])
+    ngram_threshold = float(cfg.get("ngram_threshold", 3000.0))
+
     records: list[dict] = []
     for _, row in df.iterrows():
         term = str(row.get("search_term", ""))
-        ngrams = extract_ngrams(clean_term(term), n, remove_stopwords=remove_stopwords)
-        if not ngrams:
+        grams = extract_ngrams(clean_term(term), n, remove_stopwords=remove_stopwords)
+        if not grams:
             continue
 
         metrics = {col: float(row.get(col, 0.0) or 0.0) for col in _METRIC_COLS}
-        # Distribute metrics evenly across n-grams from the same term
-        weight = 1.0 / len(ngrams)
-
-        for gram in ngrams:
+        for gram in grams:
             records.append({
                 "ngram": gram,
-                **{col: metrics[col] * weight for col in _METRIC_COLS},
                 "source_term": term,
+                **metrics,
             })
 
     if not records:
         return []
 
-    detail_df = pd.DataFrame(records)
+    detail = pd.DataFrame(records)
 
-    # Aggregate by ngram
     agg = (
-        detail_df.groupby("ngram")
+        detail.groupby("ngram")
         .agg(
             term_count=("source_term", "nunique"),
             impressions=("impressions", "sum"),
@@ -115,81 +99,44 @@ def build_ngram_table(
         .reset_index()
     )
 
-    # Filter low-frequency n-grams
     agg = agg[agg["term_count"] >= min_occurrences].copy()
-
     if agg.empty:
         return []
 
-    # Derived metrics
-    agg["ctr"] = (
-        (agg["clicks"] / agg["impressions"].replace(0, float("nan"))) * 100
-    ).fillna(0.0).round(2)
+    agg["ctr"] = (agg["clicks"] / agg["impressions"].replace(0, float("nan")) * 100).fillna(0.0)
+    agg["cvr"] = (agg["conversions"] / agg["clicks"].replace(0, float("nan")) * 100).fillna(0.0)
+    agg["roas"] = (agg["revenue"] / agg["cost"].replace(0, float("nan"))).fillna(0.0)
+    agg["cpa"] = (agg["cost"] / agg["conversions"].replace(0, float("nan"))).fillna(0.0)
 
-    agg["cpc"] = (
-        agg["cost"] / agg["clicks"].replace(0, float("nan"))
-    ).fillna(0.0).round(2)
+    agg["break_even_roas"] = break_even_roas
+    agg["aggregate_wasted_spend"] = ((break_even_roas - agg["roas"]).clip(lower=0) * agg["cost"]).fillna(0.0)
+    agg["waste_score"] = agg["aggregate_wasted_spend"] * agg["term_count"]
+    agg["is_waste"] = ((agg["cost"] >= ngram_threshold) & (agg["roas"] < break_even_roas)).astype(int)
 
-    agg["cvr"] = (
-        (agg["conversions"] / agg["clicks"].replace(0, float("nan"))) * 100
-    ).fillna(0.0).round(2)
-
-    agg["roas"] = (
-        agg["revenue"] / agg["cost"].replace(0, float("nan"))
-    ).fillna(0.0).round(2)
-
-    agg["cpa"] = (
-        agg["cost"] / agg["conversions"].replace(0, float("nan"))
-    ).fillna(0.0).round(2)
-
-    # ---------------------------------------------------------------------------
-    # Flag columns — use int(bool(...)) for JSON serialisation safety
-    # bool() in pandas/numpy can produce numpy.bool_ which some JSON serialisers
-    # reject; int(bool(...)) always produces a plain Python int (0 or 1).
-    # ---------------------------------------------------------------------------
-    agg["high_impression_flag"] = agg["impressions"].apply(
-        lambda x: int(bool(x >= agg["impressions"].quantile(0.75)))
-    )
-    agg["high_roas_flag"] = agg["roas"].apply(
-        lambda x: int(bool(x >= 4.0))
-    )
-    agg["zero_conversion_flag"] = agg["conversions"].apply(
-        lambda x: int(bool(x == 0))
-    )
-    agg["high_spend_no_conv_flag"] = agg.apply(
-        lambda r: int(bool(r["cost"] > 0 and r["conversions"] == 0 and r["clicks"] >= 5)),
-        axis=1,
-    )
-    agg["strong_term_flag"] = agg.apply(
-        lambda r: int(bool(r["roas"] >= 4.0 and r["conversions"] >= 1)),
+    agg["flag"] = agg["is_waste"]
+    agg["flag_reason"] = agg.apply(
+        lambda r: (
+            f"Spent ₹{r['cost']:,.0f} across {int(r['term_count'])} terms at "
+            f"{r['roas']:.2f}x ROAS below {break_even_roas:.2f}x break-even"
+            if int(r["is_waste"]) == 1 else ""
+        ),
         axis=1,
     )
 
-    # Opportunity score: high impressions + low CTR → SEO/listing gap
-    imp_p50 = agg["impressions"].quantile(0.50)
-    ctr_p25 = agg["ctr"].quantile(0.25)
-    agg["opportunity_flag"] = agg.apply(
-        lambda r: int(bool(r["impressions"] >= imp_p50 and r["ctr"] <= ctr_p25)),
-        axis=1,
-    )
+    # Preserve old-ish flags for frontend compatibility.
+    agg["is_high_roas"] = (agg["roas"] >= 1.5 * break_even_roas).astype(int)
+    agg["is_low_roas"] = ((agg["cost"] >= ngram_threshold) & (agg["roas"] < break_even_roas)).astype(int)
+    agg["is_high_ctr"] = (agg["ctr"] >= agg["ctr"].quantile(0.75)).astype(int)
+    agg["is_low_ctr"] = ((agg["impressions"] >= agg["impressions"].quantile(0.50)) & (agg["ctr"] <= agg["ctr"].quantile(0.25))).astype(int)
 
-    # Sort and cap
-    agg = agg.sort_values("impressions", ascending=False).head(top_k)
+    agg = agg.sort_values(["is_waste", "waste_score", "cost"], ascending=[False, False, False]).head(top_k)
 
-    # Round floats for cleaner output
-    float_cols = ["impressions", "clicks", "cost", "conversions", "revenue"]
-    for col in float_cols:
+    for col in ["impressions", "clicks", "cost", "conversions", "revenue", "ctr", "cvr", "roas", "cpa", "aggregate_wasted_spend", "waste_score"]:
         agg[col] = agg[col].round(2)
 
-    # Add n value
     agg["n"] = n
-
     return agg.to_dict(orient="records")
 
-
-# ---------------------------------------------------------------------------
-# Convenience wrappers
-# ---------------------------------------------------------------------------
 
 def unigrams(df: pd.DataFrame, **kwargs) -> list[dict]:
     return build_ngram_table(df, n=1, **kwargs)
@@ -203,10 +150,14 @@ def trigrams(df: pd.DataFrame, **kwargs) -> list[dict]:
     return build_ngram_table(df, n=3, **kwargs)
 
 
-def all_ngrams(df: pd.DataFrame, top_k: int = 100) -> dict[str, list[dict]]:
-    """Return a dict with keys '1', '2', '3' containing ngram tables."""
+def all_ngrams(
+    df: pd.DataFrame,
+    top_k: int = 100,
+    thresholds: dict[str, Any] | None = None,
+) -> dict[str, list[dict]]:
+    """Return keys '1', '2', '3' containing waste-ranked n-gram tables."""
     return {
-        "1": unigrams(df, top_k=top_k),
-        "2": bigrams(df, top_k=top_k),
-        "3": trigrams(df, top_k=top_k),
+        "1": unigrams(df, top_k=top_k, thresholds=thresholds),
+        "2": bigrams(df, top_k=top_k, thresholds=thresholds),
+        "3": trigrams(df, top_k=top_k, thresholds=thresholds),
     }

@@ -9,7 +9,6 @@ const GOOGLE_OS_MONTHS = [
 
 export function formatGoogleOsMonthLabel(month: string) {
   const [year, monthNum] = String(month || "").split("-");
-
   if (!year || !monthNum) return month || "";
 
   const monthIndex = Number(monthNum) - 1;
@@ -20,7 +19,6 @@ export function formatGoogleOsMonthLabel(month: string) {
 
 export function formatGoogleOsDateLabel(date: string) {
   const [year, monthNum, day] = String(date || "").split("-");
-
   if (!year || !monthNum || !day) return date || "";
 
   const monthIndex = Number(monthNum) - 1;
