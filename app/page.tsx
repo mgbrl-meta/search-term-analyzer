@@ -3451,7 +3451,7 @@ export default function Page() {
         <>
           {googleOsHomeTab === "summary" ? <CommandCenterTab model={googleOsModel} /> : null}
           {googleOsHomeTab === "spend_summary" ? <SpendSummaryTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} customStart={googleOsCustomStart} customEnd={googleOsCustomEnd} /> : null}
-          {googleOsHomeTab === "campaigns" ? <CampaignsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} customStart={googleOsCustomStart} customEnd={googleOsCustomEnd} /> : null}
+          {googleOsHomeTab === "campaigns" ? <CampaignsTab model={googleOsModel} /> : null}
           {googleOsHomeTab === "search_main" ? <CampaignTypeTab model={googleOsModel} type="Search" /> : null}
           {googleOsHomeTab === "shopping_main" ? <CampaignTypeTab model={googleOsModel} type="Shopping" /> : null}
           {googleOsHomeTab === "demand_gen_main" ? <CampaignTypeTab model={googleOsModel} type="Demand Gen" /> : null}
