@@ -1,17 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 import type { GoogleOsModel, GoogleOsRow } from "@/lib/googleOs/types";
 import {
   DEFAULT_SEARCH_TERM_DYNAMIC_RULES,
   DEFAULT_SEARCH_TERM_SETTINGS,
   aggregateSearchTerms,
-  buildHeadCsv,
   buildHeadNegativeText,
-  buildPhraseWasterCsv,
-  buildPhraseWasterGroups,
   buildSearchTermAnalysisHeads,
-  buildSearchTermCsv,
   buildSearchTermSummary,
   convertSearchTermRawRowsToGoogleRows,
   filterSearchTermRows,
@@ -25,6 +22,7 @@ import {
   type SearchTermDynamicRules,
   type SearchTermMode,
   type SearchTermRawRow,
+  type SearchTermWasterRow,
 } from "@/lib/googleOs/searchTermWasterToolkit";
 
 const STORAGE_KEY = "google_os_search_term_upload_rows_v1";
@@ -38,16 +36,6 @@ const MODES: { key: SearchTermMode; label: string }[] = [
   { key: "intent_mismatch", label: "Intent Mismatch" },
   { key: "positive_keywords", label: "Positive Keywords" },
 ];
-
-function downloadCsv(filename: string, csv: string) {
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 function copyText(text: string) {
   navigator.clipboard?.writeText(text);
@@ -72,6 +60,85 @@ function updateRule<K extends keyof SearchTermDynamicRules>(
   };
 }
 
+function cleanSheetName(name: string) {
+  return name
+    .replace(/[\\/?*[\]:]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 31);
+}
+
+function rowsForExcel(rows: SearchTermWasterRow[]) {
+  return rows.map((row) => ({
+    "Search Term": row.searchTerm,
+    Campaign: row.campaign,
+    "Ad Group": row.adGroup,
+    Spend: Number(row.spend.toFixed(2)),
+    Clicks: row.clicks,
+    Impressions: row.impressions,
+    CTR: `${(row.ctr * 100).toFixed(2)}%`,
+    Purchases: row.purchases,
+    Revenue: Number(row.revenue.toFixed(2)),
+    CPA: Number(row.cpa.toFixed(2)),
+    ROAS: Number(row.roas.toFixed(2)),
+    CVR: `${(row.cvr * 100).toFixed(2)}%`,
+    Keyword: row.keyword,
+    "Keyword Match Type": row.keywordMatchType,
+    Reason: row.wasteReason,
+    Recommendation: row.recommendation,
+    "Negative Match Type": row.negativeMatchType,
+    "Exact Negative": row.exactSyntax,
+    "Phrase Negative": row.phraseSyntax,
+    "Broad Negative": row.broadSyntax,
+  }));
+}
+
+function autoWidth(ws: XLSX.WorkSheet, data: Record<string, unknown>[]) {
+  const headers = Object.keys(data[0] || {});
+  ws["!cols"] = headers.map((header) => {
+    const max = Math.max(
+      header.length,
+      ...data.map((row) => String(row[header] ?? "").length)
+    );
+
+    return { wch: Math.min(Math.max(max + 2, 10), 45) };
+  });
+}
+
+function downloadWorkbook(heads: SearchTermAnalysisHead[], allRows: SearchTermWasterRow[]) {
+  const wb = XLSX.utils.book_new();
+
+  const summaryRows = heads.map((head) => ({
+    Analysis: head.title,
+    Terms: head.rows.length,
+    Spend: Number(head.totalSpend.toFixed(2)),
+    Revenue: Number(head.totalRevenue.toFixed(2)),
+    Purchases: head.purchases,
+    Risk: head.risk,
+    Action: head.action,
+  }));
+
+  const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
+  autoWidth(summarySheet, summaryRows);
+  XLSX.utils.book_append_sheet(wb, summarySheet, "Summary");
+
+  const allRowsSheetData = rowsForExcel(allRows);
+  const allRowsSheet = XLSX.utils.json_to_sheet(allRowsSheetData);
+  autoWidth(allRowsSheet, allRowsSheetData);
+  XLSX.utils.book_append_sheet(wb, allRowsSheet, "All Filtered Terms");
+
+  heads.forEach((head, index) => {
+    const sheetData = rowsForExcel(head.rows);
+    const ws = XLSX.utils.json_to_sheet(sheetData.length ? sheetData : [{ Message: "No rows matched this rule." }]);
+    autoWidth(ws, sheetData.length ? sheetData : [{ Message: "No rows matched this rule." }]);
+
+    const safeName = cleanSheetName(`${index + 1}. ${head.title}`);
+    XLSX.utils.book_append_sheet(wb, ws, safeName);
+  });
+
+  XLSX.writeFile(wb, "search-term-waster-analysis.xlsx");
+}
+
 function SearchTermHeadDropdown({
   head,
   isOpen,
@@ -82,36 +149,20 @@ function SearchTermHeadDropdown({
   onToggle: () => void;
 }) {
   return (
-    <div className="stw-head-card">
-      <button type="button" className="stw-head-row" onClick={onToggle}>
-        <span className="stw-head-name">
+    <div className="stw2-head-card">
+      <button type="button" className="stw2-head-row" onClick={onToggle}>
+        <span className="stw2-head-name">
           <b>{isOpen ? "−" : "+"}</b>
           <span>
             <strong>{head.title}</strong>
-            <small>{head.subtitle}</small>
+            <small>{head.action}</small>
           </span>
         </span>
 
-        <span>
-          <small>Terms</small>
-          <strong>{head.rows.length}</strong>
-        </span>
-
-        <span>
-          <small>Spend</small>
-          <strong className="red">{formatMoney(head.totalSpend)}</strong>
-        </span>
-
-        <span>
-          <small>Revenue</small>
-          <strong className="green">{formatMoney(head.totalRevenue)}</strong>
-        </span>
-
-        <span>
-          <small>Purch.</small>
-          <strong>{head.purchases.toFixed(0)}</strong>
-        </span>
-
+        <span><small>Terms</small><strong>{head.rows.length}</strong></span>
+        <span><small>Spend</small><strong className="red">{formatMoney(head.totalSpend)}</strong></span>
+        <span><small>Revenue</small><strong className="green">{formatMoney(head.totalRevenue)}</strong></span>
+        <span><small>Purch.</small><strong>{head.purchases.toFixed(0)}</strong></span>
         <span>
           <small>Risk</small>
           <strong className={head.risk === "High" ? "red" : head.risk === "Opportunity" || head.risk === "Protect" ? "green" : "amber"}>
@@ -121,21 +172,19 @@ function SearchTermHeadDropdown({
       </button>
 
       {isOpen ? (
-        <div className="stw-head-body">
-          <div className="stw-head-action">
+        <div className="stw2-head-body">
+          <div className="stw2-head-tools">
             <div>
-              <span>Recommended action</span>
-              <strong>{head.action}</strong>
+              <span>{head.subtitle}</span>
             </div>
 
             <button type="button" onClick={() => copyText(buildHeadNegativeText(head, "exact"))}>Copy Exact</button>
             <button type="button" onClick={() => copyText(buildHeadNegativeText(head, "phrase"))}>Copy Phrase</button>
             <button type="button" onClick={() => copyText(buildHeadNegativeText(head, "broad"))}>Copy Broad</button>
-            <button type="button" onClick={() => downloadCsv(`${head.key}.csv`, buildHeadCsv(head))}>Download Report</button>
           </div>
 
-          <div className="stw-head-table">
-            <div className="stw-head-table-header">
+          <div className="stw2-table-wrap">
+            <div className="stw2-table stw2-table-header">
               <span>Search Term</span>
               <span>Campaign</span>
               <span>Ad Group</span>
@@ -145,27 +194,27 @@ function SearchTermHeadDropdown({
               <span>CTR</span>
               <span>Purch.</span>
               <span>Revenue</span>
-              <span>ROAS</span>
               <span>CPA</span>
+              <span>ROAS</span>
               <span>Exact</span>
               <span>Phrase</span>
             </div>
 
             {head.rows.map((row) => (
-              <div key={row.id} className="stw-head-table-row">
-                <span><strong>{row.searchTerm}</strong><small>{row.wasteReason}</small></span>
-                <span>{row.campaign}</span>
-                <span>{row.adGroup}</span>
+              <div key={row.id} className="stw2-table stw2-table-row">
+                <span title={row.searchTerm}><strong>{row.searchTerm}</strong></span>
+                <span title={row.campaign}>{row.campaign}</span>
+                <span title={row.adGroup}>{row.adGroup}</span>
                 <span className="red">{formatMoney(row.spend)}</span>
                 <span>{row.clicks}</span>
                 <span>{row.impressions}</span>
                 <span>{formatPercent(row.ctr)}</span>
                 <span>{row.purchases}</span>
                 <span className="green">{formatMoney(row.revenue)}</span>
-                <span>{formatX(row.roas)}</span>
                 <span>{formatMoney(row.cpa)}</span>
-                <span>{row.exactSyntax}</span>
-                <span>{row.phraseSyntax}</span>
+                <span>{formatX(row.roas)}</span>
+                <span title={row.exactSyntax}>{row.exactSyntax}</span>
+                <span title={row.phraseSyntax}>{row.phraseSyntax}</span>
               </div>
             ))}
           </div>
@@ -265,145 +314,110 @@ export function SearchTermWasterTab({ model }: { model: GoogleOsModel }) {
   }, [searchTermRows, mode, rules, contains, campaign, matchType]);
 
   const heads = useMemo(() => {
-    return buildSearchTermAnalysisHeads(baseFilteredRows, rules, settings);
+    return buildSearchTermAnalysisHeads(baseFilteredRows, rules, settings)
+      .filter((head) => head.key !== "phrase_waster");
   }, [baseFilteredRows, rules, settings]);
-
-  const phraseGroups = useMemo(() => {
-    return buildPhraseWasterGroups(searchTermRows, rules);
-  }, [searchTermRows, rules]);
 
   const summary = useMemo(() => buildSearchTermSummary(searchTermRows), [searchTermRows]);
 
   return (
-    <section className="gos-page search-term-waster-page">
-      <div className="stw-header">
+    <section className="gos-page search-term-waster-page stw2-page">
+      <div className="stw2-hero">
         <div>
           <span>Search Term Waster</span>
-          <h2>Search term waste finder and negative export center</h2>
-          <p>Dynamic quantitative heads, n-gram phrase waster analysis, and downloadable negative keyword reports.</p>
+          <h2>Search term analysis and negative keyword export</h2>
+          <p>Upload search-term CSV, change thresholds, open each analysis head, and export a multi-sheet Excel workbook.</p>
         </div>
 
-        <div className="stw-header-actions">
-          <button type="button" onClick={() => downloadCsv("search-term-waster-all-filtered.csv", buildSearchTermCsv(baseFilteredRows))}>
-            Download Filtered Report
+        <div className="stw2-hero-actions">
+          <label>
+            Upload CSV
+            <input type="file" accept=".csv,text/csv" onChange={(event) => handleCsvUpload(event.target.files?.[0] || null)} />
+          </label>
+
+          <button type="button" onClick={clearUpload}>Clear</button>
+
+          <button type="button" onClick={() => downloadWorkbook(heads, baseFilteredRows)}>
+            Export Excel Workbook
           </button>
         </div>
       </div>
 
-      <div className="stw-upload-card">
-        <div>
-          <span>Search Term Data Source</span>
-          <h3>Direct CSV Upload</h3>
-          <p>Required minimum columns: Search term, Campaign, Ad group, Cost, Clicks, Impr., Conversions, Conv. value.</p>
-        </div>
+      {uploadError ? <div className="stw-upload-error">{uploadError}</div> : null}
 
-        <div className="stw-upload-actions">
-          <label>
-            Upload Search Term CSV
-            <input type="file" accept=".csv,text/csv" onChange={(event) => handleCsvUpload(event.target.files?.[0] || null)} />
-          </label>
-
-          <button type="button" onClick={clearUpload}>Clear Upload</button>
-        </div>
-
-        <div className="stw-upload-status">
-          <div><span>Rows Loaded</span><strong>{uploadedRawRows.length.toLocaleString("en-IN")}</strong></div>
-          <div><span>Date Range</span><strong>{getEarliestDate(uploadedRawRows)} → {getLatestDate(uploadedRawRows)}</strong></div>
-          <div><span>Campaign Sheet Rows</span><strong>{model.rows.length.toLocaleString("en-IN")}</strong></div>
-        </div>
-
-        {uploadError ? <div className="stw-upload-error">{uploadError}</div> : null}
-      </div>
-
-      <div className="stw-summary-grid">
-        <div><span>Total Terms</span><strong>{summary.totalTerms}</strong></div>
+      <div className="stw2-status-grid">
+        <div><span>Rows Loaded</span><strong>{uploadedRawRows.length.toLocaleString("en-IN")}</strong></div>
+        <div><span>Date Range</span><strong>{getEarliestDate(uploadedRawRows)} → {getLatestDate(uploadedRawRows)}</strong></div>
+        <div><span>Total Terms</span><strong>{summary.totalTerms.toLocaleString("en-IN")}</strong></div>
         <div><span>Total Spend</span><strong>{formatMoney(summary.totalSpend)}</strong></div>
         <div><span>Wasted Spend</span><strong className="red">{formatMoney(summary.wastedSpend)}</strong></div>
         <div><span>Waste Share</span><strong className="red">{formatPercent(summary.wasteShare)}</strong></div>
-        <div><span>Zero-sale Terms</span><strong>{summary.zeroSaleTerms}</strong></div>
-        <div><span>Negative Candidates</span><strong>{summary.negativeCandidates}</strong></div>
-        <div><span>Positive Candidates</span><strong className="green">{summary.positiveCandidates}</strong></div>
+        <div><span>Negative Candidates</span><strong>{summary.negativeCandidates.toLocaleString("en-IN")}</strong></div>
       </div>
 
-      <div className="stw-dynamic-rules">
-        <div>
+      <div className="stw2-control-panel">
+        <div className="stw2-control-title">
           <span>Dynamic Rule Controls</span>
-          <h3>Change threshold values and every head updates instantly</h3>
+          <strong>Change values and analysis heads update instantly</strong>
         </div>
 
-        <label>Clicks, 0 purchase<input type="number" value={rules.clickWasteClicks} onChange={(e) => setRules(updateRule(rules, "clickWasteClicks", Number(e.target.value || 0)))} /></label>
-        <label>Spend, 0 purchase ₹<input type="number" value={rules.spendWasteAmount} onChange={(e) => setRules(updateRule(rules, "spendWasteAmount", Number(e.target.value || 0)))} /></label>
+        <label>Clicks, 0 Purchase<input type="number" value={rules.clickWasteClicks} onChange={(e) => setRules(updateRule(rules, "clickWasteClicks", Number(e.target.value || 0)))} /></label>
+        <label>Spend, 0 Purchase ₹<input type="number" value={rules.spendWasteAmount} onChange={(e) => setRules(updateRule(rules, "spendWasteAmount", Number(e.target.value || 0)))} /></label>
         <label>Low ROAS Spend ₹<input type="number" value={rules.lowRoasSpend} onChange={(e) => setRules(updateRule(rules, "lowRoasSpend", Number(e.target.value || 0)))} /></label>
         <label>Target ROAS<input type="number" step="0.1" value={rules.lowRoasTarget} onChange={(e) => setRules(updateRule(rules, "lowRoasTarget", Number(e.target.value || 0)))} /></label>
         <label>High CPA ₹<input type="number" value={rules.highCpaAmount} onChange={(e) => setRules(updateRule(rules, "highCpaAmount", Number(e.target.value || 0)))} /></label>
         <label>Low CTR Impr.<input type="number" value={rules.lowCtrImpressions} onChange={(e) => setRules(updateRule(rules, "lowCtrImpressions", Number(e.target.value || 0)))} /></label>
         <label>Low CTR %<input type="number" step="0.1" value={rules.lowCtrPercent} onChange={(e) => setRules(updateRule(rules, "lowCtrPercent", Number(e.target.value || 0)))} /></label>
-        <label>Phrase min terms<input type="number" value={rules.phraseMinTerms} onChange={(e) => setRules(updateRule(rules, "phraseMinTerms", Number(e.target.value || 0)))} /></label>
-        <label>Phrase min spend ₹<input type="number" value={rules.phraseMinSpend} onChange={(e) => setRules(updateRule(rules, "phraseMinSpend", Number(e.target.value || 0)))} /></label>
+      </div>
+
+      <div className="stw2-filter-panel">
+        <label>
+          Analysis Mode
+          <select value={mode} onChange={(e) => setMode(e.target.value as SearchTermMode)}>
+            {MODES.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
+          </select>
+        </label>
+
+        <label>
+          Contains
+          <input value={contains} onChange={(e) => setContains(e.target.value)} placeholder="free, amazon, hair fall..." />
+        </label>
+
+        <label>
+          Campaign
+          <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
+            <option value="all">All Campaigns</option>
+            {campaigns.map((name) => <option key={name} value={name}>{name}</option>)}
+          </select>
+        </label>
+
+        <label>
+          Match Type
+          <select value={matchType} onChange={(e) => setMatchType(e.target.value as NegativeMatchType | "all")}>
+            <option value="all">All</option>
+            <option value="exact">Exact</option>
+            <option value="phrase">Phrase</option>
+            <option value="broad">Broad</option>
+          </select>
+        </label>
       </div>
 
       {!uploadedRawRows.length ? (
         <div className="stw-empty">
           <h3>Upload a Search Terms CSV to start.</h3>
-          <p>The heads below will appear after upload. Search term data stays outside Google Sheets.</p>
+          <p>The Excel workbook export will create one sheet for each analysis head.</p>
         </div>
       ) : (
-        <>
-          <div className="stw-filters">
-            <label>
-              Analysis Mode
-              <select value={mode} onChange={(e) => setMode(e.target.value as SearchTermMode)}>
-                {MODES.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
-              </select>
-            </label>
-
-            <label>
-              Contains
-              <input value={contains} onChange={(e) => setContains(e.target.value)} placeholder="e.g. free, amazon, hair fall" />
-            </label>
-
-            <label>
-              Campaign
-              <select value={campaign} onChange={(e) => setCampaign(e.target.value)}>
-                <option value="all">All Campaigns</option>
-                {campaigns.map((name) => <option key={name} value={name}>{name}</option>)}
-              </select>
-            </label>
-
-            <label>
-              Match Type
-              <select value={matchType} onChange={(e) => setMatchType(e.target.value as NegativeMatchType | "all")}>
-                <option value="all">All</option>
-                <option value="exact">Exact</option>
-                <option value="phrase">Phrase</option>
-                <option value="broad">Broad</option>
-              </select>
-            </label>
-          </div>
-
-          <div className="stw-phrase-summary">
-            <div>
-              <span>N-Gram Phrase Waster</span>
-              <h3>{phraseGroups.length} phrase patterns found</h3>
-              <p>Repeated word patterns across multiple zero-purchase search terms. Best used for phrase negatives.</p>
-            </div>
-
-            <button type="button" onClick={() => downloadCsv("phrase-waster-ngram-report.csv", buildPhraseWasterCsv(phraseGroups))}>
-              Download Phrase Waster Report
-            </button>
-          </div>
-
-          <div className="stw-head-list">
-            {heads.map((head) => (
-              <SearchTermHeadDropdown
-                key={head.key}
-                head={head}
-                isOpen={Boolean(openHeads[head.key])}
-                onToggle={() => setOpenHeads((current) => ({ ...current, [head.key]: !current[head.key] }))}
-              />
-            ))}
-          </div>
-        </>
+        <div className="stw2-head-list">
+          {heads.map((head) => (
+            <SearchTermHeadDropdown
+              key={head.key}
+              head={head}
+              isOpen={Boolean(openHeads[head.key])}
+              onToggle={() => setOpenHeads((current) => ({ ...current, [head.key]: !current[head.key] }))}
+            />
+          ))}
+        </div>
       )}
     </section>
   );
