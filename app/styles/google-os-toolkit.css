@@ -1296,3 +1296,252 @@ html.light {
     min-width: 1360px !important;
   }
 }
+
+/* =========================================================
+   SHARED GOOGLE OS SUMMARY HEADER
+   Used across All Campaigns, Search, Shopping, Demand Gen, Video, etc.
+   ========================================================= */
+
+.google-os-shell .gos-shared-summary-header {
+  width: 100% !important;
+  max-width: none !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 16px !important;
+  background: var(--gos-surface-2) !important;
+  padding: 14px !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  gap: 14px !important;
+}
+
+.google-os-shell .gos-shared-summary-top {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+}
+
+.google-os-shell .gos-shared-summary-top span {
+  display: block !important;
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .gos-shared-summary-top h2 {
+  margin: 6px 0 0 !important;
+  color: var(--gos-text) !important;
+  font-size: 19px !important;
+  line-height: 1.15 !important;
+  font-weight: 850 !important;
+}
+
+.google-os-shell .gos-shared-summary-top p {
+  margin: 7px 0 0 !important;
+  color: var(--gos-muted) !important;
+  font-size: 11.5px !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+}
+
+.google-os-shell .gos-shared-period-controls {
+  display: grid !important;
+  grid-template-columns: auto 210px !important;
+  gap: 10px !important;
+  align-items: end !important;
+  flex: 0 0 auto !important;
+}
+
+.google-os-shell .gos-shared-time-buttons {
+  display: inline-flex !important;
+  gap: 5px !important;
+  padding: 4px !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface) !important;
+  border-radius: 13px !important;
+}
+
+.google-os-shell .gos-shared-time-buttons button {
+  height: 30px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--gos-muted) !important;
+  border-radius: 9px !important;
+  padding: 0 13px !important;
+  font-size: 10.5px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+.google-os-shell .gos-shared-time-buttons button.active {
+  background: var(--gos-surface-3) !important;
+  color: var(--gos-text) !important;
+  box-shadow: inset 0 0 0 1px rgba(66, 133, 244, 0.36) !important;
+}
+
+.google-os-shell .gos-shared-period-controls label {
+  display: grid !important;
+  gap: 5px !important;
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .gos-shared-period-controls select {
+  height: 38px !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface) !important;
+  color: var(--gos-text) !important;
+  border-radius: 10px !important;
+  padding: 0 12px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+.google-os-shell .gos-shared-summary-metrics {
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 9px !important;
+}
+
+.google-os-shell .gos-shared-summary-metrics > div {
+  min-height: 58px !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface) !important;
+  border-radius: 12px !important;
+  padding: 10px 12px !important;
+  display: grid !important;
+  align-content: center !important;
+  gap: 6px !important;
+  box-sizing: border-box !important;
+}
+
+.google-os-shell .gos-shared-summary-metrics span {
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .gos-shared-summary-metrics strong {
+  color: var(--gos-text) !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  font-weight: 900 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+@media(max-width: 1180px) {
+  .google-os-shell .gos-shared-summary-top {
+    flex-direction: column !important;
+  }
+
+  .google-os-shell .gos-shared-period-controls {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .google-os-shell .gos-shared-summary-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media(max-width: 760px) {
+  .google-os-shell .gos-shared-summary-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* If old CampaignType header remains below shared header, reduce duplicate visual weight */
+.google-os-shell .campaign-type-panel > .campaign-type-head,
+.google-os-shell .campaign-type-panel > .campaign-type-title,
+.google-os-shell .campaign-type-page > .campaign-type-head,
+.google-os-shell .campaign-type-page > .campaign-type-title {
+  margin-top: 12px !important;
+}
+
+/* =========================================================
+   SHARED SUMMARY HEADER — GLOBAL PERIOD CONTROLS
+   Ensures every tab has Daily / Weekly / Monthly / Quarterly.
+   ========================================================= */
+
+.google-os-shell .gos-shared-summary-header {
+  margin-bottom: 14px !important;
+}
+
+.google-os-shell .gos-shared-period-controls {
+  display: grid !important;
+  grid-template-columns: auto minmax(190px, 220px) !important;
+  gap: 10px !important;
+  align-items: end !important;
+}
+
+.google-os-shell .gos-shared-time-buttons {
+  display: inline-flex !important;
+  gap: 5px !important;
+  padding: 4px !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface) !important;
+  border-radius: 13px !important;
+}
+
+.google-os-shell .gos-shared-time-buttons button {
+  height: 30px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--gos-muted) !important;
+  border-radius: 9px !important;
+  padding: 0 13px !important;
+  font-size: 10.5px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+.google-os-shell .gos-shared-time-buttons button.active {
+  background: var(--gos-surface-3) !important;
+  color: var(--gos-text) !important;
+  box-shadow: inset 0 0 0 1px rgba(66, 133, 244, 0.36) !important;
+}
+
+.google-os-shell .gos-shared-period-controls label {
+  display: grid !important;
+  gap: 5px !important;
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .gos-shared-period-controls select {
+  height: 38px !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface) !important;
+  color: var(--gos-text) !important;
+  border-radius: 10px !important;
+  padding: 0 12px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+@media(max-width: 1180px) {
+  .google-os-shell .gos-shared-summary-top {
+    flex-direction: column !important;
+  }
+
+  .google-os-shell .gos-shared-period-controls {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .google-os-shell .gos-shared-time-buttons {
+    width: fit-content !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+  }
+}
