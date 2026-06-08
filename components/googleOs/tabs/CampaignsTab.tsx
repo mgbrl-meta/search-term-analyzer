@@ -447,7 +447,7 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
                         <span className="campaign-col-main campaign-child-name">
                           <i />
                           <strong>{campaign.campaign}</strong>
-                          <small>{campaign.statusText}</small>
+                          
                         </span>
 
                         <span>—</span>

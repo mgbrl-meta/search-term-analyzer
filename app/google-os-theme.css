@@ -4598,3 +4598,72 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+/* =========================================================
+   CAMPAIGN CHILD ROW SINGLE-LINE COMPACT FIX
+   ========================================================= */
+
+/* Reduce child campaign row height */
+.gos-campaign-child-row {
+  min-height: 38px !important;
+  padding: 7px 11px !important;
+  align-items: center !important;
+}
+
+/* Campaign name should be one line only */
+.campaign-child-name {
+  padding-left: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+/* Small dash connector */
+.campaign-child-name i {
+  width: 10px !important;
+  height: 1px !important;
+  background: var(--gos-border) !important;
+  display: inline-block !important;
+  flex: 0 0 auto !important;
+}
+
+/* One-line campaign title */
+.campaign-child-name strong {
+  display: block !important;
+  color: var(--gos-text) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Hide any remaining campaign sub-status text */
+.campaign-child-name small {
+  display: none !important;
+}
+
+/* Align all metric cells vertically centered */
+.gos-campaign-child-row span {
+  align-self: center !important;
+  line-height: 1.15 !important;
+}
+
+/* Smaller decision pill */
+.campaign-decision {
+  padding: 3px 7px !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+}
+
+/* Slightly compact segment parent rows too */
+.gos-campaign-segment-row {
+  min-height: 38px !important;
+  padding: 8px 11px !important;
+}
+
+.campaign-segment-name strong {
+  line-height: 1 !important;
+}
