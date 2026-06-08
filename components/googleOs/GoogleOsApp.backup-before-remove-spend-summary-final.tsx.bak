@@ -5,6 +5,7 @@ import { buildGoogleOsModel } from "@/lib/googleOs/normalize";
 import type { GoogleOsModel } from "@/lib/googleOs/types";
 import { formatGoogleOsDateLabel } from "@/lib/googleOs/dateFilter";
 
+import { SpendSummaryTab } from "@/components/googleOs/tabs/SpendSummaryTab";
 import { CampaignsTab } from "@/components/googleOs/tabs/CampaignsTab";
 import { CampaignTypeTab } from "@/components/googleOs/tabs/CampaignTypeTab";
 import { MonthlySummaryTab } from "@/components/googleOs/tabs/MonthlySummaryTab";
@@ -12,6 +13,7 @@ import { AiOperatorReportTab } from "@/components/googleOs/tabs/AiOperatorReport
 import { SettingsTab } from "@/components/googleOs/tabs/SettingsTab";
 
 type GoogleOsTab =
+  | "spend_summary"
   | "campaigns"
   | "search"
   | "shopping"
@@ -22,6 +24,7 @@ type GoogleOsTab =
   | "settings";
 
 const TABS: { key: GoogleOsTab; label: string }[] = [
+  { key: "spend_summary", label: "Spend Summary" },
   { key: "campaigns", label: "All Campaigns" },
   { key: "search", label: "Search" },
   { key: "shopping", label: "Shopping" },
@@ -95,7 +98,7 @@ function fileToText(file: File) {
 }
 
 export function GoogleOsApp() {
-  const [activeTab, setActiveTab] = useState<GoogleOsTab>("campaigns");
+  const [activeTab, setActiveTab] = useState<GoogleOsTab>("spend_summary");
   const [sheetUrl, setSheetUrl] = useState("");
   const [sourceOpen, setSourceOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -311,6 +314,8 @@ export function GoogleOsApp() {
           </div>
         </section>
       ) : null}
+
+      {model && activeTab === "spend_summary" ? <SpendSummaryTab model={model} /> : null}
       {model && activeTab === "campaigns" ? <CampaignsTab model={model} /> : null}
       {model && activeTab === "search" ? <CampaignTypeTab model={model} type="Search" /> : null}
       {model && activeTab === "shopping" ? <CampaignTypeTab model={model} type="Shopping" /> : null}

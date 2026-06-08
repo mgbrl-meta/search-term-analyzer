@@ -643,118 +643,6 @@ CVR: ${pct(row.cvr)}`}</title>
 }
 
 
-
-type DailyPerformanceRow = {
-  date: string;
-  spend: number;
-  revenue: number;
-  roas: number;
-  purchases: number;
-  cpa: number;
-  ctr: number;
-  cvr: number;
-  impressions: number;
-  clicks: number;
-  spendDelta: number;
-  revenueDelta: number;
-  roasDelta: number;
-  purchaseDelta: number;
-  cpaDelta: number;
-};
-
-function buildLatestDailyPerformanceRows(rows: GoogleOsRow[]) {
-  const groups = new Map<string, GoogleOsRow[]>();
-
-  rows.forEach((row) => {
-    if (!row.date) return;
-    if (!groups.has(row.date)) groups.set(row.date, []);
-    groups.get(row.date)!.push(row);
-  });
-
-  const ascending = Array.from(groups.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, dateRows]) => {
-      const a = aggregate(dateRows);
-
-      return {
-        date,
-        spend: a.spend,
-        revenue: a.revenue,
-        roas: a.roas,
-        purchases: a.purchases,
-        cpa: a.cpa,
-        ctr: a.ctr,
-        cvr: a.cvr,
-        impressions: a.impressions,
-        clicks: a.clicks,
-        spendDelta: 0,
-        revenueDelta: 0,
-        roasDelta: 0,
-        purchaseDelta: 0,
-        cpaDelta: 0,
-      };
-    });
-
-  const withDelta = ascending.map((row, index) => {
-    const previous = ascending[index - 1];
-
-    if (!previous) return row;
-
-    return {
-      ...row,
-      spendDelta: safeDiv(row.spend - previous.spend, previous.spend),
-      revenueDelta: safeDiv(row.revenue - previous.revenue, previous.revenue),
-      roasDelta: safeDiv(row.roas - previous.roas, previous.roas),
-      purchaseDelta: safeDiv(row.purchases - previous.purchases, previous.purchases),
-      cpaDelta: safeDiv(row.cpa - previous.cpa, previous.cpa),
-    };
-  });
-
-  return withDelta.slice(-30).reverse();
-}
-
-function Movement({
-  value,
-  inverse = false,
-}: {
-  value: number;
-  inverse?: boolean;
-}) {
-  if (!Number.isFinite(value) || value === 0) {
-    return <small className="gos-daily-move neutral">—</small>;
-  }
-
-  const good = inverse ? value < 0 : value > 0;
-  const sign = value > 0 ? "+" : "";
-
-  return (
-    <small className={`gos-daily-move ${good ? "green" : "red"}`}>
-      {sign}{pct(value)}
-    </small>
-  );
-}
-
-function DailyTableCell({
-  value,
-  move,
-  inverse = false,
-  children,
-}: {
-  value: string;
-  move?: number;
-  inverse?: boolean;
-  children?: React.ReactNode;
-}) {
-  return (
-    <span className="gos-daily-cell">
-      <strong>{value}</strong>
-      {typeof move === "number" ? <Movement value={move} inverse={inverse} /> : null}
-      {children}
-    </span>
-  );
-}
-
-
 export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   const [periodMode, setPeriodMode] = useState<PeriodMode>("daily");
   const [chartDimension, setChartDimension] = useState<ChartDimension>("All Account");
@@ -797,10 +685,6 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
   }, [model.rows, chartPeriodMode, activeChartDimension]);
 
   const totals = useMemo(() => aggregate(periodRows), [periodRows]);
-
-  const latestDailyRows = useMemo(() => {
-    return buildLatestDailyPerformanceRows(model.rows);
-  }, [model.rows]);
 
   function toggleChartKpi(kpi: ChartKpi) {
     setChartKpis((current) => {
@@ -1133,53 +1017,6 @@ export function CampaignsTab({ model }: { model: GoogleOsModel }) {
             );
           })}
         </div>
-
-        <div className="gos-daily-performance-table">
-          <div className="gos-daily-performance-head">
-            <div>
-              <span>Daily Table</span>
-              <h2>Day-wise Google Ads performance — latest 30 days</h2>
-              <p>Most recent date appears first. Green/red values show day-over-day movement.</p>
-            </div>
-          </div>
-
-          <div className="gos-daily-table">
-            <div className="gos-daily-table-header">
-              <span>Date</span>
-              <span>Spend</span>
-              <span>Revenue</span>
-              <span>ROAS</span>
-              <span>Purchases</span>
-              <span>CPA</span>
-              <span>CTR</span>
-              <span>CVR</span>
-              <span>Impr.</span>
-              <span>Clicks</span>
-            </div>
-
-            {latestDailyRows.map((row) => (
-              <div key={row.date} className="gos-daily-table-row">
-                <span className="gos-daily-date">{formatGoogleOsDateLabel(row.date)}</span>
-
-                <DailyTableCell value={compactMoney(row.spend)} move={row.spendDelta} />
-
-                <DailyTableCell value={compactMoney(row.revenue)} move={row.revenueDelta} />
-
-                <DailyTableCell value={x(row.roas)} move={row.roasDelta} />
-
-                <DailyTableCell value={row.purchases.toFixed(0)} move={row.purchaseDelta} />
-
-                <DailyTableCell value={compactMoney(row.cpa)} move={row.cpaDelta} inverse />
-
-                <span>{pct(row.ctr)}</span>
-                <span>{pct(row.cvr)}</span>
-                <span>{compactMoney(row.impressions)}</span>
-                <span>{compactMoney(row.clicks)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
       </div>
     </section>
   );

@@ -6475,3 +6475,152 @@ html.light .gos-axis-chart-caption {
     min-width: 1380px !important;
   }
 }
+
+/* =========================================================
+   ALL CAMPAIGNS — DAILY TABLE LATEST 30 DAYS
+   ========================================================= */
+
+.gos-daily-performance-table {
+  margin-top: 14px !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+
+.gos-daily-performance-head {
+  padding: 12px 14px !important;
+  border-bottom: 1px solid var(--gos-border) !important;
+}
+
+.gos-daily-performance-head span {
+  display: block !important;
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  text-transform: uppercase !important;
+}
+
+.gos-daily-performance-head h2 {
+  margin: 5px 0 0 !important;
+  color: var(--gos-text) !important;
+  font-size: 16px !important;
+}
+
+.gos-daily-performance-head p {
+  margin: 5px 0 0 !important;
+  color: var(--gos-muted) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+.gos-daily-table {
+  width: 100% !important;
+  overflow-x: auto !important;
+}
+
+.gos-daily-table-header,
+.gos-daily-table-row {
+  display: grid !important;
+  grid-template-columns:
+    minmax(120px, 0.75fr)
+    minmax(100px, 0.7fr)
+    minmax(110px, 0.75fr)
+    minmax(80px, 0.55fr)
+    minmax(95px, 0.6fr)
+    minmax(90px, 0.6fr)
+    minmax(80px, 0.55fr)
+    minmax(80px, 0.55fr)
+    minmax(90px, 0.6fr)
+    minmax(90px, 0.6fr);
+  gap: 8px !important;
+  align-items: center !important;
+  min-width: 1080px !important;
+}
+
+.gos-daily-table-header {
+  padding: 9px 14px !important;
+  background: rgba(66, 133, 244, 0.07) !important;
+  border-bottom: 1px solid rgba(66, 133, 244, 0.22) !important;
+}
+
+.gos-daily-table-header span {
+  color: var(--gos-faint) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+}
+
+.gos-daily-table-header span:first-child {
+  text-align: left !important;
+}
+
+.gos-daily-table-row {
+  padding: 8px 14px !important;
+  min-height: 42px !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16) !important;
+}
+
+.gos-daily-table-row:last-child {
+  border-bottom: 0 !important;
+}
+
+.gos-daily-table-row > span {
+  color: var(--gos-muted) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.gos-daily-date {
+  text-align: left !important;
+  color: var(--gos-text) !important;
+  font-weight: 900 !important;
+}
+
+.gos-daily-cell {
+  display: grid !important;
+  justify-items: end !important;
+  gap: 2px !important;
+}
+
+.gos-daily-cell strong {
+  color: var(--gos-text) !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+.gos-daily-move {
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+.gos-daily-move.green {
+  color: var(--gos-green) !important;
+}
+
+.gos-daily-move.red {
+  color: var(--gos-red) !important;
+}
+
+.gos-daily-move.neutral {
+  color: var(--gos-faint) !important;
+}
+
+/* Remove Spend Summary from UI even if old bundle/cache still has it */
+.gos-home-tabs button:has-text("Spend Summary") {
+  display: none !important;
+}
+
+@media(max-width: 900px) {
+  .gos-daily-performance-head h2 {
+    font-size: 14px !important;
+  }
+}
