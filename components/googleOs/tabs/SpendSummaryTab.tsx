@@ -6,7 +6,10 @@ import { compactInt, compactMoney, pct, safeDiv, x } from "../../../lib/googleOs
 import { GoogleOsKpi } from "../shared/GoogleOsKpi";
 import { GoogleOsTable } from "../shared/GoogleOsTable";
 import type { GoogleOsDateMode } from "../../../lib/googleOs/dateFilter";
-import { getDateLabel } from "../../../lib/googleOs/dateFilter";
+import { getDateLabel, formatGoogleOsDateLabel } from "../../../lib/googleOs/dateFilter";
+
+type SpendView = "overview" | "campaign_type";
+type PeriodView = "day" | "week" | "month";
 
 type DailyRow = {
   date: string;
@@ -30,6 +33,20 @@ type DailyRow = {
   cpcChangePct: number;
 };
 
+type TypePeriodRow = {
+  period: string;
+  type: string;
+  cost: number;
+  revenue: number;
+  purchases: number;
+  impressions: number;
+  clicks: number;
+  share: number;
+  roas: number;
+  cpa: number;
+  ctr: number;
+};
+
 type TooltipState = {
   x: number;
   y: number;
@@ -37,6 +54,16 @@ type TooltipState = {
 } | null;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const TYPE_COLORS = [
+  "#4285F4",
+  "#34A853",
+  "#FBBC04",
+  "#EA4335",
+  "#A855F7",
+  "#06B6D4",
+  "#F97316",
+  "#22C55E",
+];
 
 function changePct(current: number, previous: number) {
   if (!previous && !current) return 0;
@@ -44,16 +71,65 @@ function changePct(current: number, previous: number) {
   return ((current - previous) / previous) * 100;
 }
 
+function getCampaignType(row: GoogleOsRow) {
+  const raw = String(row.campaignType || "").trim();
+
+  if (!raw) return "Other";
+
+  const lower = raw.toLowerCase();
+
+  if (lower.includes("search")) return "Search";
+  if (lower.includes("shopping")) return "Shopping";
+  if (lower.includes("video")) return "Video";
+  if (lower.includes("demand")) return "Demand Gen";
+  if (lower.includes("performance max") || lower.includes("pmax")) return "PMax";
+  if (lower.includes("display")) return "Display";
+  if (lower.includes("app")) return "App";
+
+  return raw;
+}
+
 function formatDateLabel(date: string) {
-  const [year, month, day] = date.split("-");
-  if (!year || !month || !day) return date;
-  return `${day}-${MONTHS[Number(month) - 1]}-${year.slice(2)}`;
+  return formatGoogleOsDateLabel(date);
 }
 
 function shortDateLabel(date: string) {
   const [year, month, day] = date.split("-");
   if (!year || !month || !day) return date;
   return `${day}/${month}`;
+}
+
+function formatMonthLabel(month: string) {
+  const [year, monthNum] = month.split("-");
+  if (!year || !monthNum) return month;
+  return `${MONTHS[Number(monthNum) - 1]}-${year.slice(2)}`;
+}
+
+function weekKey(date: string) {
+  const d = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return date;
+
+  const temp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = temp.getUTCDay() || 7;
+
+  temp.setUTCDate(temp.getUTCDate() + 4 - dayNum);
+
+  const yearStart = new Date(Date.UTC(temp.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((temp.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+
+  return `${temp.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
+
+function periodKey(date: string, period: PeriodView) {
+  if (period === "month") return date.slice(0, 7);
+  if (period === "week") return weekKey(date);
+  return date;
+}
+
+function formatPeriodLabel(period: string, periodView: PeriodView) {
+  if (periodView === "month") return formatMonthLabel(period);
+  if (periodView === "week") return period.replace("-W", " W");
+  return formatDateLabel(period);
 }
 
 function buildDailyRows(rows: GoogleOsRow[]): DailyRow[] {
@@ -99,6 +175,7 @@ function buildDailyRows(rows: GoogleOsRow[]): DailyRow[] {
 
   return baseRows.map((row, index) => {
     const previous = baseRows[index - 1];
+
     if (!previous) return row;
 
     return {
@@ -115,8 +192,68 @@ function buildDailyRows(rows: GoogleOsRow[]): DailyRow[] {
   });
 }
 
-function last30DailyRows(rows: DailyRow[]) {
-  return rows.slice(-30);
+function buildCampaignTypeRows(rows: GoogleOsRow[], periodView: PeriodView) {
+  const grouped = new Map<string, TypePeriodRow>();
+
+  rows.forEach((row) => {
+    if (!row.date) return;
+
+    const period = periodKey(row.date, periodView);
+    const type = getCampaignType(row);
+    const key = `${period}::${type}`;
+
+    const existing = grouped.get(key) || {
+      period,
+      type,
+      cost: 0,
+      revenue: 0,
+      purchases: 0,
+      impressions: 0,
+      clicks: 0,
+      share: 0,
+      roas: 0,
+      cpa: 0,
+      ctr: 0,
+    };
+
+    existing.cost += row.cost;
+    existing.revenue += row.conversionValue;
+    existing.purchases += row.conversions;
+    existing.impressions += row.impressions;
+    existing.clicks += row.clicks;
+
+    grouped.set(key, existing);
+  });
+
+  const rowsOut = Array.from(grouped.values());
+  const periodTotals = new Map<string, number>();
+
+  rowsOut.forEach((row) => {
+    periodTotals.set(row.period, (periodTotals.get(row.period) || 0) + row.cost);
+  });
+
+  return rowsOut
+    .map((row) => ({
+      ...row,
+      share: safeDiv(row.cost, periodTotals.get(row.period) || 0),
+      roas: safeDiv(row.revenue, row.cost),
+      cpa: safeDiv(row.cost, row.purchases),
+      ctr: safeDiv(row.clicks, row.impressions),
+    }))
+    .sort((a, b) => a.period.localeCompare(b.period) || b.cost - a.cost);
+}
+
+function getRecentPeriods(rows: TypePeriodRow[], periodView: PeriodView) {
+  const limit = periodView === "day" ? 30 : periodView === "week" ? 12 : 12;
+
+  return Array.from(new Set(rows.map((row) => row.period)))
+    .sort()
+    .slice(-limit);
+}
+
+function getTypeColor(type: string, types: string[]) {
+  const index = types.indexOf(type);
+  return TYPE_COLORS[index % TYPE_COLORS.length];
 }
 
 function maxOf(rows: DailyRow[], key: keyof DailyRow) {
@@ -222,8 +359,8 @@ function TrendChart({
 
   const chartRows = rows.slice(-30);
   const width = 1000;
-  const height = 320;
-  const padding = { left: 58, right: 58, top: 34, bottom: 44 };
+  const height = 280;
+  const padding = { left: 58, right: 58, top: 28, bottom: 38 };
   const innerW = width - padding.left - padding.right;
   const innerH = height - padding.top - padding.bottom;
 
@@ -273,19 +410,9 @@ function TrendChart({
 
           return (
             <g key={ratio}>
-              <line
-                x1={padding.left}
-                x2={width - padding.right}
-                y1={y}
-                y2={y}
-                className="gos-grid-line"
-              />
-              <text x={8} y={y + 4} className="gos-chart-axis">
-                {leftFormatter(leftValue)}
-              </text>
-              <text x={width - 6} y={y + 4} textAnchor="end" className="gos-chart-axis">
-                {rightFormatter(rightValue)}
-              </text>
+              <line x1={padding.left} x2={width - padding.right} y1={y} y2={y} className="gos-grid-line" />
+              <text x={8} y={y + 4} className="gos-chart-axis">{leftFormatter(leftValue)}</text>
+              <text x={width - 6} y={y + 4} textAnchor="end" className="gos-chart-axis">{rightFormatter(rightValue)}</text>
             </g>
           );
         })}
@@ -319,16 +446,10 @@ function TrendChart({
         {mode === "bar-line" ? <path d={rightPath} className="gos-line-blue" /> : null}
 
         {chartRows.map((row, index) => {
-          if (index % Math.ceil(chartRows.length / 8) !== 0 && index !== chartRows.length - 1) return null;
+          if (index % Math.ceil(chartRows.length / 7) !== 0 && index !== chartRows.length - 1) return null;
 
           return (
-            <text
-              key={`x-${row.date}`}
-              x={xScale(index)}
-              y={height - 14}
-              textAnchor="middle"
-              className="gos-chart-axis"
-            >
+            <text key={`x-${row.date}`} x={xScale(index)} y={height - 12} textAnchor="middle" className="gos-chart-axis">
               {shortDateLabel(row.date)}
             </text>
           );
@@ -343,7 +464,8 @@ function TrendChart({
             <g
               key={`hover-${row.date}`}
               onMouseMove={(event) => {
-                const rect = event.currentTarget.ownerSVGElement?.getBoundingClientRect();
+                const svg = event.currentTarget.ownerSVGElement;
+                const rect = svg?.getBoundingClientRect();
                 if (!rect) return;
 
                 setTooltip({
@@ -353,29 +475,13 @@ function TrendChart({
                 });
               }}
             >
-              <rect
-                x={xValue - hoverWidth / 2}
-                y={padding.top}
-                width={hoverWidth}
-                height={innerH}
-                className="gos-chart-hover-zone"
-              />
+              <rect x={xValue - hoverWidth / 2} y={padding.top} width={hoverWidth} height={innerH} className="gos-chart-hover-zone" />
 
               {mode === "line-line" ? (
-                <circle
-                  cx={xValue}
-                  cy={leftY}
-                  r={3.6}
-                  className="gos-chart-point blue"
-                />
+                <circle cx={xValue} cy={leftY} r={3.6} className="gos-chart-point blue" />
               ) : null}
 
-              <circle
-                cx={xValue}
-                cy={rightY}
-                r={3.6}
-                className={mode === "line-line" ? "gos-chart-point green" : "gos-chart-point blue"}
-              />
+              <circle cx={xValue} cy={rightY} r={3.6} className={mode === "line-line" ? "gos-chart-point green" : "gos-chart-point blue"} />
             </g>
           );
         })}
@@ -383,6 +489,220 @@ function TrendChart({
 
       <ChartTooltip tooltip={tooltip} />
     </div>
+  );
+}
+
+function CampaignTypeSpendView({ rows }: { rows: GoogleOsRow[] }) {
+  const [periodView, setPeriodView] = useState<PeriodView>("day");
+
+  const typeRowsAll = useMemo(() => buildCampaignTypeRows(rows, periodView), [rows, periodView]);
+  const recentPeriods = useMemo(() => getRecentPeriods(typeRowsAll, periodView), [typeRowsAll, periodView]);
+  const typeRows = useMemo(() => typeRowsAll.filter((row) => recentPeriods.includes(row.period)), [typeRowsAll, recentPeriods]);
+  const types = useMemo(() => Array.from(new Set(typeRows.map((row) => row.type))).sort(), [typeRows]);
+
+  const typeTotals = useMemo(() => {
+    const totalSpend = typeRows.reduce((sum, row) => sum + row.cost, 0);
+    const map = new Map<string, TypePeriodRow>();
+
+    typeRows.forEach((row) => {
+      const existing = map.get(row.type) || {
+        period: "Total",
+        type: row.type,
+        cost: 0,
+        revenue: 0,
+        purchases: 0,
+        impressions: 0,
+        clicks: 0,
+        share: 0,
+        roas: 0,
+        cpa: 0,
+        ctr: 0,
+      };
+
+      existing.cost += row.cost;
+      existing.revenue += row.revenue;
+      existing.purchases += row.purchases;
+      existing.impressions += row.impressions;
+      existing.clicks += row.clicks;
+
+      map.set(row.type, existing);
+    });
+
+    return Array.from(map.values())
+      .map((row) => ({
+        ...row,
+        share: safeDiv(row.cost, totalSpend),
+        roas: safeDiv(row.revenue, row.cost),
+        cpa: safeDiv(row.cost, row.purchases),
+        ctr: safeDiv(row.clicks, row.impressions),
+      }))
+      .sort((a, b) => b.cost - a.cost);
+  }, [typeRows]);
+
+  const maxPeriodSpend = useMemo(() => {
+    return Math.max(
+      ...recentPeriods.map((period) =>
+        typeRows
+          .filter((row) => row.period === period)
+          .reduce((sum, row) => sum + row.cost, 0)
+      ),
+      1
+    );
+  }, [recentPeriods, typeRows]);
+
+  const chartWidth = 1000;
+  const chartHeight = 330;
+  const padding = { left: 68, right: 24, top: 24, bottom: 56 };
+  const innerW = chartWidth - padding.left - padding.right;
+  const innerH = chartHeight - padding.top - padding.bottom;
+  const barGap = 10;
+  const barWidth = Math.max(14, innerW / Math.max(recentPeriods.length, 1) - barGap);
+
+  return (
+    <section className="gos-campaign-type-spend">
+      <div className="gos-panel">
+        <div className="gos-panel-head campaign-type-head">
+          <div>
+            <span>Campaign Type Spend</span>
+            <h2>Spend mix by Search, Shopping, Video and other campaign types</h2>
+            <p>
+              Spend is shown in ₹L with % share of total spend. Use day, week or month view to understand allocation movement.
+            </p>
+          </div>
+
+          <div className="gos-mini-tabs">
+            <button type="button" className={periodView === "day" ? "active" : ""} onClick={() => setPeriodView("day")}>Day</button>
+            <button type="button" className={periodView === "week" ? "active" : ""} onClick={() => setPeriodView("week")}>Week</button>
+            <button type="button" className={periodView === "month" ? "active" : ""} onClick={() => setPeriodView("month")}>Month</button>
+          </div>
+        </div>
+
+        <div className="campaign-type-card-grid">
+          {typeTotals.map((row) => (
+            <div key={row.type} className="campaign-type-card">
+              <div>
+                <span style={{ background: getTypeColor(row.type, types) }} />
+                <strong>{row.type}</strong>
+              </div>
+              <b>{compactMoney(row.cost)}</b>
+              <small>{pct(row.share)} share · ROAS {x(row.roas)}</small>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="gos-panel">
+        <div className="gos-chart-title-row">
+          <h2>Spend trend by campaign type</h2>
+          <span>Stacked bars · Spend in ₹L · Share by type</span>
+        </div>
+
+        <div className="campaign-type-chart-wrap">
+          <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="gos-svg-chart campaign-type-svg" preserveAspectRatio="xMidYMid meet">
+            {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+              const y = padding.top + innerH - ratio * innerH;
+              return (
+                <g key={ratio}>
+                  <line x1={padding.left} x2={chartWidth - padding.right} y1={y} y2={y} className="gos-grid-line" />
+                  <text x={8} y={y + 4} className="gos-chart-axis">{compactMoney(maxPeriodSpend * ratio)}</text>
+                </g>
+              );
+            })}
+
+            {recentPeriods.map((period, periodIndex) => {
+              const periodRows = types
+                .map((type) => typeRows.find((row) => row.period === period && row.type === type))
+                .filter(Boolean) as TypePeriodRow[];
+
+              const total = periodRows.reduce((sum, row) => sum + row.cost, 0);
+
+              let stacked = 0;
+
+              return (
+                <g key={period}>
+                  {periodRows.map((row) => {
+                    const h = (row.cost / maxPeriodSpend) * innerH;
+                    const xPos = padding.left + periodIndex * (innerW / Math.max(recentPeriods.length, 1)) + barGap / 2;
+                    const yPos = padding.top + innerH - stacked - h;
+
+                    stacked += h;
+
+                    return (
+                      <rect
+                        key={`${period}-${row.type}`}
+                        x={xPos}
+                        y={yPos}
+                        width={barWidth}
+                        height={Math.max(h, row.cost > 0 ? 2 : 0)}
+                        rx={3}
+                        fill={getTypeColor(row.type, types)}
+                      >
+                        <title>{`${formatPeriodLabel(period, periodView)}\n${row.type}\nSpend: ${compactMoney(row.cost)}\nShare: ${pct(row.share)}\nROAS: ${x(row.roas)}\nPurchases: ${compactInt(row.purchases)}`}</title>
+                      </rect>
+                    );
+                  })}
+
+                  <text
+                    x={padding.left + periodIndex * (innerW / Math.max(recentPeriods.length, 1)) + barWidth / 2 + barGap / 2}
+                    y={chartHeight - 18}
+                    textAnchor="middle"
+                    className="gos-chart-axis campaign-type-x-axis"
+                  >
+                    {periodView === "day" && periodIndex % Math.ceil(recentPeriods.length / 7) !== 0 && periodIndex !== recentPeriods.length - 1
+                      ? ""
+                      : formatPeriodLabel(period, periodView)}
+                  </text>
+
+                  <text
+                    x={padding.left + periodIndex * (innerW / Math.max(recentPeriods.length, 1)) + barWidth / 2 + barGap / 2}
+                    y={padding.top + innerH - (total / maxPeriodSpend) * innerH - 8}
+                    textAnchor="middle"
+                    className="gos-chart-axis campaign-type-total-label"
+                  >
+                    {compactMoney(total)}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        <div className="campaign-type-legend">
+          {types.map((type) => (
+            <span key={type}>
+              <i style={{ background: getTypeColor(type, types) }} />
+              {type}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="gos-panel">
+        <div className="gos-panel-head">
+          <div>
+            <span>Spend Table</span>
+            <h2>Campaign type spend and share</h2>
+            <p>Period-level spend, share, revenue, ROAS and purchases.</p>
+          </div>
+        </div>
+
+        <GoogleOsTable
+          rows={typeRows.slice().reverse() as unknown as Record<string, unknown>[]}
+          columns={[
+            { key: "period", label: "Period", render: (row) => formatPeriodLabel(String(row.period || ""), periodView) },
+            { key: "type", label: "Campaign Type" },
+            { key: "cost", label: "Spend", right: true, render: (row) => <Metric value={compactMoney(row.cost)} tone="red" /> },
+            { key: "share", label: "Share", right: true, render: (row) => <Metric value={pct(row.share)} tone={Number(row.share || 0) >= 0.3 ? "amber" : "neutral"} /> },
+            { key: "revenue", label: "Revenue", right: true, render: (row) => <Metric value={compactMoney(row.revenue)} tone="green" /> },
+            { key: "roas", label: "ROAS", right: true, render: (row) => <Metric value={x(row.roas)} tone={roasTone(Number(row.roas || 0))} /> },
+            { key: "purchases", label: "Purch.", right: true, render: (row) => compactInt(row.purchases) },
+            { key: "cpa", label: "CPA", right: true, render: (row) => compactMoney(row.cpa) },
+            { key: "ctr", label: "CTR", right: true, render: (row) => pct(row.ctr) },
+          ]}
+          empty="No campaign type spend data available."
+        />
+      </div>
+    </section>
   );
 }
 
@@ -405,9 +725,11 @@ export function SpendSummaryTab({
   customStart?: string;
   customEnd?: string;
 }) {
+  const [spendView, setSpendView] = useState<SpendView>("overview");
+
   const sourceRows = inputRows || model.rows;
   const allDailyRows = useMemo(() => buildDailyRows(sourceRows), [sourceRows]);
-  const dailyRows = useMemo(() => last30DailyRows(allDailyRows), [allDailyRows]);
+  const dailyRows = useMemo(() => allDailyRows.slice(-30), [allDailyRows]);
 
   const totals = useMemo(() => {
     const cost = dailyRows.reduce((sum, row) => sum + row.cost, 0);
@@ -437,88 +759,97 @@ export function SpendSummaryTab({
           <span>Spend Summary</span>
           <h1>Daily spend and efficiency trends</h1>
           <p>
-            {getDateLabel({ mode: dateMode, selectedMonth, compareMonth, customStart, customEnd })}. Day-wise table below always shows the latest 30 dates from this selected view.
+            {getDateLabel({ mode: dateMode, selectedMonth, compareMonth, customStart, customEnd })}. Use campaign type view to understand spend allocation.
           </p>
         </div>
-      </div>
 
-      <div className="gos-kpi-grid">
-        <GoogleOsKpi label="Spend" value={compactMoney(totals.cost)} tone="red" />
-        <GoogleOsKpi label="Revenue" value={compactMoney(totals.revenue)} tone="green" />
-        <GoogleOsKpi label="ROAS" value={x(totals.roas)} tone={totals.roas >= 3 ? "green" : totals.roas < 1 ? "red" : "amber"} />
-        <GoogleOsKpi label="CPA" value={compactMoney(totals.cpa)} />
-        <GoogleOsKpi label="Purchases" value={compactInt(totals.purchases)} tone="green" />
-        <GoogleOsKpi label="CTR" value={pct(totals.ctr)} />
-        <GoogleOsKpi label="Impressions" value={compactInt(totals.impressions)} />
-        <GoogleOsKpi label="Clicks" value={compactInt(totals.clicks)} />
-      </div>
-
-      <div className="gos-chart-grid">
-        <div className="gos-panel">
-          <TrendChart
-            rows={dailyRows}
-            leftKey="cost"
-            rightKey="revenue"
-            title="Daily Spend & Revenue Trend"
-            leftLabel="Spend"
-            rightLabel="Revenue"
-            leftFormatter={compactMoney}
-            rightFormatter={compactMoney}
-          />
-        </div>
-
-        <div className="gos-panel">
-          <TrendChart
-            rows={dailyRows}
-            leftKey="cpa"
-            rightKey="roas"
-            title="Daily CPA & ROAS Trend"
-            leftLabel="CPA"
-            rightLabel="ROAS"
-            leftFormatter={compactMoney}
-            rightFormatter={(value) => value.toFixed(1)}
-            mode="bar-line"
-          />
+        <div className="gos-mini-tabs">
+          <button type="button" className={spendView === "overview" ? "active" : ""} onClick={() => setSpendView("overview")}>Overview</button>
+          <button type="button" className={spendView === "campaign_type" ? "active" : ""} onClick={() => setSpendView("campaign_type")}>Campaign Type Spend</button>
         </div>
       </div>
 
-      <div className="gos-panel spend-daily-table">
-        <div className="gos-panel-head">
-          <div>
-            <span>Daily Table</span>
-            <h2>Day-wise Google Ads performance — latest 30 days</h2>
-            <p>
-              Most recent date appears first. Green/red values show day-over-day % change versus the previous available date.
-            </p>
+      {spendView === "campaign_type" ? (
+        <CampaignTypeSpendView rows={sourceRows} />
+      ) : (
+        <>
+          <div className="gos-kpi-grid">
+            <GoogleOsKpi label="Spend" value={compactMoney(totals.cost)} tone="red" />
+            <GoogleOsKpi label="Revenue" value={compactMoney(totals.revenue)} tone="green" />
+            <GoogleOsKpi label="ROAS" value={x(totals.roas)} tone={totals.roas >= 3 ? "green" : totals.roas < 1 ? "red" : "amber"} />
+            <GoogleOsKpi label="CPA" value={compactMoney(totals.cpa)} />
+            <GoogleOsKpi label="Purchases" value={compactInt(totals.purchases)} tone="green" />
+            <GoogleOsKpi label="CTR" value={pct(totals.ctr)} />
+            <GoogleOsKpi label="Impressions" value={compactInt(totals.impressions)} />
+            <GoogleOsKpi label="Clicks" value={compactInt(totals.clicks)} />
           </div>
-        </div>
 
-        <GoogleOsTable
-          rows={dailyRows.slice().reverse() as unknown as Record<string, unknown>[]}
-          columns={[
-            { key: "date", label: "Date", render: (row) => formatDateLabel(String(row.date || "")) },
-            { key: "cost", label: "Spend", right: true, render: (row) => <Metric value={compactMoney(row.cost)} tone="red" /> },
-            { key: "spendChangePct", label: "Spend Δ", right: true, render: (row) => <Delta value={Number(row.spendChangePct || 0)} goodWhenPositive={false} /> },
-            { key: "revenue", label: "Revenue", right: true, render: (row) => <Metric value={compactMoney(row.revenue)} tone="green" /> },
-            { key: "revenueChangePct", label: "Revenue Δ", right: true, render: (row) => <Delta value={Number(row.revenueChangePct || 0)} /> },
-            { key: "roas", label: "ROAS", right: true, render: (row) => <Metric value={x(row.roas)} tone={roasTone(Number(row.roas || 0))} /> },
-            { key: "roasChangePct", label: "ROAS Δ", right: true, render: (row) => <Delta value={Number(row.roasChangePct || 0)} /> },
-            { key: "purchases", label: "Purch.", right: true, render: (row) => compactInt(row.purchases) },
-            { key: "purchasesChangePct", label: "Purch. Δ", right: true, render: (row) => <Delta value={Number(row.purchasesChangePct || 0)} /> },
-            { key: "cpa", label: "CPA", right: true, render: (row) => <Metric value={compactMoney(row.cpa)} tone={cpaTone(row)} /> },
-            { key: "cpaChangePct", label: "CPA Δ", right: true, render: (row) => <Delta value={Number(row.cpaChangePct || 0)} goodWhenPositive={false} /> },
-            { key: "impressions", label: "Impr.", right: true, render: (row) => compactInt(row.impressions) },
-            { key: "clicks", label: "Clicks", right: true, render: (row) => compactInt(row.clicks) },
-            { key: "ctr", label: "CTR", right: true, render: (row) => pct(row.ctr) },
-            { key: "ctrChangePct", label: "CTR Δ", right: true, render: (row) => <Delta value={Number(row.ctrChangePct || 0)} /> },
-            { key: "cvr", label: "CVR", right: true, render: (row) => pct(row.cvr) },
-            { key: "cvrChangePct", label: "CVR Δ", right: true, render: (row) => <Delta value={Number(row.cvrChangePct || 0)} /> },
-            { key: "avgCpc", label: "CPC", right: true, render: (row) => compactMoney(row.avgCpc) },
-            { key: "cpcChangePct", label: "CPC Δ", right: true, render: (row) => <Delta value={Number(row.cpcChangePct || 0)} goodWhenPositive={false} /> },
-          ]}
-          empty="No daily data available."
-        />
-      </div>
+          <div className="gos-chart-grid">
+            <div className="gos-panel">
+              <TrendChart
+                rows={dailyRows}
+                leftKey="cost"
+                rightKey="revenue"
+                title="Daily Spend & Revenue Trend"
+                leftLabel="Spend"
+                rightLabel="Revenue"
+                leftFormatter={compactMoney}
+                rightFormatter={compactMoney}
+              />
+            </div>
+
+            <div className="gos-panel">
+              <TrendChart
+                rows={dailyRows}
+                leftKey="cpa"
+                rightKey="roas"
+                title="Daily CPA & ROAS Trend"
+                leftLabel="CPA"
+                rightLabel="ROAS"
+                leftFormatter={compactMoney}
+                rightFormatter={(value) => value.toFixed(1)}
+                mode="bar-line"
+              />
+            </div>
+          </div>
+
+          <div className="gos-panel spend-daily-table">
+            <div className="gos-panel-head">
+              <div>
+                <span>Daily Table</span>
+                <h2>Day-wise Google Ads performance — latest 30 days</h2>
+                <p>Most recent date appears first. Green/red values show day-over-day movement.</p>
+              </div>
+            </div>
+
+            <GoogleOsTable
+              rows={dailyRows.slice().reverse() as unknown as Record<string, unknown>[]}
+              columns={[
+                { key: "date", label: "Date", render: (row) => formatDateLabel(String(row.date || "")) },
+                { key: "cost", label: "Spend", right: true, render: (row) => <Metric value={compactMoney(row.cost)} tone="red" /> },
+                { key: "spendChangePct", label: "Spend Δ", right: true, render: (row) => <Delta value={Number(row.spendChangePct || 0)} goodWhenPositive={false} /> },
+                { key: "revenue", label: "Revenue", right: true, render: (row) => <Metric value={compactMoney(row.revenue)} tone="green" /> },
+                { key: "revenueChangePct", label: "Revenue Δ", right: true, render: (row) => <Delta value={Number(row.revenueChangePct || 0)} /> },
+                { key: "roas", label: "ROAS", right: true, render: (row) => <Metric value={x(row.roas)} tone={roasTone(Number(row.roas || 0))} /> },
+                { key: "roasChangePct", label: "ROAS Δ", right: true, render: (row) => <Delta value={Number(row.roasChangePct || 0)} /> },
+                { key: "purchases", label: "Purch.", right: true, render: (row) => compactInt(row.purchases) },
+                { key: "purchasesChangePct", label: "Purch. Δ", right: true, render: (row) => <Delta value={Number(row.purchasesChangePct || 0)} /> },
+                { key: "cpa", label: "CPA", right: true, render: (row) => <Metric value={compactMoney(row.cpa)} tone={cpaTone(row)} /> },
+                { key: "cpaChangePct", label: "CPA Δ", right: true, render: (row) => <Delta value={Number(row.cpaChangePct || 0)} goodWhenPositive={false} /> },
+                { key: "impressions", label: "Impr.", right: true, render: (row) => compactInt(row.impressions) },
+                { key: "clicks", label: "Clicks", right: true, render: (row) => compactInt(row.clicks) },
+                { key: "ctr", label: "CTR", right: true, render: (row) => pct(row.ctr) },
+                { key: "ctrChangePct", label: "CTR Δ", right: true, render: (row) => <Delta value={Number(row.ctrChangePct || 0)} /> },
+                { key: "cvr", label: "CVR", right: true, render: (row) => pct(row.cvr) },
+                { key: "cvrChangePct", label: "CVR Δ", right: true, render: (row) => <Delta value={Number(row.cvrChangePct || 0)} /> },
+                { key: "avgCpc", label: "CPC", right: true, render: (row) => compactMoney(row.avgCpc) },
+                { key: "cpcChangePct", label: "CPC Δ", right: true, render: (row) => <Delta value={Number(row.cpcChangePct || 0)} goodWhenPositive={false} /> },
+              ]}
+              empty="No daily data available."
+            />
+          </div>
+        </>
+      )}
     </section>
   );
 }

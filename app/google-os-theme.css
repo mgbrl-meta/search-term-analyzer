@@ -1630,3 +1630,261 @@ body {
 .gos-chart-point:hover {
   filter: drop-shadow(0 0 8px rgba(66, 133, 244, 0.55));
 }
+
+/* =========================================================
+   GOOGLE OS OVERLAP FIX
+   Header + tabs stay fixed.
+   Date View becomes normal layout so page titles do not hide behind it.
+   ========================================================= */
+
+/* Keep enough space below fixed header + tabs */
+.google-os-shell {
+  padding-top: 122px !important;
+}
+
+/* Source strip should be normal, not sticky/fixed */
+.gos-source-strip {
+  position: relative !important;
+  top: auto !important;
+  z-index: 1 !important;
+  margin-top: 0 !important;
+  margin-bottom: 14px !important;
+}
+
+/* Date View must NOT float over content */
+.gos-date-control {
+  position: relative !important;
+  top: auto !important;
+  z-index: 1 !important;
+
+  width: var(--gos-shell) !important;
+  max-width: var(--gos-shell) !important;
+
+  margin: 0 auto 16px !important;
+  padding: 10px 12px !important;
+
+  background: var(--gos-surface) !important;
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+}
+
+/* Content sections should start cleanly after Date View */
+.gos-date-control + .gos-page,
+.gos-date-control + section,
+.gos-page {
+  position: relative !important;
+  z-index: 0 !important;
+}
+
+/* Hero/title card should never be hidden behind previous controls */
+.gos-hero {
+  margin-top: 0 !important;
+  position: relative !important;
+  z-index: 0 !important;
+}
+
+/* Campaign panel title should not sit behind Date View */
+.gos-panel {
+  position: relative !important;
+  z-index: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* If a panel directly follows Date View, add clean breathing space */
+.gos-date-control + .gos-page .gos-panel:first-child,
+.gos-date-control + .gos-page .gos-hero:first-child {
+  margin-top: 0 !important;
+}
+
+/* Remove any earlier sticky/fixed Date View behavior */
+.gos-date-control.sticky,
+.gos-date-control.fixed {
+  position: relative !important;
+  top: auto !important;
+}
+
+/* Date View compact controls */
+.gos-date-left span {
+  margin-bottom: 6px !important;
+}
+
+.gos-date-buttons button,
+.gos-date-fields select,
+.gos-date-fields input {
+  height: 34px !important;
+  padding: 0 12px !important;
+}
+
+/* On smaller screens keep it vertical but still non-sticky */
+@media(max-width: 900px) {
+  .gos-date-control {
+    position: relative !important;
+    top: auto !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .gos-date-fields {
+    justify-content: stretch !important;
+  }
+
+  .gos-date-fields label {
+    width: 100% !important;
+  }
+}
+
+/* Spend Summary campaign type visualisation */
+.gos-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.gos-mini-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.gos-mini-tabs button {
+  border: 1px solid var(--gos-border);
+  background: var(--gos-surface-2);
+  color: var(--gos-muted);
+  border-radius: 999px;
+  padding: 8px 11px;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.gos-mini-tabs button.active {
+  background: var(--gos-blue);
+  border-color: var(--gos-blue);
+  color: #fff;
+}
+
+.gos-campaign-type-spend {
+  display: grid;
+  gap: 10px;
+}
+
+.campaign-type-head {
+  align-items: flex-start !important;
+}
+
+.campaign-type-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.campaign-type-card {
+  border: 1px solid var(--gos-border);
+  background: var(--gos-surface-2);
+  border-radius: 13px;
+  padding: 11px 12px;
+}
+
+.campaign-type-card div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.campaign-type-card span {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.campaign-type-card strong {
+  color: var(--gos-text);
+  font-size: 12px;
+}
+
+.campaign-type-card b {
+  display: block;
+  margin-top: 10px;
+  color: var(--gos-text);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.campaign-type-card small {
+  display: block;
+  margin-top: 7px;
+  color: var(--gos-faint);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.campaign-type-chart-wrap {
+  width: 100%;
+  overflow: hidden;
+}
+
+.campaign-type-svg {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  aspect-ratio: 1000 / 330 !important;
+}
+
+.campaign-type-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+
+.campaign-type-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gos-muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.campaign-type-legend i {
+  width: 16px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.campaign-type-total-label {
+  font-size: 9px !important;
+  fill: var(--gos-text) !important;
+  font-weight: 900;
+}
+
+.campaign-type-x-axis {
+  font-size: 9px !important;
+}
+
+@media(max-width: 1100px) {
+  .campaign-type-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gos-hero {
+    flex-direction: column;
+  }
+}
+
+@media(max-width: 640px) {
+  .campaign-type-card-grid {
+    grid-template-columns: 1fr;
+  }
+}
