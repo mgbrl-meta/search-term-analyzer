@@ -1237,3 +1237,143 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Google OS vertical-scroll UX override */
+html,
+body {
+  overflow-x: hidden;
+}
+
+.google-os-shell,
+.gos-page,
+.gos-panel,
+.gos-source-strip,
+.gos-table-wrap {
+  max-width: 1240px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.gos-table-wrap {
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+}
+
+.gos-table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: fixed;
+}
+
+.gos-table th,
+.gos-table td {
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  vertical-align: top;
+}
+
+.gos-table th {
+  position: sticky;
+  top: 0;
+}
+
+.gos-table td {
+  min-height: 38px;
+}
+
+/* Keep important text columns wider */
+.gos-table th:first-child,
+.gos-table td:first-child {
+  width: 18%;
+}
+
+.gos-table th:nth-child(2),
+.gos-table td:nth-child(2) {
+  width: 16%;
+}
+
+/* Numeric columns should stay compact */
+.gos-table th.right,
+.gos-table td.right {
+  text-align: right;
+  width: 82px;
+}
+
+/* Source strip should not push horizontal scroll */
+.gos-source-strip {
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 2fr);
+}
+
+.gos-source-actions {
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+}
+
+.gos-source-actions input {
+  min-width: 0;
+  width: 100%;
+}
+
+/* Mobile/tablet becomes fully vertical */
+@media(max-width: 1180px) {
+  .gos-source-strip,
+  .gos-source-actions,
+  .gos-two-col,
+  .gos-insight-grid,
+  .gos-kpi-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gos-table {
+    table-layout: auto;
+  }
+
+  .gos-table-wrap {
+    overflow-x: hidden !important;
+  }
+
+  .gos-table th,
+  .gos-table td {
+    font-size: 11px;
+    padding: 8px 7px;
+  }
+}
+
+@media(max-width: 760px) {
+  .gos-table,
+  .gos-table thead,
+  .gos-table tbody,
+  .gos-table th,
+  .gos-table td,
+  .gos-table tr {
+    display: block;
+    width: 100% !important;
+  }
+
+  .gos-table thead {
+    display: none;
+  }
+
+  .gos-table tr {
+    border-bottom: 1px solid var(--wr-line);
+    padding: 8px 0;
+  }
+
+  .gos-table td {
+    border: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    text-align: right !important;
+    padding: 6px 10px;
+  }
+
+  .gos-table td::before {
+    content: attr(data-label);
+    color: var(--wr-faint);
+    font-weight: 900;
+    text-align: left;
+  }
+}

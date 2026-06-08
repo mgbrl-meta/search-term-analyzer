@@ -41,7 +41,11 @@ export function GoogleOsTable<T extends Record<string, unknown>>({
           {rows.map((row, rowIndex) => (
             <tr key={rowIndex}>
               {columns.map((column) => (
-                <td key={column.key} className={column.right ? "right" : ""}>
+                <td
+                  key={column.key}
+                  className={column.right ? "right" : ""}
+                  data-label={column.label}
+                >
                   {column.render ? column.render(row) : String(row[column.key] ?? "")}
                 </td>
               ))}

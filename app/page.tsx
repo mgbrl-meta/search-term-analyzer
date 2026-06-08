@@ -2838,7 +2838,7 @@ function PageContent({
                 onClick={() => loadGoogleOsSheetUrl()}
                 disabled={googleOsLoading}
               >
-                {googleOsLoading ? "Loading..." : "Connect / Refresh"}
+                {googleOsLoading ? "Loading..." : "Refresh Sheet"}
               </button>
             </div>
 
@@ -3132,7 +3132,7 @@ export default function Page() {
   const [googleOsError, setGoogleOsError] = useState("");
   const [googleOsLoading, setGoogleOsLoading] = useState(false);
   const [googleOsHomeTab, setGoogleOsHomeTab] = useState<
-    "summary" | "campaigns" | "ad_groups" | "search_terms" | "operator_report" | "settings"
+    "summary" | "campaigns" | "ad_groups" | "search_terms" | "operator_report"
   >("summary");
 
   async function loadGoogleOsCsvText(csvText: string, sourceName: string) {
@@ -3226,12 +3226,11 @@ export default function Page() {
   }
 
   const tabs = [
-    ["summary", "Summary"],
+    ["summary", "Command Center"],
     ["campaigns", "Campaigns"],
     ["ad_groups", "Ad Groups"],
     ["search_terms", "Search Terms"],
     ["operator_report", "Operator Report"],
-    ["settings", "Settings"],
   ] as const;
 
   return (
@@ -3274,10 +3273,10 @@ export default function Page() {
           <strong>
             {googleOsModel
               ? `${googleOsModel.rows.length.toLocaleString("en-IN")} rows loaded`
-              : "Connect Google Ads DoD data"}
+              : "Google Ads DoD data"}
           </strong>
           <small>
-            {googleOsSourceName || "Use published Google Sheet CSV URL or upload CSV backup."}
+            {googleOsSourceName || "Sheet connected or CSV backup uploaded."}
           </small>
         </div>
 
@@ -3296,7 +3295,7 @@ export default function Page() {
             onClick={() => loadGoogleOsSheetUrl()}
             disabled={googleOsLoading}
           >
-            {googleOsLoading ? "Loading..." : "Connect / Refresh"}
+            {googleOsLoading ? "Loading..." : "Refresh Sheet"}
           </button>
 
           <label>
@@ -3331,7 +3330,6 @@ export default function Page() {
           {googleOsHomeTab === "campaigns" ? <CampaignsTab model={googleOsModel} /> : null}
           {googleOsHomeTab === "ad_groups" ? <AdGroupsTab model={googleOsModel} /> : null}
           {googleOsHomeTab === "operator_report" ? <AiOperatorReportTab model={googleOsModel} /> : null}
-          {googleOsHomeTab === "settings" ? <SettingsTab /> : null}
         </>
       ) : (
         <section className="gos-page">
@@ -3339,10 +3337,9 @@ export default function Page() {
             <div className="gos-panel-head">
               <div>
                 <span>Start here</span>
-                <h2>Connect Daily Google Ads DoD data</h2>
+                <h2>Connect Google Ads DoD data</h2>
                 <p>
-                  Once connected, Google OS will show Summary, Campaigns, Ad Groups,
-                  and Operator Report immediately. Search terms remain manual in the Search Terms tab.
+                  Once connected, Google OS will show operator-grade analysis immediately. Search terms remain manual in the Search Terms tab.
                 </p>
               </div>
             </div>
