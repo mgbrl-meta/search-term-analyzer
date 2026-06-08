@@ -5284,3 +5284,164 @@ body {
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
 }
+
+/* =========================================================
+   GOOGLE OS CHART THEME TOOLKIT
+   Fixes dark/light mode chart readability and axis visibility.
+   ========================================================= */
+
+:root {
+  --gos-chart-bg: var(--gos-surface-2);
+  --gos-chart-bg-soft: rgba(15, 23, 42, 0.22);
+  --gos-chart-grid: rgba(148, 163, 184, 0.18);
+  --gos-chart-axis: rgba(203, 213, 225, 0.92);
+  --gos-chart-axis-soft: rgba(148, 163, 184, 0.82);
+  --gos-chart-label: rgba(241, 245, 249, 0.96);
+  --gos-chart-muted: rgba(148, 163, 184, 0.9);
+  --gos-chart-tooltip-bg: rgba(15, 23, 42, 0.96);
+  --gos-chart-tooltip-border: rgba(148, 163, 184, 0.28);
+  --gos-chart-blue: #4285f4;
+  --gos-chart-green: #34a853;
+  --gos-chart-yellow: #fbbc04;
+  --gos-chart-red: #ea4335;
+  --gos-chart-purple: #8b5cf6;
+  --gos-chart-cyan: #06b6d4;
+}
+
+html.light,
+[data-theme="light"],
+.light {
+  --gos-chart-bg: #ffffff;
+  --gos-chart-bg-soft: #f8fafc;
+  --gos-chart-grid: rgba(71, 85, 105, 0.18);
+  --gos-chart-axis: rgba(15, 23, 42, 0.92);
+  --gos-chart-axis-soft: rgba(71, 85, 105, 0.8);
+  --gos-chart-label: rgba(15, 23, 42, 0.96);
+  --gos-chart-muted: rgba(71, 85, 105, 0.86);
+  --gos-chart-tooltip-bg: rgba(255, 255, 255, 0.98);
+  --gos-chart-tooltip-border: rgba(15, 23, 42, 0.18);
+}
+
+/* Recharts axis and grid */
+.recharts-wrapper text,
+.recharts-cartesian-axis-tick-value,
+.recharts-cartesian-axis text,
+.recharts-text,
+.recharts-label {
+  fill: var(--gos-chart-axis) !important;
+  color: var(--gos-chart-axis) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+.recharts-cartesian-grid line,
+.recharts-cartesian-axis-line,
+.recharts-cartesian-axis-tick-line {
+  stroke: var(--gos-chart-grid) !important;
+}
+
+.recharts-reference-line line {
+  stroke: var(--gos-chart-axis-soft) !important;
+}
+
+.recharts-legend-wrapper,
+.recharts-default-legend,
+.recharts-legend-item-text {
+  color: var(--gos-chart-label) !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+}
+
+.recharts-tooltip-wrapper {
+  z-index: 30 !important;
+}
+
+.recharts-default-tooltip,
+.gos-chart-tooltip {
+  background: var(--gos-chart-tooltip-bg) !important;
+  border: 1px solid var(--gos-chart-tooltip-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.34) !important;
+  color: var(--gos-chart-label) !important;
+}
+
+.recharts-tooltip-label,
+.recharts-tooltip-item,
+.recharts-tooltip-item-name,
+.recharts-tooltip-item-value {
+  color: var(--gos-chart-label) !important;
+  font-weight: 800 !important;
+}
+
+/* Native SVG charts used in Google OS */
+.gos-timeseries-axis,
+.gos-timeseries-axis.x,
+.gos-timeseries-svg text,
+.gos-dynamic-chart-label {
+  fill: var(--gos-chart-axis) !important;
+  color: var(--gos-chart-axis) !important;
+  opacity: 1 !important;
+  font-weight: 900 !important;
+}
+
+.gos-timeseries-grid {
+  stroke: var(--gos-chart-grid) !important;
+  opacity: 1 !important;
+}
+
+/* Make x/y labels readable even near bottom dock */
+.gos-timeseries-wrap,
+.gos-chart-card,
+.gos-panel:has(.recharts-wrapper),
+.gos-panel:has(.gos-timeseries-svg) {
+  background: var(--gos-chart-bg) !important;
+}
+
+/* Month selector chips */
+.gos-month-multi-select {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin: 12px 0 4px !important;
+  align-items: center !important;
+}
+
+.gos-month-chip {
+  height: 30px !important;
+  border: 1px solid var(--gos-border) !important;
+  background: var(--gos-surface-2) !important;
+  color: var(--gos-muted) !important;
+  border-radius: 999px !important;
+  padding: 0 12px !important;
+  font-size: 10.5px !important;
+  font-weight: 900 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  cursor: pointer !important;
+}
+
+.gos-month-chip.active {
+  color: var(--gos-text) !important;
+  background: var(--gos-surface-3) !important;
+  border-color: rgba(66, 133, 244, 0.42) !important;
+  box-shadow: inset 0 0 0 1px rgba(66, 133, 244, 0.12) !important;
+}
+
+.gos-month-chip i {
+  width: 13px !important;
+  height: 8px !important;
+  border-radius: 999px !important;
+  display: inline-block !important;
+}
+
+.gos-month-chip.all {
+  background: rgba(66, 133, 244, 0.14) !important;
+  color: var(--gos-text) !important;
+  border-color: rgba(66, 133, 244, 0.34) !important;
+}
+
+.gos-chart-readable-axis {
+  color: var(--gos-chart-axis) !important;
+  fill: var(--gos-chart-axis) !important;
+}

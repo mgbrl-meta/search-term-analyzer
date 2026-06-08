@@ -6,6 +6,8 @@ import { compactInt, compactMoney, pct, safeDiv, x } from "../../../lib/googleOs
 import { GoogleOsKpi } from "../shared/GoogleOsKpi";
 import { GoogleOsTable } from "../shared/GoogleOsTable";
 import type { GoogleOsDateMode } from "../../../lib/googleOs/dateFilter";
+import { GoogleOsMonthMultiSelect } from "../shared/GoogleOsMonthMultiSelect";
+import { getAvailableMonthKeysFromRows, filterRowsBySelectedMonths } from "../../../lib/googleOs/chartTheme";
 import { getDateLabel, formatGoogleOsDateLabel } from "../../../lib/googleOs/dateFilter";
 
 type SpendView = "overview" | "campaign_type";
@@ -496,7 +498,18 @@ function CampaignTypeSpendView({ rows }: { rows: GoogleOsRow[] }) {
   const [periodView, setPeriodView] = useState<PeriodView>("day");
 
   const typeRowsAll = useMemo(() => buildCampaignTypeRows(rows, periodView), [rows, periodView]);
-const recentPeriods = useMemo(() => getRecentPeriods(typeRowsAll, periodView), [typeRowsAll, periodView]);
+
+  const availableChartMonths = useMemo(() => {
+    return getAvailableMonthKeysFromRows(model.rows || []);
+  }, [model.rows]);
+
+  const activeChartMonths = selectedChartMonths.length ? selectedChartMonths : availableChartMonths;
+
+  const multiMonthRows = useMemo(() => {
+    return filterRowsBySelectedMonths(model.rows || [], activeChartMonths);
+  }, [model.rows, activeChartMonths]);
+
+  const recentPeriods = useMemo(() => getRecentPeriods(typeRowsAll, periodView), [typeRowsAll, periodView]);
   const typeRows = useMemo(() => typeRowsAll.filter((row) => recentPeriods.includes(row.period)), [typeRowsAll, recentPeriods]);
   const types = useMemo(() => Array.from(new Set(typeRows.map((row) => row.type))).sort(), [typeRows]);
 
@@ -725,6 +738,7 @@ export function SpendSummaryTab({
   customStart?: string;
   customEnd?: string;
 }) {
+  const [selectedChartMonths, setSelectedChartMonths] = useState<string[]>([]);
   const [spendView, setSpendView] = useState<SpendView>("overview");
 
   const sourceRows = inputRows || model.rows;
