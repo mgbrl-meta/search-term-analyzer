@@ -2582,3 +2582,319 @@ body {
     #ea4335 100%
   ) !important;
 }
+
+/* =========================================================
+   COMPACT CAMPAIGN DRILLDOWN VIEW
+   Makes Search / Shopping / Demand Gen / Video campaign rows dense
+   ========================================================= */
+
+/* Reduce page and panel spacing */
+.campaign-type-main-tab,
+.campaign-drilldown-page {
+  gap: 8px !important;
+}
+
+.campaign-type-main-tab .gos-panel,
+.campaign-drilldown-page .gos-panel {
+  padding: 10px 12px !important;
+}
+
+/* Compact type summary strip */
+.campaign-type-summary-strip {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  margin: 8px 0 10px !important;
+}
+
+.campaign-type-summary-strip > div {
+  padding: 8px 9px !important;
+  border-radius: 10px !important;
+  gap: 3px !important;
+}
+
+.campaign-type-summary-strip span {
+  font-size: 8px !important;
+  letter-spacing: 0.1em !important;
+}
+
+.campaign-type-summary-strip strong {
+  font-size: 15px !important;
+}
+
+/* Compact filter header */
+.campaign-filter-head {
+  margin-bottom: 8px !important;
+}
+
+.campaign-filter-head h2 {
+  font-size: 16px !important;
+  margin-top: 4px !important;
+}
+
+.campaign-filter-head p {
+  font-size: 11px !important;
+  margin-top: 4px !important;
+}
+
+.campaign-filter-bar {
+  gap: 6px !important;
+}
+
+.campaign-filter-bar label {
+  font-size: 8px !important;
+  gap: 4px !important;
+}
+
+.campaign-filter-bar select {
+  height: 30px !important;
+  min-width: 118px !important;
+  padding: 0 9px !important;
+  font-size: 10px !important;
+  border-radius: 8px !important;
+}
+
+/* Compact type pill filters inside All Campaigns */
+.campaign-type-tabs {
+  gap: 6px !important;
+  margin: 8px 0 10px !important;
+}
+
+.campaign-type-tabs button {
+  padding: 6px 10px !important;
+  border-radius: 999px !important;
+  gap: 6px !important;
+}
+
+.campaign-type-tabs button span {
+  font-size: 11px !important;
+}
+
+.campaign-type-tabs button b {
+  min-width: 19px !important;
+  height: 18px !important;
+  font-size: 9px !important;
+}
+
+/* Main compact accordion */
+.campaign-accordion {
+  gap: 6px !important;
+}
+
+.campaign-accordion-item {
+  border-radius: 11px !important;
+}
+
+/* THIS is the main row compaction */
+.campaign-accordion-row {
+  min-height: 54px !important;
+  padding: 8px 10px !important;
+  grid-template-columns:
+    minmax(300px, 2.3fr)
+    minmax(72px, 0.7fr)
+    minmax(76px, 0.7fr)
+    minmax(58px, 0.55fr)
+    minmax(56px, 0.55fr)
+    minmax(62px, 0.6fr)
+    minmax(62px, 0.6fr)
+    minmax(74px, 0.65fr) !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+/* Compact campaign name section */
+.campaign-name {
+  display: grid !important;
+  grid-template-columns: 22px minmax(0, 1fr) !important;
+  grid-template-rows: auto auto !important;
+  column-gap: 8px !important;
+  row-gap: 1px !important;
+  align-items: center !important;
+}
+
+.campaign-name i {
+  grid-row: 1 / 3 !important;
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  font-size: 13px !important;
+  line-height: 18px !important;
+  border-radius: 6px !important;
+}
+
+.campaign-name strong {
+  font-size: 12px !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.campaign-name small {
+  font-size: 9.5px !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Compact metric labels and values */
+.campaign-accordion-row span:not(.campaign-name) {
+  gap: 2px !important;
+}
+
+.campaign-accordion-row em {
+  font-size: 7.5px !important;
+  letter-spacing: 0.1em !important;
+  line-height: 1 !important;
+}
+
+.campaign-accordion-row b {
+  font-size: 11.5px !important;
+  line-height: 1.1 !important;
+}
+
+/* Compact compare delta strip */
+.campaign-delta-strip {
+  gap: 6px !important;
+  padding: 0 10px 8px 10px !important;
+}
+
+.campaign-delta-strip span {
+  padding: 4px 7px !important;
+  font-size: 9px !important;
+}
+
+/* Compact expanded ad group box */
+.campaign-adgroups-box {
+  padding: 9px 10px !important;
+}
+
+.campaign-adgroups-head {
+  margin-bottom: 7px !important;
+}
+
+.campaign-adgroups-head strong {
+  font-size: 12px !important;
+}
+
+.campaign-adgroups-head small {
+  font-size: 10px !important;
+}
+
+/* Compact table inside expanded rows */
+.campaign-adgroups-box .gos-table th {
+  padding: 7px 8px !important;
+  font-size: 8px !important;
+}
+
+.campaign-adgroups-box .gos-table td {
+  padding: 7px 8px !important;
+  font-size: 10.5px !important;
+}
+
+.campaign-adgroups-box .gos-table td:first-child,
+.campaign-adgroups-box .gos-table th:first-child {
+  min-width: 160px !important;
+}
+
+/* Reduce row hover visual weight */
+.campaign-accordion-row:hover {
+  background: rgba(66, 133, 244, 0.035) !important;
+}
+
+/* Make sticky header area less visually heavy */
+.gos-topbar {
+  height: 46px !important;
+  padding: 6px 10px !important;
+}
+
+.gos-home-tabs {
+  height: 42px !important;
+  padding: 5px !important;
+}
+
+.gos-home-tabs button {
+  height: 30px !important;
+  padding: 0 10px !important;
+  font-size: 10.5px !important;
+}
+
+.google-os-shell {
+  padding-top: 106px !important;
+}
+
+/* Source strip compact */
+.gos-source-strip {
+  padding: 8px 10px !important;
+  margin-bottom: 10px !important;
+}
+
+.gos-source-main strong {
+  font-size: 13px !important;
+}
+
+.gos-source-main small {
+  font-size: 10px !important;
+}
+
+.gos-source-actions input,
+.gos-source-actions button,
+.gos-source-actions label {
+  height: 32px !important;
+  padding: 0 9px !important;
+  font-size: 10px !important;
+}
+
+/* Date view compact */
+.gos-date-control {
+  padding: 8px 10px !important;
+  margin-bottom: 10px !important;
+}
+
+.gos-date-buttons button,
+.gos-date-fields select,
+.gos-date-fields input {
+  height: 30px !important;
+  padding: 0 10px !important;
+  font-size: 10px !important;
+}
+
+/* More compact on medium screens */
+@media(max-width: 1280px) {
+  .campaign-accordion-row {
+    grid-template-columns:
+      minmax(260px, 2fr)
+      repeat(4, minmax(65px, 1fr))
+      repeat(3, minmax(58px, 1fr)) !important;
+  }
+
+  .campaign-accordion-row b {
+    font-size: 11px !important;
+  }
+}
+
+/* Tablet/mobile: card remains readable */
+@media(max-width: 900px) {
+  .campaign-accordion-row {
+    grid-template-columns: 1fr 1fr 1fr !important;
+    padding: 9px !important;
+  }
+
+  .campaign-name {
+    grid-column: 1 / -1 !important;
+  }
+
+  .campaign-type-summary-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media(max-width: 640px) {
+  .campaign-accordion-row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .campaign-type-summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
