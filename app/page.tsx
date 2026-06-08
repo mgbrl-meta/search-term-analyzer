@@ -2,6 +2,7 @@
 
 import { CommandCenterTab } from "@/components/googleOs/tabs/CommandCenterTab";
 import { CampaignsTab } from "@/components/googleOs/tabs/CampaignsTab";
+import { CampaignTypeTab } from "@/components/googleOs/tabs/CampaignTypeTab";
 import { SpendSummaryTab } from "@/components/googleOs/tabs/SpendSummaryTab";
 import { AdGroupsTab } from "@/components/googleOs/tabs/AdGroupsTab";
 import { MonthlySummaryTab } from "@/components/googleOs/tabs/MonthlySummaryTab";
@@ -11,7 +12,7 @@ import { CompactSearchTermUpload } from "@/components/googleOs/shared/CompactSea
 import { parseCsv } from "@/lib/googleOs/csv";
 import { buildGoogleOsModel } from "@/lib/googleOs/normalize";
 import type { GoogleOsModel } from "@/lib/googleOs/types";
-import { filterGoogleOsRows, getAvailableMonths } from "@/lib/googleOs/dateFilter";
+import { filterGoogleOsRows, getAvailableMonths, formatGoogleOsMonthLabel} from "@/lib/googleOs/dateFilter";
 
 import { AiBrainTab } from "@/components/searchTerms/tabs/AiBrainTab";
 import { KeywordCategoryCardsTab } from "@/components/searchTerms/tabs/KeywordCategoryCardsTab";
@@ -3135,7 +3136,7 @@ export default function Page() {
   const [googleOsError, setGoogleOsError] = useState("");
   const [googleOsLoading, setGoogleOsLoading] = useState(false);
   const [googleOsHomeTab, setGoogleOsHomeTab] = useState<
-    "summary" | "spend_summary" | "campaigns" | "ad_groups" | "monthly_summary" | "search_terms" | "operator_report"
+    "summary" | "spend_summary" | "campaigns" | "search_main" | "shopping_main" | "demand_gen_main" | "video_main" | "ad_groups" | "monthly_summary" | "search_terms" | "operator_report"
   >("summary");
 
   const [googleOsDateMode, setGoogleOsDateMode] = useState<"last_30" | "month" | "custom">("last_30");
@@ -3253,7 +3254,11 @@ export default function Page() {
   const tabs = [
     ["summary", "Command Center"],
     ["spend_summary", "Spend Summary"],
-    ["campaigns", "Campaigns"],
+    ["campaigns", "All Campaigns"],
+    ["search_main", "Search"],
+    ["shopping_main", "Shopping"],
+    ["demand_gen_main", "Demand Gen"],
+    ["video_main", "Video"],
     ["ad_groups", "Ad Groups"],
     ["monthly_summary", "Monthly Summary"],
     ["search_terms", "Search Terms"],
@@ -3386,7 +3391,7 @@ export default function Page() {
                     onChange={(event) => setGoogleOsSelectedMonth(event.target.value)}
                   >
                     {googleOsMonths.slice().reverse().map((month) => (
-                      <option key={month} value={month}>{month}</option>
+                      <option key={month} value={month}>{formatGoogleOsMonthLabel(month)}</option>
                     ))}
                   </select>
                 </label>
@@ -3399,7 +3404,7 @@ export default function Page() {
                   >
                     <option value="">No comparison</option>
                     {googleOsMonths.slice().reverse().map((month) => (
-                      <option key={month} value={month}>{month}</option>
+                      <option key={month} value={month}>{formatGoogleOsMonthLabel(month)}</option>
                     ))}
                   </select>
                 </label>
@@ -3447,6 +3452,10 @@ export default function Page() {
           {googleOsHomeTab === "summary" ? <CommandCenterTab model={googleOsModel} /> : null}
           {googleOsHomeTab === "spend_summary" ? <SpendSummaryTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} customStart={googleOsCustomStart} customEnd={googleOsCustomEnd} /> : null}
           {googleOsHomeTab === "campaigns" ? <CampaignsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} customStart={googleOsCustomStart} customEnd={googleOsCustomEnd} /> : null}
+          {googleOsHomeTab === "search_main" ? <CampaignTypeTab model={googleOsModel} type="Search" /> : null}
+          {googleOsHomeTab === "shopping_main" ? <CampaignTypeTab model={googleOsModel} type="Shopping" /> : null}
+          {googleOsHomeTab === "demand_gen_main" ? <CampaignTypeTab model={googleOsModel} type="Demand Gen" /> : null}
+          {googleOsHomeTab === "video_main" ? <CampaignTypeTab model={googleOsModel} type="Video" /> : null}
           {googleOsHomeTab === "ad_groups" ? <AdGroupsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} customStart={googleOsCustomStart} customEnd={googleOsCustomEnd} /> : null}
           {googleOsHomeTab === "monthly_summary" ? <MonthlySummaryTab model={googleOsModel} /> : null}
           {googleOsHomeTab === "operator_report" ? <AiOperatorReportTab model={googleOsModel} /> : null}
