@@ -11,6 +11,7 @@ import { CompactSearchTermUpload } from "@/components/googleOs/shared/CompactSea
 import { parseCsv } from "@/lib/googleOs/csv";
 import { buildGoogleOsModel } from "@/lib/googleOs/normalize";
 import type { GoogleOsModel } from "@/lib/googleOs/types";
+import { filterGoogleOsRows, getAvailableMonths } from "@/lib/googleOs/dateFilter";
 
 import { AiBrainTab } from "@/components/searchTerms/tabs/AiBrainTab";
 import { KeywordCategoryCardsTab } from "@/components/searchTerms/tabs/KeywordCategoryCardsTab";
@@ -2884,7 +2885,7 @@ function PageContent({
 
       {activeTab === "campaigns" ? (
         googleOsModel ? (
-          <CampaignsTab model={googleOsModel} />
+          <CampaignsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} />
         ) : (
           <section className="gos-page">
             <div className="gos-panel">
@@ -2902,7 +2903,7 @@ function PageContent({
 
       {activeTab === "ad_groups" ? (
         googleOsModel ? (
-          <AdGroupsTab model={googleOsModel} />
+          <AdGroupsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} />
         ) : (
           <section className="gos-page">
             <div className="gos-panel">
@@ -3137,6 +3138,12 @@ export default function Page() {
     "summary" | "spend_summary" | "campaigns" | "ad_groups" | "monthly_summary" | "search_terms" | "operator_report"
   >("summary");
 
+  const [googleOsDateMode, setGoogleOsDateMode] = useState<"last_30" | "month" | "custom">("last_30");
+  const [googleOsSelectedMonth, setGoogleOsSelectedMonth] = useState("");
+  const [googleOsCompareMonth, setGoogleOsCompareMonth] = useState("");
+  const [googleOsCustomStart, setGoogleOsCustomStart] = useState("");
+  const [googleOsCustomEnd, setGoogleOsCustomEnd] = useState("");
+
   async function loadGoogleOsCsvText(csvText: string, sourceName: string) {
     const rows = parseCsv(csvText);
     const model = buildGoogleOsModel(rows);
@@ -3226,6 +3233,22 @@ export default function Page() {
       />
     );
   }
+
+  const googleOsMonths = googleOsModel ? getAvailableMonths(googleOsModel.rows) : [];
+
+  const googleOsFilteredRows = googleOsModel
+    ? filterGoogleOsRows({
+        rows: googleOsModel.rows,
+        mode: googleOsDateMode,
+        selectedMonth: googleOsSelectedMonth,
+        customStart: googleOsCustomStart,
+        customEnd: googleOsCustomEnd,
+      })
+    : [];
+
+  const googleOsCompareRows = googleOsModel && googleOsCompareMonth
+    ? googleOsModel.rows.filter((row) => row.date.startsWith(googleOsCompareMonth))
+    : [];
 
   const tabs = [
     ["summary", "Command Center"],
@@ -3317,6 +3340,97 @@ export default function Page() {
         ) : null}
       </section>
 
+      {googleOsModel && googleOsHomeTab !== "search_terms" ? (
+        <section className="gos-date-control">
+          <div className="gos-date-left">
+            <span>Date View</span>
+            <div className="gos-date-buttons">
+              <button
+                type="button"
+                className={googleOsDateMode === "last_30" ? "active" : ""}
+                onClick={() => setGoogleOsDateMode("last_30")}
+              >
+                Last 30 Days
+              </button>
+
+              <button
+                type="button"
+                className={googleOsDateMode === "month" ? "active" : ""}
+                onClick={() => {
+                  setGoogleOsDateMode("month");
+                  if (!googleOsSelectedMonth) {
+                    setGoogleOsSelectedMonth(googleOsMonths[googleOsMonths.length - 1] || "");
+                  }
+                }}
+              >
+                Month
+              </button>
+
+              <button
+                type="button"
+                className={googleOsDateMode === "custom" ? "active" : ""}
+                onClick={() => setGoogleOsDateMode("custom")}
+              >
+                Custom
+              </button>
+            </div>
+          </div>
+
+          <div className="gos-date-fields">
+            {googleOsDateMode === "month" ? (
+              <>
+                <label>
+                  Month
+                  <select
+                    value={googleOsSelectedMonth || googleOsMonths[googleOsMonths.length - 1] || ""}
+                    onChange={(event) => setGoogleOsSelectedMonth(event.target.value)}
+                  >
+                    {googleOsMonths.slice().reverse().map((month) => (
+                      <option key={month} value={month}>{month}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Compare with
+                  <select
+                    value={googleOsCompareMonth}
+                    onChange={(event) => setGoogleOsCompareMonth(event.target.value)}
+                  >
+                    <option value="">No comparison</option>
+                    {googleOsMonths.slice().reverse().map((month) => (
+                      <option key={month} value={month}>{month}</option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            ) : null}
+
+            {googleOsDateMode === "custom" ? (
+              <>
+                <label>
+                  Start
+                  <input
+                    type="date"
+                    value={googleOsCustomStart}
+                    onChange={(event) => setGoogleOsCustomStart(event.target.value)}
+                  />
+                </label>
+
+                <label>
+                  End
+                  <input
+                    type="date"
+                    value={googleOsCustomEnd}
+                    onChange={(event) => setGoogleOsCustomEnd(event.target.value)}
+                  />
+                </label>
+              </>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
       {googleOsHomeTab === "search_terms" ? (
         <section className="gos-page">
           <div className="gos-panel">
@@ -3331,9 +3445,9 @@ export default function Page() {
       ) : googleOsModel ? (
         <>
           {googleOsHomeTab === "summary" ? <CommandCenterTab model={googleOsModel} /> : null}
-          {googleOsHomeTab === "spend_summary" ? <SpendSummaryTab model={googleOsModel} /> : null}
-          {googleOsHomeTab === "campaigns" ? <CampaignsTab model={googleOsModel} /> : null}
-          {googleOsHomeTab === "ad_groups" ? <AdGroupsTab model={googleOsModel} /> : null}
+          {googleOsHomeTab === "spend_summary" ? <SpendSummaryTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} /> : null}
+          {googleOsHomeTab === "campaigns" ? <CampaignsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} /> : null}
+          {googleOsHomeTab === "ad_groups" ? <AdGroupsTab model={googleOsModel} rows={googleOsFilteredRows} compareRows={googleOsCompareRows} dateMode={googleOsDateMode} selectedMonth={googleOsSelectedMonth} compareMonth={googleOsCompareMonth} /> : null}
           {googleOsHomeTab === "monthly_summary" ? <MonthlySummaryTab model={googleOsModel} /> : null}
           {googleOsHomeTab === "operator_report" ? <AiOperatorReportTab model={googleOsModel} /> : null}
         </>
