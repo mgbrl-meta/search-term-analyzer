@@ -1687,3 +1687,90 @@ body {
     max-width: 45%;
   }
 }
+
+/* Google OS Spend Summary charts */
+.spend-summary-page {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+.gos-chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.gos-spend-chart {
+  width: 100%;
+}
+
+.gos-chart-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.gos-chart-title-row h2 {
+  margin: 0;
+  color: var(--wr-ink);
+  font-size: 18px;
+  letter-spacing: -0.04em;
+}
+
+.gos-chart-title-row span {
+  color: var(--wr-faint);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.gos-area-blue {
+  fill: rgba(66, 133, 244, 0.18);
+}
+
+.gos-line-blue {
+  fill: none;
+  stroke: #1a73e8;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.gos-line-green {
+  fill: none;
+  stroke: #34d399;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.gos-chart-bar {
+  fill: rgba(148, 163, 184, 0.36);
+}
+
+.spend-daily-table .gos-table-wrap {
+  overflow-x: auto !important;
+}
+
+.spend-daily-table .gos-table {
+  min-width: 980px !important;
+}
+
+@media(max-width: 1180px) {
+  .gos-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media(max-width: 760px) {
+  .gos-chart-title-row {
+    flex-direction: column;
+  }
+
+  .spend-daily-table .gos-table {
+    min-width: 0 !important;
+  }
+}
