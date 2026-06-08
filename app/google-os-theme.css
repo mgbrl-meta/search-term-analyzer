@@ -4843,3 +4843,53 @@ body {
     grid-template-columns: 100px minmax(0, 1fr) 80px !important;
   }
 }
+
+/* =========================================================
+   CAMPAIGN TYPE HEADER BENCHMARK METRICS
+   Adds Last 7D and All Time metrics to Search/Shopping/Demand/Video tabs
+   ========================================================= */
+
+.campaign-type-summary-strip.benchmark {
+  grid-template-columns: repeat(9, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+  margin: 10px 0 12px !important;
+}
+
+.campaign-type-summary-strip.benchmark > div {
+  min-height: 66px !important;
+  padding: 9px 10px !important;
+  border-radius: 12px !important;
+}
+
+.campaign-type-summary-strip.benchmark span {
+  font-size: 8px !important;
+  letter-spacing: 0.1em !important;
+}
+
+.campaign-type-summary-strip.benchmark strong {
+  font-size: 15px !important;
+}
+
+.campaign-type-summary-strip.benchmark .red {
+  color: var(--gos-red) !important;
+}
+
+.campaign-type-summary-strip.benchmark .green {
+  color: var(--gos-green) !important;
+}
+
+.campaign-type-summary-strip.benchmark .amber {
+  color: var(--gos-amber) !important;
+}
+
+@media(max-width: 1320px) {
+  .campaign-type-summary-strip.benchmark {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media(max-width: 720px) {
+  .campaign-type-summary-strip.benchmark {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

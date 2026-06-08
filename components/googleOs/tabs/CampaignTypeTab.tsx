@@ -276,6 +276,45 @@ function TypeIcon({ type }: { type: CampaignTypeName }) {
   return <span className={`campaign-type-icon ${cls}`} />;
 }
 
+
+function getMaxDateFromRows(rows: GoogleOsRow[]) {
+  return Array.from(new Set(rows.map((row) => row.date).filter(Boolean))).sort().at(-1) || "";
+}
+
+function getLast7RowsFromRows(rows: GoogleOsRow[]) {
+  const maxDate = getMaxDateFromRows(rows);
+  if (!maxDate) return [];
+
+  const end = new Date(`${maxDate}T00:00:00`);
+  const start = new Date(end);
+  start.setDate(start.getDate() - 6);
+
+  return rows.filter((row) => {
+    const d = new Date(`${row.date}T00:00:00`);
+    return d >= start && d <= end;
+  });
+}
+
+function aggregateTypeRows(rows: GoogleOsRow[], type: CampaignTypeName) {
+  const filteredRows = rows.filter((row) => getCampaignType(row) === type);
+  const cost = filteredRows.reduce((sum, row) => sum + row.cost, 0);
+  const conversionValue = filteredRows.reduce((sum, row) => sum + row.conversionValue, 0);
+  const conversions = filteredRows.reduce((sum, row) => sum + row.conversions, 0);
+  const impressions = filteredRows.reduce((sum, row) => sum + row.impressions, 0);
+  const clicks = filteredRows.reduce((sum, row) => sum + row.clicks, 0);
+
+  return {
+    cost,
+    conversionValue,
+    conversions,
+    roas: safeDiv(conversionValue, cost),
+    cpa: safeDiv(cost, conversions),
+    ctr: safeDiv(clicks, impressions),
+    cvr: safeDiv(conversions, clicks),
+  };
+}
+
+
 export function CampaignTypeTab({
   model,
   type,
@@ -312,6 +351,14 @@ export function CampaignTypeTab({
 
   const campaignRows = useMemo(() => buildCampaignRows(selectedRows, type), [selectedRows, type]);
   const compareCampaignRows = useMemo(() => buildCampaignRows(compareRows, type), [compareRows, type]);
+
+  const last7Metrics = useMemo(() => {
+    return aggregateTypeRows(getLast7RowsFromRows(model.rows), type);
+  }, [model.rows, type]);
+
+  const allTimeMetrics = useMemo(() => {
+    return aggregateTypeRows(model.rows, type);
+  }, [model.rows, type]);
 
   const compareMap = useMemo(() => {
     const map = new Map<string, CampaignRow>();
@@ -413,22 +460,18 @@ export function CampaignTypeTab({
           </div>
         </div>
 
-        <div className="campaign-type-summary-strip">
+        <div className="campaign-type-summary-strip benchmark">
           <div>
             <TypeIcon type={type} />
             <span>Campaigns</span>
             <strong>{tableRows.length}</strong>
           </div>
           <div>
-            <span>Spend</span>
+            <span>Selected Spend</span>
             <strong className="red">{compactMoney(totalSpend)}</strong>
           </div>
           <div>
-            <span>Revenue</span>
-            <strong className="green">{compactMoney(totalRevenue)}</strong>
-          </div>
-          <div>
-            <span>ROAS</span>
+            <span>Selected ROAS</span>
             <strong className={roasTone(safeDiv(totalRevenue, totalSpend))}>{x(safeDiv(totalRevenue, totalSpend))}</strong>
           </div>
           <div>
@@ -438,6 +481,22 @@ export function CampaignTypeTab({
           <div>
             <span>CPA</span>
             <strong>{compactMoney(safeDiv(totalSpend, totalPurchases))}</strong>
+          </div>
+          <div>
+            <span>Last 7D Spend</span>
+            <strong className="red">{compactMoney(last7Metrics.cost)}</strong>
+          </div>
+          <div>
+            <span>Last 7D ROAS</span>
+            <strong className={roasTone(last7Metrics.roas)}>{x(last7Metrics.roas)}</strong>
+          </div>
+          <div>
+            <span>All Time Spend</span>
+            <strong className="red">{compactMoney(allTimeMetrics.cost)}</strong>
+          </div>
+          <div>
+            <span>All Time ROAS</span>
+            <strong className={roasTone(allTimeMetrics.roas)}>{x(allTimeMetrics.roas)}</strong>
           </div>
         </div>
 
