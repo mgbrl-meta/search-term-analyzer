@@ -510,3 +510,386 @@ body,
 .gos-table td.right {
   font-variant-numeric: tabular-nums;
 }
+
+/* Google OS date filter controls */
+.gos-date-control {
+  width: var(--gos-shell);
+  max-width: var(--gos-shell);
+  margin: 0 auto 14px;
+  border: 1px solid var(--gos-border);
+  background: var(--gos-surface);
+  border-radius: var(--gos-radius-lg);
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  box-shadow: var(--gos-shadow);
+}
+
+.gos-date-left span {
+  display: block;
+  color: var(--gos-faint);
+  font-size: var(--gos-font-xs);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+
+.gos-date-buttons {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.gos-date-buttons button,
+.gos-date-fields select,
+.gos-date-fields input {
+  border: 1px solid var(--gos-border);
+  background: var(--gos-surface-2);
+  color: var(--gos-text);
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: var(--gos-font-sm);
+  font-weight: 800;
+}
+
+.gos-date-buttons button {
+  cursor: pointer;
+}
+
+.gos-date-buttons button.active {
+  background: var(--gos-blue);
+  border-color: var(--gos-blue);
+  color: #fff;
+}
+
+.gos-date-fields {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: flex-end;
+}
+
+.gos-date-fields label {
+  display: grid;
+  gap: 5px;
+  color: var(--gos-faint);
+  font-size: var(--gos-font-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gos-metric {
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.gos-metric.green {
+  color: var(--gos-green) !important;
+}
+
+.gos-metric.red {
+  color: var(--gos-red) !important;
+}
+
+.gos-metric.amber {
+  color: var(--gos-amber) !important;
+}
+
+.gos-metric.neutral {
+  color: var(--gos-muted) !important;
+}
+
+@media(max-width: 900px) {
+  .gos-date-control {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gos-date-fields {
+    justify-content: stretch;
+  }
+
+  .gos-date-fields label {
+    width: 100%;
+  }
+}
+
+/* Google OS date filter controls */
+.gos-date-control {
+  width: var(--gos-shell);
+  max-width: var(--gos-shell);
+  margin: 0 auto 14px;
+  border: 1px solid var(--gos-border);
+  background: var(--gos-surface);
+  border-radius: var(--gos-radius-lg);
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  box-shadow: var(--gos-shadow);
+}
+
+.gos-date-left span {
+  display: block;
+  color: var(--gos-faint);
+  font-size: var(--gos-font-xs);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+
+.gos-date-buttons {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.gos-date-buttons button,
+.gos-date-fields select,
+.gos-date-fields input {
+  border: 1px solid var(--gos-border);
+  background: var(--gos-surface-2);
+  color: var(--gos-text);
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: var(--gos-font-sm);
+  font-weight: 800;
+}
+
+.gos-date-buttons button {
+  cursor: pointer;
+}
+
+.gos-date-buttons button.active {
+  background: var(--gos-blue);
+  border-color: var(--gos-blue);
+  color: #fff;
+}
+
+.gos-date-fields {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: flex-end;
+}
+
+.gos-date-fields label {
+  display: grid;
+  gap: 5px;
+  color: var(--gos-faint);
+  font-size: var(--gos-font-xs);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gos-metric {
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.gos-metric.green {
+  color: var(--gos-green) !important;
+}
+
+.gos-metric.red {
+  color: var(--gos-red) !important;
+}
+
+.gos-metric.amber {
+  color: var(--gos-amber) !important;
+}
+
+.gos-metric.neutral {
+  color: var(--gos-muted) !important;
+}
+
+@media(max-width: 900px) {
+  .gos-date-control {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gos-date-fields {
+    justify-content: stretch;
+  }
+
+  .gos-date-fields label {
+    width: 100%;
+  }
+}
+
+/* =========================================================
+   GOOGLE OS STICKY HEADER / FROZEN NAV SYSTEM
+   ========================================================= */
+
+/* Main shell spacing for sticky header stack */
+.google-os-shell {
+  padding-top: 12px !important;
+}
+
+/* Freeze top Google OS header */
+.gos-topbar {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+
+  width: var(--gos-shell) !important;
+  max-width: var(--gos-shell) !important;
+  margin: 0 auto 8px !important;
+
+  background: color-mix(in srgb, var(--gos-bg) 88%, transparent) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 16px !important;
+  padding: 10px 12px !important;
+  box-shadow: var(--gos-shadow) !important;
+}
+
+/* Freeze main tab bar below header */
+.gos-home-tabs {
+  position: sticky !important;
+  top: 68px !important;
+  z-index: 999 !important;
+
+  width: var(--gos-shell) !important;
+  max-width: var(--gos-shell) !important;
+  margin: 0 auto 10px !important;
+
+  background: color-mix(in srgb, var(--gos-bg) 88%, transparent) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+
+  border: 1px solid var(--gos-border) !important;
+  border-radius: 14px !important;
+  padding: 8px !important;
+
+  display: flex !important;
+  gap: 7px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+}
+
+.gos-home-tabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+.gos-home-tabs button {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+
+/* Freeze data source strip below tabs */
+.gos-source-strip {
+  position: sticky !important;
+  top: 125px !important;
+  z-index: 998 !important;
+
+  background: color-mix(in srgb, var(--gos-surface) 94%, transparent) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+
+  margin-bottom: 10px !important;
+}
+
+/* Freeze date filter below source strip */
+.gos-date-control {
+  position: sticky !important;
+  top: 198px !important;
+  z-index: 997 !important;
+
+  background: color-mix(in srgb, var(--gos-surface) 94%, transparent) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+
+  margin-bottom: 12px !important;
+}
+
+/* Compact source strip when data is loaded */
+.gos-source-strip.compact {
+  padding: 9px 12px !important;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(0, 2fr) !important;
+}
+
+.gos-source-strip.compact .gos-source-main strong {
+  font-size: 14px !important;
+}
+
+.gos-source-strip.compact .gos-source-main small {
+  font-size: 11px !important;
+}
+
+.gos-source-strip.compact .gos-source-actions input,
+.gos-source-strip.compact .gos-source-actions button,
+.gos-source-strip.compact .gos-source-actions label {
+  padding: 8px 10px !important;
+  font-size: 11px !important;
+}
+
+/* Keep table headers frozen inside tables */
+.gos-table th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 20 !important;
+}
+
+/* If table appears directly under sticky page controls, don't let it hide under them */
+.gos-panel {
+  scroll-margin-top: 240px !important;
+}
+
+/* Better compact mode for zoom / smaller screens */
+@media(max-width: 1200px) {
+  .gos-topbar {
+    top: 0 !important;
+  }
+
+  .gos-home-tabs {
+    top: 66px !important;
+  }
+
+  .gos-source-strip {
+    position: relative !important;
+    top: auto !important;
+  }
+
+  .gos-date-control {
+    position: sticky !important;
+    top: 124px !important;
+  }
+}
+
+/* Mobile: only header and tabs stay sticky, source/date become normal to avoid covering screen */
+@media(max-width: 760px) {
+  .gos-topbar {
+    top: 0 !important;
+    border-radius: 12px !important;
+  }
+
+  .gos-home-tabs {
+    top: 62px !important;
+    border-radius: 12px !important;
+  }
+
+  .gos-source-strip,
+  .gos-date-control {
+    position: relative !important;
+    top: auto !important;
+    z-index: auto !important;
+  }
+
+  .gos-panel {
+    scroll-margin-top: 130px !important;
+  }
+}
