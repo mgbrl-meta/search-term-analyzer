@@ -7346,3 +7346,250 @@ html.light .gos-axis-chart-caption {
     min-width: 1220px !important;
   }
 }
+
+/* =========================================================
+   SEARCH TERM WASTER — CLEAN COMPACT DROPDOWN V2
+   Active file: app/google-os-theme.css
+   ========================================================= */
+
+.google-os-shell .search-term-waster-page {
+  gap: 12px !important;
+}
+
+/* remove overlap issue on this tab */
+.google-os-shell .search-term-waster-page {
+  padding-top: 0 !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-head {
+  width: 100% !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  border-radius: 12px !important;
+  background: rgba(15, 23, 42, 0.78) !important;
+  overflow: hidden !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-head-row {
+  width: 100% !important;
+  min-height: 48px !important;
+  padding: 8px 10px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #f8fafc !important;
+  display: grid !important;
+  grid-template-columns:
+    minmax(330px, 2fr)
+    minmax(66px, .42fr)
+    minmax(78px, .48fr)
+    minmax(70px, .42fr)
+    minmax(76px, .46fr)
+    minmax(62px, .38fr)
+    minmax(82px, .5fr)
+    minmax(62px, .38fr)
+    minmax(72px, .44fr)
+    minmax(62px, .38fr)
+    minmax(70px, .42fr) !important;
+  gap: 7px !important;
+  align-items: center !important;
+  text-align: right !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-head-row > span {
+  display: grid !important;
+  gap: 1px !important;
+  justify-items: end !important;
+  min-width: 0 !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-head-row small {
+  color: #94a3b8 !important;
+  font-size: 6.5px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-head-row strong {
+  color: #f8fafc !important;
+  font-size: 11px !important;
+  line-height: 1.1 !important;
+  font-weight: 950 !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  text-align: left !important;
+  justify-items: start !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-title b {
+  width: 19px !important;
+  height: 19px !important;
+  flex: 0 0 19px !important;
+  border-radius: 7px !important;
+  background: rgba(66, 133, 244, 0.18) !important;
+  color: #4285f4 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-title span {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 2px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-title strong {
+  font-size: 11.5px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-title small {
+  color: #cbd5e1 !important;
+  font-size: 8px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-body {
+  border-top: 1px solid rgba(148, 163, 184, 0.22) !important;
+  padding: 8px !important;
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-tools {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 0 2px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-tools p {
+  margin: 0 auto 0 0 !important;
+  color: #cbd5e1 !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  font-weight: 750 !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-tools > div {
+  display: flex !important;
+  gap: 6px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-tools button {
+  height: 26px !important;
+  border: 1px solid rgba(66, 133, 244, 0.34) !important;
+  background: rgba(66, 133, 244, 0.13) !important;
+  color: #f8fafc !important;
+  border-radius: 8px !important;
+  padding: 0 8px !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-table-wrap {
+  max-height: 420px !important;
+  overflow: auto !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  border-radius: 10px !important;
+  background: rgba(2, 6, 23, 0.28) !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-table {
+  width: 100% !important;
+  min-width: 1260px !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-table th,
+.google-os-shell .search-term-waster-page .stw-clean-table td {
+  padding: 5px 7px !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12) !important;
+  font-size: 9.5px !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-table th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 3 !important;
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+  font-size: 6.5px !important;
+  font-weight: 950 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-table td {
+  color: #cbd5e1 !important;
+  font-weight: 750 !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-table td strong {
+  color: #f8fafc !important;
+  font-weight: 900 !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-table th:first-child,
+.google-os-shell .search-term-waster-page .stw-clean-table th:nth-child(2),
+.google-os-shell .search-term-waster-page .stw-clean-table th:nth-child(3),
+.google-os-shell .search-term-waster-page .stw-clean-table td:first-child,
+.google-os-shell .search-term-waster-page .stw-clean-table td:nth-child(2),
+.google-os-shell .search-term-waster-page .stw-clean-table td:nth-child(3) {
+  text-align: left !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-table th:first-child,
+.google-os-shell .search-term-waster-page .stw-clean-table td:first-child {
+  width: 210px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-table th:nth-child(2),
+.google-os-shell .search-term-waster-page .stw-clean-table td:nth-child(2) {
+  width: 210px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-table th:nth-child(3),
+.google-os-shell .search-term-waster-page .stw-clean-table td:nth-child(3) {
+  width: 150px !important;
+}
+
+.google-os-shell .search-term-waster-page .stw-clean-table th:nth-child(12),
+.google-os-shell .search-term-waster-page .stw-clean-table td:nth-child(12),
+.google-os-shell .search-term-waster-page .stw-clean-table th:nth-child(13),
+.google-os-shell .search-term-waster-page .stw-clean-table td:nth-child(13) {
+  width: 130px !important;
+}
+
+@media(max-width: 1600px) {
+  .google-os-shell .search-term-waster-page .stw-clean-head {
+    overflow-x: auto !important;
+  }
+
+  .google-os-shell .search-term-waster-page .stw-clean-head-row {
+    min-width: 1220px !important;
+  }
+}
