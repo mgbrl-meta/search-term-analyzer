@@ -35,7 +35,6 @@ export type SearchTermRawRow = {
   adGroup: string;
   adGroupId: string;
   adGroupStatus: string;
-  addedExcluded: string;
   searchTerm: string;
   keyword: string;
   keywordMatchType: string;
@@ -315,14 +314,6 @@ export function normalizeUploadedSearchTermRows(rawRows: Record<string, string>[
         adGroup: pick(row, ["Ad group", "Ad group name"]),
         adGroupId: pick(row, ["Ad group ID", "Ad group id"]),
         adGroupStatus: pick(row, ["Ad group status", "Ad group state"]),
-        addedExcluded: pick(row, [
-          "Added/Excluded",
-          "Added / Excluded",
-          "Added excluded",
-          "Added or excluded",
-          "Status",
-          "Search term status"
-        ]),
         searchTerm: cleanTerm(pick(row, [
           "Search term",
           "Search Term",
@@ -345,22 +336,7 @@ export function normalizeUploadedSearchTermRows(rawRows: Record<string, string>[
         conversionValue,
       };
     })
-    .filter((row) => {
-      if (!row.searchTerm) return false;
-
-      const addedExcluded = String(row.addedExcluded || "").trim().toLowerCase();
-
-      // Google Ads Search Terms report has "Added/Excluded".
-      // Already excluded terms should not be shown in Search Term Waster.
-      if (
-        addedExcluded === "excluded" ||
-        addedExcluded.includes("excluded")
-      ) {
-        return false;
-      }
-
-      return row.cost > 0 || row.clicks > 0 || row.impressions > 0;
-    });
+    .filter((row) => row.searchTerm && (row.cost > 0 || row.clicks > 0 || row.impressions > 0));
 }
 
 export function convertSearchTermRawRowsToGoogleRows(rows: SearchTermRawRow[]): GoogleOsRow[] {
@@ -429,7 +405,6 @@ export function convertSearchTermRawRowsToGoogleRows(rows: SearchTermRawRow[]): 
         adGroup: row.adGroup,
         adGroupId: row.adGroupId,
         adGroupStatus: row.adGroupStatus,
-        addedExcluded: row.addedExcluded,
         searchTerm: row.searchTerm,
         keyword: row.keyword,
         keywordMatchType: row.keywordMatchType,
