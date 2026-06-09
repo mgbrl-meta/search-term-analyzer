@@ -433,23 +433,6 @@ async function downloadWorkbook(heads: SearchTermAnalysisHead[], allRows: Search
   URL.revokeObjectURL(url);
 }
 
-
-function getHeadMetrics(head: SearchTermAnalysisHead) {
-  const clicks = head.rows.reduce((sum, row) => sum + row.clicks, 0);
-  const impressions = head.rows.reduce((sum, row) => sum + row.impressions, 0);
-  const revenue = head.totalRevenue;
-  const spend = head.totalSpend;
-  const purchases = head.purchases;
-
-  return {
-    clicks,
-    impressions,
-    ctr: impressions > 0 ? clicks / impressions : 0,
-    cpa: purchases > 0 ? spend / purchases : 0,
-    roas: spend > 0 ? revenue / spend : 0,
-  };
-}
-
 function SearchTermHeadDropdown({
   head,
   isOpen,
@@ -459,12 +442,10 @@ function SearchTermHeadDropdown({
   isOpen: boolean;
   onToggle: () => void;
 }) {
-  const metrics = getHeadMetrics(head);
-
   return (
-    <div className="stw-clean-head">
-      <button type="button" className="stw-clean-head-row" onClick={onToggle}>
-        <span className="stw-clean-title">
+    <div className="stw3-head-card">
+      <button type="button" className="stw3-head-row" onClick={onToggle}>
+        <span className="stw3-head-title">
           <b>{isOpen ? "−" : "+"}</b>
           <span>
             <strong>{head.title}</strong>
@@ -472,68 +453,64 @@ function SearchTermHeadDropdown({
           </span>
         </span>
 
-        <span><small>Terms</small><strong>{head.rows.length.toLocaleString("en-IN")}</strong></span>
+        <span><small>Terms</small><strong>{head.rows.length}</strong></span>
         <span><small>Spend</small><strong className="red">{formatMoney(head.totalSpend)}</strong></span>
-        <span><small>Clicks</small><strong>{metrics.clicks.toLocaleString("en-IN")}</strong></span>
-        <span><small>Impr.</small><strong>{metrics.impressions.toLocaleString("en-IN")}</strong></span>
-        <span><small>CTR</small><strong>{formatPercent(metrics.ctr)}</strong></span>
         <span><small>Revenue</small><strong className="green">{formatMoney(head.totalRevenue)}</strong></span>
         <span><small>Purch.</small><strong>{head.purchases.toFixed(0)}</strong></span>
-        <span><small>CPA</small><strong>{formatMoney(metrics.cpa)}</strong></span>
-        <span><small>ROAS</small><strong className={metrics.roas >= 2 ? "green" : metrics.roas >= 1 ? "amber" : "red"}>{formatX(metrics.roas)}</strong></span>
-        <span><small>Risk</small><strong className={head.risk === "High" ? "red" : head.risk === "Opportunity" || head.risk === "Protect" ? "green" : "amber"}>{head.risk}</strong></span>
+        <span>
+          <small>Risk</small>
+          <strong className={head.risk === "High" ? "red" : head.risk === "Opportunity" || head.risk === "Protect" ? "green" : "amber"}>
+            {head.risk}
+          </strong>
+        </span>
       </button>
 
       {isOpen ? (
-        <div className="stw-clean-body">
-          <div className="stw-clean-tools">
-            <p>{head.subtitle}</p>
+        <div className="stw3-head-body">
+          <div className="stw3-head-tools">
             <div>
-              <button type="button" onClick={() => copyText(buildHeadNegativeText(head, "exact"))}>Copy Exact</button>
-              <button type="button" onClick={() => copyText(buildHeadNegativeText(head, "phrase"))}>Copy Phrase</button>
-              <button type="button" onClick={() => copyText(buildHeadNegativeText(head, "broad"))}>Copy Broad</button>
+              <span>{head.subtitle}</span>
             </div>
+
+            <button type="button" onClick={() => copyText(buildHeadNegativeText(head, "exact"))}>Copy Exact</button>
+            <button type="button" onClick={() => copyText(buildHeadNegativeText(head, "phrase"))}>Copy Phrase</button>
+            <button type="button" onClick={() => copyText(buildHeadNegativeText(head, "broad"))}>Copy Broad</button>
           </div>
 
-          <div className="stw-clean-table-wrap">
-            <table className="stw-clean-table">
-              <thead>
-                <tr>
-                  <th>Search Term</th>
-                  <th>Campaign</th>
-                  <th>Ad Group</th>
-                  <th>Spend</th>
-                  <th>Clicks</th>
-                  <th>Impr.</th>
-                  <th>CTR</th>
-                  <th>Purch.</th>
-                  <th>Revenue</th>
-                  <th>CPA</th>
-                  <th>ROAS</th>
-                  <th>Exact Negative</th>
-                  <th>Phrase Negative</th>
-                </tr>
-              </thead>
-              <tbody>
-                {head.rows.map((row) => (
-                  <tr key={row.id}>
-                    <td title={row.searchTerm}><strong>{row.searchTerm}</strong></td>
-                    <td title={row.campaign}>{row.campaign}</td>
-                    <td title={row.adGroup}>{row.adGroup}</td>
-                    <td className="red">{formatMoney(row.spend)}</td>
-                    <td>{row.clicks.toLocaleString("en-IN")}</td>
-                    <td>{row.impressions.toLocaleString("en-IN")}</td>
-                    <td>{formatPercent(row.ctr)}</td>
-                    <td>{row.purchases.toFixed(0)}</td>
-                    <td className="green">{formatMoney(row.revenue)}</td>
-                    <td>{formatMoney(row.cpa)}</td>
-                    <td className={row.roas >= 2 ? "green" : row.roas >= 1 ? "amber" : "red"}>{formatX(row.roas)}</td>
-                    <td title={row.exactSyntax}>{row.exactSyntax}</td>
-                    <td title={row.phraseSyntax}>{row.phraseSyntax}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="stw3-table-wrap">
+            <div className="stw3-table stw3-table-header">
+              <span>Search Term</span>
+              <span>Campaign</span>
+              <span>Ad Group</span>
+              <span>Spend</span>
+              <span>Clicks</span>
+              <span>Impr.</span>
+              <span>CTR</span>
+              <span>Purch.</span>
+              <span>Revenue</span>
+              <span>CPA</span>
+              <span>ROAS</span>
+              <span>Exact</span>
+              <span>Phrase</span>
+            </div>
+
+            {head.rows.map((row) => (
+              <div key={row.id} className="stw3-table stw3-table-row">
+                <span title={row.searchTerm}><strong>{row.searchTerm}</strong></span>
+                <span title={row.campaign}>{row.campaign}</span>
+                <span title={row.adGroup}>{row.adGroup}</span>
+                <span className="red">{formatMoney(row.spend)}</span>
+                <span>{row.clicks}</span>
+                <span>{row.impressions}</span>
+                <span>{formatPercent(row.ctr)}</span>
+                <span>{row.purchases}</span>
+                <span className="green">{formatMoney(row.revenue)}</span>
+                <span>{formatMoney(row.cpa)}</span>
+                <span>{formatX(row.roas)}</span>
+                <span title={row.exactSyntax}>{row.exactSyntax}</span>
+                <span title={row.phraseSyntax}>{row.phraseSyntax}</span>
+              </div>
+            ))}
           </div>
         </div>
       ) : null}
