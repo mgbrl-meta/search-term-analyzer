@@ -2,189 +2,117 @@
 
 import { useMemo, useState } from "react";
 import type { GoogleOsRow } from "@/lib/googleOs/types";
-import { compactMoney, pct, safeDiv, x } from "@/lib/googleOs/format";
+import {
+  aggregateGoogleOsRows,
+  buildGoogleOsPeriodOptions,
+  filterRowsByGoogleOsPeriod,
+  formatCompactMoney,
+  formatPercent,
+  formatX,
+  type GoogleOsPeriodMode,
+} from "@/lib/googleOs/periodToolkit";
 
-type TimeMode = "daily" | "weekly" | "monthly" | "quarterly";
+type GoogleOsSummaryHeaderProps = {
+  kicker: string;
+  title: string;
+  description: string;
 
-function aggregate(rows: GoogleOsRow[]) {
-  const spend = rows.reduce((sum, row) => sum + row.cost, 0);
-  const revenue = rows.reduce((sum, row) => sum + row.conversionValue, 0);
-  const purchases = rows.reduce((sum, row) => sum + row.conversions, 0);
-  const impressions = rows.reduce((sum, row) => sum + row.impressions, 0);
-  const clicks = rows.reduce((sum, row) => sum + row.clicks, 0);
+  /**
+   * Preferred toolkit prop.
+   * Use this going forward.
+   */
+  baseRows?: GoogleOsRow[];
 
-  return {
-    spend,
-    revenue,
-    purchases,
-    roas: safeDiv(revenue, spend),
-    cpa: safeDiv(spend, purchases),
-    ctr: safeDiv(clicks, impressions),
-    cvr: safeDiv(purchases, clicks),
-  };
-}
+  /**
+   * Backward-compatible prop.
+   * Existing tabs using rows={model.rows} will still work.
+   */
+  rows?: GoogleOsRow[];
 
-function toDate(date: string) {
-  return new Date(`${date}T00:00:00`);
-}
-
-function pad(value: number) {
-  return String(value).padStart(2, "0");
-}
-
-function formatDateLabel(date: string) {
-  const d = toDate(date);
-  if (Number.isNaN(d.getTime())) return date;
-
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-  return `${pad(d.getDate())}-${months[d.getMonth()]}-${String(d.getFullYear()).slice(2)}`;
-}
-
-function formatMonthLabel(month: string) {
-  const [year, monthNumber] = month.split("-");
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const label = months[Number(monthNumber) - 1] || monthNumber;
-
-  return `${label}-${String(year).slice(2)}`;
-}
-
-function getWeekStart(date: string) {
-  const d = toDate(date);
-  if (Number.isNaN(d.getTime())) return date;
-
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-function getQuarterKey(date: string) {
-  const d = toDate(date);
-  if (Number.isNaN(d.getTime())) return date;
-
-  const quarter = Math.floor(d.getMonth() / 3) + 1;
-
-  return `${d.getFullYear()}-Q${quarter}`;
-}
-
-function getPeriodKey(row: GoogleOsRow, mode: TimeMode) {
-  const date = row.date || "";
-
-  if (!date) return "";
-
-  if (mode === "daily") return date;
-  if (mode === "weekly") return getWeekStart(date);
-  if (mode === "monthly") return date.slice(0, 7);
-  if (mode === "quarterly") return getQuarterKey(date);
-
-  return date;
-}
-
-function getPeriodLabel(value: string, mode: TimeMode) {
-  if (mode === "daily") return formatDateLabel(value);
-  if (mode === "weekly") return `Week of ${formatDateLabel(value)}`;
-  if (mode === "monthly") return formatMonthLabel(value);
-  if (mode === "quarterly") {
-    const [year, quarter] = value.split("-Q");
-    return `Q${quarter}-${String(year).slice(2)}`;
-  }
-
-  return value;
-}
-
-function buildPeriodOptions(rows: GoogleOsRow[], mode: TimeMode) {
-  return Array.from(
-    new Set(
-      rows
-        .map((row) => getPeriodKey(row, mode))
-        .filter(Boolean)
-    )
-  )
-    .sort()
-    .reverse()
-    .map((value) => ({
-      value,
-      label: getPeriodLabel(value, mode),
-    }));
-}
-
-function filterRowsByPeriod(rows: GoogleOsRow[], mode: TimeMode, period: string) {
-  if (!period) return rows;
-
-  return rows.filter((row) => getPeriodKey(row, mode) === period);
-}
+  /**
+   * Controlled mode.
+   * Use when parent tab needs the same period selection for both summary + lower table.
+   */
+  periodMode?: GoogleOsPeriodMode;
+  selectedPeriod?: string;
+  onPeriodModeChange?: (mode: GoogleOsPeriodMode) => void;
+  onSelectedPeriodChange?: (period: string) => void;
+};
 
 export function GoogleOsSummaryHeader({
   kicker,
   title,
   description,
+  baseRows,
   rows,
-  periodLabel = "Period",
-  timeMode,
-  onTimeModeChange,
-  periodOptions,
+  periodMode,
   selectedPeriod,
-  onPeriodChange,
-}: {
-  kicker: string;
-  title: string;
-  description: string;
-  rows: GoogleOsRow[];
-  periodLabel?: string;
-  timeMode?: TimeMode;
-  onTimeModeChange?: (mode: TimeMode) => void;
-  periodOptions?: { value: string; label: string }[];
-  selectedPeriod?: string;
-  onPeriodChange?: (period: string) => void;
-}) {
-  const [internalTimeMode, setInternalTimeMode] = useState<TimeMode>("daily");
-  const [internalPeriodByMode, setInternalPeriodByMode] = useState<Record<TimeMode, string>>({
+  onPeriodModeChange,
+  onSelectedPeriodChange,
+}: GoogleOsSummaryHeaderProps) {
+  const sourceRows = baseRows || rows || [];
+
+  const [internalPeriodMode, setInternalPeriodMode] = useState<GoogleOsPeriodMode>("daily");
+  const [internalSelectedPeriodByMode, setInternalSelectedPeriodByMode] = useState<
+    Record<GoogleOsPeriodMode, string>
+  >({
     daily: "",
     weekly: "",
     monthly: "",
     quarterly: "",
   });
 
-  const activeTimeMode = timeMode || internalTimeMode;
+  const isControlled =
+    Boolean(periodMode) &&
+    Boolean(onPeriodModeChange) &&
+    Boolean(onSelectedPeriodChange);
 
-  const generatedOptions = useMemo(() => {
-    return buildPeriodOptions(rows || [], activeTimeMode);
-  }, [rows, activeTimeMode]);
+  const activePeriodMode = periodMode || internalPeriodMode;
 
-  const activeOptions = periodOptions?.length ? periodOptions : generatedOptions;
+  const periodOptions = useMemo(() => {
+    return buildGoogleOsPeriodOptions(sourceRows, activePeriodMode);
+  }, [sourceRows, activePeriodMode]);
 
   const activeSelectedPeriod =
     selectedPeriod ||
-    internalPeriodByMode[activeTimeMode] ||
-    activeOptions[0]?.value ||
+    internalSelectedPeriodByMode[activePeriodMode] ||
+    periodOptions[0]?.value ||
     "";
 
-  const summaryRows = useMemo(() => {
-    return filterRowsByPeriod(rows || [], activeTimeMode, activeSelectedPeriod);
-  }, [rows, activeTimeMode, activeSelectedPeriod]);
+  const filteredRows = useMemo(() => {
+    return filterRowsByGoogleOsPeriod(sourceRows, activePeriodMode, activeSelectedPeriod);
+  }, [sourceRows, activePeriodMode, activeSelectedPeriod]);
 
-  const totals = aggregate(summaryRows);
+  const totals = useMemo(() => {
+    return aggregateGoogleOsRows(filteredRows);
+  }, [filteredRows]);
 
-  function handleTimeModeChange(mode: TimeMode) {
-    if (onTimeModeChange) {
-      onTimeModeChange(mode);
+  function handleModeChange(mode: GoogleOsPeriodMode) {
+    const nextOptions = buildGoogleOsPeriodOptions(sourceRows, mode);
+    const nextPeriod = nextOptions[0]?.value || "";
+
+    if (isControlled) {
+      onPeriodModeChange?.(mode);
+      onSelectedPeriodChange?.(nextPeriod);
       return;
     }
 
-    setInternalTimeMode(mode);
+    setInternalPeriodMode(mode);
+    setInternalSelectedPeriodByMode((current) => ({
+      ...current,
+      [mode]: nextPeriod,
+    }));
   }
 
   function handlePeriodChange(period: string) {
-    if (onPeriodChange) {
-      onPeriodChange(period);
+    if (isControlled) {
+      onSelectedPeriodChange?.(period);
       return;
     }
 
-    setInternalPeriodByMode((current) => ({
+    setInternalSelectedPeriodByMode((current) => ({
       ...current,
-      [activeTimeMode]: period,
+      [activePeriodMode]: period,
     }));
   }
 
@@ -199,12 +127,12 @@ export function GoogleOsSummaryHeader({
 
         <div className="gos-shared-period-controls">
           <div className="gos-shared-time-buttons">
-            {(["daily", "weekly", "monthly", "quarterly"] as TimeMode[]).map((mode) => (
+            {(["daily", "weekly", "monthly", "quarterly"] as GoogleOsPeriodMode[]).map((mode) => (
               <button
                 key={mode}
                 type="button"
-                className={activeTimeMode === mode ? "active" : ""}
-                onClick={() => handleTimeModeChange(mode)}
+                className={activePeriodMode === mode ? "active" : ""}
+                onClick={() => handleModeChange(mode)}
               >
                 {mode.charAt(0).toUpperCase() + mode.slice(1)}
               </button>
@@ -212,9 +140,9 @@ export function GoogleOsSummaryHeader({
           </div>
 
           <label>
-            {periodLabel}
+            Period
             <select value={activeSelectedPeriod} onChange={(event) => handlePeriodChange(event.target.value)}>
-              {activeOptions.map((option) => (
+              {periodOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -227,31 +155,37 @@ export function GoogleOsSummaryHeader({
       <div className="gos-shared-summary-metrics">
         <div>
           <span>Total Spend</span>
-          <strong>{compactMoney(totals.spend)}</strong>
+          <strong>{formatCompactMoney(totals.spend)}</strong>
         </div>
+
         <div>
           <span>Total Revenue</span>
-          <strong>{compactMoney(totals.revenue)}</strong>
+          <strong>{formatCompactMoney(totals.revenue)}</strong>
         </div>
+
         <div>
           <span>ROAS</span>
-          <strong>{x(totals.roas)}</strong>
+          <strong>{formatX(totals.roas)}</strong>
         </div>
+
         <div>
           <span>Purchases</span>
           <strong>{totals.purchases.toFixed(0)}</strong>
         </div>
+
         <div>
           <span>CPA</span>
-          <strong>{compactMoney(totals.cpa)}</strong>
+          <strong>{formatCompactMoney(totals.cpa)}</strong>
         </div>
+
         <div>
           <span>CTR</span>
-          <strong>{pct(totals.ctr)}</strong>
+          <strong>{formatPercent(totals.ctr)}</strong>
         </div>
+
         <div>
           <span>CVR</span>
-          <strong>{pct(totals.cvr)}</strong>
+          <strong>{formatPercent(totals.cvr)}</strong>
         </div>
       </div>
     </div>

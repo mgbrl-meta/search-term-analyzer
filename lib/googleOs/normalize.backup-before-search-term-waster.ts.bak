@@ -74,34 +74,6 @@ export function normalizeGoogleAdsRows(rawRows: Record<string, unknown>[]): Goog
         adGroupId: str(pick(row, ["Ad group ID"])),
         adGroupStatus: str(pick(row, ["Ad group state", "Ad group status"])),
         adGroupType: str(pick(row, ["Ad group type"])),
-        searchTerm: str(pick(row, [
-          "Search term",
-          "Search Term",
-          "Search query",
-          "Search Query",
-          "Query",
-          "User search term",
-          "Matched search term",
-          "Customer search term"
-        ])),
-        keyword: str(pick(row, [
-          "Keyword",
-          "Keyword text",
-          "Keyword Text",
-          "Matched keyword",
-          "Search keyword"
-        ])),
-        keywordMatchType: str(pick(row, [
-          "Keyword match type",
-          "Match type",
-          "Keyword Match Type",
-          "Search term match type"
-        ])),
-        queryMatchType: str(pick(row, [
-          "Query match type",
-          "Search term match type",
-          "Match Type"
-        ])),
 
         avgCpc,
         cost,

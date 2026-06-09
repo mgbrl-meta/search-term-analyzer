@@ -11,11 +11,6 @@ export type GoogleOsRow = {
   adGroupStatus: string;
   adGroupType: string;
 
-  searchTerm: string;
-  keyword: string;
-  keywordMatchType: string;
-  queryMatchType: string;
-
   avgCpc: number;
   cost: number;
   impressions: number;
@@ -63,11 +58,6 @@ export type GoogleOsGroupRow = {
   adGroup?: string;
   adGroupId?: string;
   adGroupStatus?: string;
-
-  searchTerm?: string;
-  keyword?: string;
-  keywordMatchType?: string;
-  queryMatchType?: string;
 
   dates: string[];
 

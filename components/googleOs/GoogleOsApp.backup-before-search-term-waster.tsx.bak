@@ -1,0 +1,324 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { buildGoogleOsModel } from "@/lib/googleOs/normalize";
+import type { GoogleOsModel } from "@/lib/googleOs/types";
+import { formatGoogleOsDateLabel } from "@/lib/googleOs/dateFilter";
+
+import { CampaignsTab } from "@/components/googleOs/tabs/CampaignsTab";
+import { CampaignTypeTab } from "@/components/googleOs/tabs/CampaignTypeTab";
+import { MonthlySummaryTab } from "@/components/googleOs/tabs/MonthlySummaryTab";
+import { AiOperatorReportTab } from "@/components/googleOs/tabs/AiOperatorReportTab";
+import { SettingsTab } from "@/components/googleOs/tabs/SettingsTab";
+
+type GoogleOsTab =
+  | "campaigns"
+  | "search"
+  | "shopping"
+  | "demand_gen"
+  | "video"
+  | "monthly_summary"
+  | "operator_report"
+  | "settings";
+
+const TABS: { key: GoogleOsTab; label: string }[] = [
+  { key: "campaigns", label: "All Campaigns" },
+  { key: "search", label: "Search" },
+  { key: "shopping", label: "Shopping" },
+  { key: "demand_gen", label: "Demand Gen" },
+  { key: "video", label: "Video" },
+  { key: "monthly_summary", label: "Monthly Summary" },
+  { key: "operator_report", label: "Operator Report" },
+  { key: "settings", label: "Settings" },
+];
+
+function parseCsvLine(line: string) {
+  const cells: string[] = [];
+  let value = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i += 1) {
+    const char = line[i];
+    const next = line[i + 1];
+
+    if (char === '"' && inQuotes && next === '"') {
+      value += '"';
+      i += 1;
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+
+    if (char === "," && !inQuotes) {
+      cells.push(value.trim());
+      value = "";
+      continue;
+    }
+
+    value += char;
+  }
+
+  cells.push(value.trim());
+  return cells;
+}
+
+function parseCsv(text: string): Record<string, string>[] {
+  const cleaned = text.replace(/^\uFEFF/, "").trim();
+  if (!cleaned) return [];
+
+  const lines = cleaned.split(/\r?\n/).filter(Boolean);
+  const headers = parseCsvLine(lines[0]).map((header) => header.trim());
+
+  return lines.slice(1).map((line) => {
+    const cells = parseCsvLine(line);
+    const row: Record<string, string> = {};
+
+    headers.forEach((header, index) => {
+      row[header] = cells[index] ?? "";
+    });
+
+    return row;
+  });
+}
+
+function fileToText(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(reader.error || new Error("Unable to read file"));
+    reader.readAsText(file);
+  });
+}
+
+export function GoogleOsApp() {
+  const [activeTab, setActiveTab] = useState<GoogleOsTab>("campaigns");
+  const [sheetUrl, setSheetUrl] = useState("");
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [sourceLabel, setSourceLabel] = useState("No data loaded");
+  const [error, setError] = useState("");
+  const [model, setModel] = useState<GoogleOsModel | null>(null);
+  const [themeMode, setThemeMode] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const savedTheme = (localStorage.getItem("google_os_theme_mode") || "dark") as "dark" | "light";
+    setThemeMode(savedTheme);
+    document.documentElement.classList.toggle("light", savedTheme === "light");
+    document.documentElement.classList.toggle("dark", savedTheme === "dark");
+
+    const savedUrl = localStorage.getItem("google_os_sheet_csv_url") || "";
+    const savedCsv = localStorage.getItem("google_os_last_csv") || "";
+
+    if (savedUrl) setSheetUrl(savedUrl);
+
+    if (savedCsv) {
+      try {
+        const rows = parseCsv(savedCsv);
+        const nextModel = buildGoogleOsModel(rows as any);
+        setModel(nextModel);
+        setSourceLabel(`${rows.length.toLocaleString()} rows loaded`);
+      } catch {
+        localStorage.removeItem("google_os_last_csv");
+      }
+    }
+  }, []);
+
+  async function loadSheetUrl() {
+    if (!sheetUrl.trim()) {
+      setError("Paste a published Google Sheet CSV URL first.");
+      setSourceOpen(true);
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(sheetUrl.trim());
+
+      if (!response.ok) {
+        throw new Error(`Unable to load CSV. HTTP ${response.status}`);
+      }
+
+      const csvText = await response.text();
+      const rows = parseCsv(csvText);
+      const nextModel = buildGoogleOsModel(rows as any);
+
+      setModel(nextModel);
+      setSourceLabel(`${rows.length.toLocaleString()} rows loaded`);
+      localStorage.setItem("google_os_sheet_csv_url", sheetUrl.trim());
+      localStorage.setItem("google_os_last_csv", csvText);
+      setSourceOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load Google Sheet CSV.");
+      setSourceOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function uploadCsv(file: File | null) {
+    if (!file) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const csvText = await fileToText(file);
+      const rows = parseCsv(csvText);
+      const nextModel = buildGoogleOsModel(rows as any);
+
+      setModel(nextModel);
+      setSourceLabel(`${rows.length.toLocaleString()} rows loaded`);
+      localStorage.setItem("google_os_last_csv", csvText);
+      setSourceOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to parse uploaded CSV.");
+      setSourceOpen(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function toggleThemeMode() {
+    const nextTheme = themeMode === "dark" ? "light" : "dark";
+    setThemeMode(nextTheme);
+    localStorage.setItem("google_os_theme_mode", nextTheme);
+    document.documentElement.classList.toggle("light", nextTheme === "light");
+    document.documentElement.classList.toggle("dark", nextTheme === "dark");
+  }
+
+  const activeTitle = useMemo(() => {
+    return TABS.find((tab) => tab.key === activeTab)?.label || "Google OS";
+  }, [activeTab]);
+
+  const latestDateLabel = useMemo(() => {
+    if (!model?.rows?.length) return "No date";
+
+    const latestDate = Array.from(
+      new Set(model.rows.map((row) => row.date).filter(Boolean))
+    ).sort().at(-1);
+
+    return latestDate ? formatGoogleOsDateLabel(latestDate) : "No date";
+  }, [model]);
+
+  return (
+    <main className="google-os-shell">
+      <header className="gos-topbar">
+        <div className="gos-brand">
+          <div className="gos-logo">G</div>
+          <div>
+            <h1>Google OS</h1>
+            <p>Daily Performance OS</p>
+          </div>
+        </div>
+
+        <div className="gos-header-pills">
+          {model ? (
+            <div className="gos-header-date-pill">
+              <span>Latest Date</span>
+              <b>{latestDateLabel}</b>
+            </div>
+          ) : null}
+
+          <button
+            type="button"
+            className="gos-theme-toggle"
+            onClick={toggleThemeMode}
+            title="Toggle light / dark mode"
+          >
+            {themeMode === "dark" ? "LIGHT" : "DARK"}
+          </button>
+
+          <button
+            type="button"
+            className="gos-header-source-pill"
+            onClick={() => setSourceOpen((value) => !value)}
+          >
+            <span>{model ? "Sheet Live" : "Connect Data"}</span>
+            <b>{sourceLabel}</b>
+          </button>
+        </div>
+      </header>
+
+      <nav className="gos-home-tabs">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            className={activeTab === tab.key ? "active" : ""}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+
+      <button
+        type="button"
+        className="gos-source-toggle"
+        onClick={() => setSourceOpen((value) => !value)}
+      >
+        <span>{model ? "Sheet Live" : "Connect Sheet"}</span>
+        <b>{sourceOpen ? "Close" : "Data Source"}</b>
+      </button>
+
+      {sourceOpen ? (
+        <section className="gos-source-strip gos-source-drawer open">
+          <div className="gos-source-main">
+            <span>Data Source</span>
+            <strong>{model ? "Google Ads data loaded" : "Connect Google Ads data"}</strong>
+            <small>Use published Google Sheet CSV URL or upload CSV backup. URL is hidden from the main view.</small>
+            {error ? <small className="gos-error-text">{error}</small> : null}
+          </div>
+
+          <div className="gos-source-actions">
+            <input
+              value={sheetUrl}
+              onChange={(event) => setSheetUrl(event.target.value)}
+              placeholder="Paste published Google Sheet CSV URL..."
+            />
+
+            <button type="button" onClick={loadSheetUrl} disabled={loading}>
+              {loading ? "Loading..." : "Load Sheet"}
+            </button>
+
+            <label>
+              Upload CSV
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                hidden
+                onChange={(event) => uploadCsv(event.target.files?.[0] || null)}
+              />
+            </label>
+          </div>
+        </section>
+      ) : null}
+
+      {!model ? (
+        <section className="gos-page">
+          <div className="gos-hero">
+            <div>
+              <span>{activeTitle}</span>
+              <h1>Connect Google Ads data</h1>
+              <p>Click Data Source at bottom-right and load your Google Sheet CSV or upload a CSV backup.</p>
+            </div>
+          </div>
+        </section>
+      ) : null}
+      {model && activeTab === "campaigns" ? <CampaignsTab model={model} /> : null}
+      {model && activeTab === "search" ? <CampaignTypeTab model={model} type="Search" /> : null}
+      {model && activeTab === "shopping" ? <CampaignTypeTab model={model} type="Shopping" /> : null}
+      {model && activeTab === "demand_gen" ? <CampaignTypeTab model={model} type="Demand Gen" /> : null}
+      {model && activeTab === "video" ? <CampaignTypeTab model={model} type="Video" /> : null}
+      {model && activeTab === "monthly_summary" ? <MonthlySummaryTab model={model} /> : null}
+      {model && activeTab === "operator_report" ? <AiOperatorReportTab model={model} /> : null}
+      {model && activeTab === "settings" ? <SettingsTab /> : null}
+    </main>
+  );
+}
