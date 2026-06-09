@@ -462,9 +462,9 @@ function SearchTermHeadDropdown({
   const metrics = getHeadMetrics(head);
 
   return (
-    <div className="stw-table-head-block">
-      <button type="button" className="stw-table-head-row" onClick={onToggle}>
-        <span className="stw-table-head-title">
+    <div className="stw-clean-head">
+      <button type="button" className="stw-clean-head-row" onClick={onToggle}>
+        <span className="stw-clean-title">
           <b>{isOpen ? "−" : "+"}</b>
           <span>
             <strong>{head.title}</strong>
@@ -472,21 +472,21 @@ function SearchTermHeadDropdown({
           </span>
         </span>
 
-        <span>{head.rows.length.toLocaleString("en-IN")}</span>
-        <span className="red">{formatMoney(head.totalSpend)}</span>
-        <span>{metrics.clicks.toLocaleString("en-IN")}</span>
-        <span>{metrics.impressions.toLocaleString("en-IN")}</span>
-        <span>{formatPercent(metrics.ctr)}</span>
-        <span className="green">{formatMoney(head.totalRevenue)}</span>
-        <span>{head.purchases.toFixed(0)}</span>
-        <span>{formatMoney(metrics.cpa)}</span>
-        <span className={metrics.roas >= 2 ? "green" : metrics.roas >= 1 ? "amber" : "red"}>{formatX(metrics.roas)}</span>
-        <span className={head.risk === "High" ? "red" : head.risk === "Opportunity" || head.risk === "Protect" ? "green" : "amber"}>{head.risk}</span>
+        <span><small>Terms</small><strong>{head.rows.length.toLocaleString("en-IN")}</strong></span>
+        <span><small>Spend</small><strong className="red">{formatMoney(head.totalSpend)}</strong></span>
+        <span><small>Clicks</small><strong>{metrics.clicks.toLocaleString("en-IN")}</strong></span>
+        <span><small>Impr.</small><strong>{metrics.impressions.toLocaleString("en-IN")}</strong></span>
+        <span><small>CTR</small><strong>{formatPercent(metrics.ctr)}</strong></span>
+        <span><small>Revenue</small><strong className="green">{formatMoney(head.totalRevenue)}</strong></span>
+        <span><small>Purch.</small><strong>{head.purchases.toFixed(0)}</strong></span>
+        <span><small>CPA</small><strong>{formatMoney(metrics.cpa)}</strong></span>
+        <span><small>ROAS</small><strong className={metrics.roas >= 2 ? "green" : metrics.roas >= 1 ? "amber" : "red"}>{formatX(metrics.roas)}</strong></span>
+        <span><small>Risk</small><strong className={head.risk === "High" ? "red" : head.risk === "Opportunity" || head.risk === "Protect" ? "green" : "amber"}>{head.risk}</strong></span>
       </button>
 
       {isOpen ? (
-        <div className="stw-table-head-body">
-          <div className="stw-table-head-tools">
+        <div className="stw-clean-body">
+          <div className="stw-clean-tools">
             <p>{head.subtitle}</p>
             <div>
               <button type="button" onClick={() => copyText(buildHeadNegativeText(head, "exact"))}>Copy Exact</button>
@@ -495,8 +495,8 @@ function SearchTermHeadDropdown({
             </div>
           </div>
 
-          <div className="stw-inner-table-wrap">
-            <table className="stw-inner-table">
+          <div className="stw-clean-table-wrap">
+            <table className="stw-clean-table">
               <thead>
                 <tr>
                   <th>Search Term</th>
@@ -514,7 +514,6 @@ function SearchTermHeadDropdown({
                   <th>Phrase Negative</th>
                 </tr>
               </thead>
-
               <tbody>
                 {head.rows.map((row) => (
                   <tr key={row.id}>
@@ -742,7 +741,7 @@ export function SearchTermWasterTab({ model }: { model: GoogleOsModel }) {
           <p>The Excel workbook export will create one sheet for each analysis head.</p>
         </div>
       ) : (
-        <div className="stw-table-head-list">
+        <div className="stw2-head-list">
           {heads.map((head) => (
             <SearchTermHeadDropdown
               key={head.key}
