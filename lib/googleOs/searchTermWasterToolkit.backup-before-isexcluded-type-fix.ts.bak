@@ -56,8 +56,6 @@ export type SearchTermWasterRow = {
   adGroupId: string;
   keyword: string;
   keywordMatchType: string;
-  addedExcluded: string;
-  isExcluded: boolean;
   spend: number;
   revenue: number;
   purchases: number;
