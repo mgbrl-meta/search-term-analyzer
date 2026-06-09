@@ -7869,3 +7869,285 @@ html.light .gos-axis-chart-caption {
   }
 }
 
+
+/* =========================================================
+   SEARCH TERM ANALYSER
+   ========================================================= */
+
+.google-os-shell .search-term-analyser-page {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.google-os-shell .sta-hero {
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  border-radius: 16px !important;
+  background: rgba(15, 23, 42, 0.78) !important;
+  padding: 14px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  align-items: flex-start !important;
+}
+
+.google-os-shell .sta-hero span,
+.google-os-shell .sta-section-head span,
+.google-os-shell .sta-rules-grid span {
+  color: #94a3b8 !important;
+  font-size: 8px !important;
+  font-weight: 950 !important;
+  letter-spacing: .12em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .sta-hero h2,
+.google-os-shell .sta-section-head h3 {
+  margin: 6px 0 0 !important;
+  color: #f8fafc !important;
+  font-size: 20px !important;
+  line-height: 1.15 !important;
+}
+
+.google-os-shell .sta-hero p {
+  margin: 8px 0 0 !important;
+  color: #cbd5e1 !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+}
+
+.google-os-shell .sta-hero button {
+  height: 36px !important;
+  border: 1px solid rgba(66, 133, 244, 0.36) !important;
+  background: rgba(66, 133, 244, 0.14) !important;
+  color: #f8fafc !important;
+  border-radius: 10px !important;
+  padding: 0 13px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+}
+
+.google-os-shell .sta-kpi-grid {
+  display: grid !important;
+  grid-template-columns: repeat(11, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.google-os-shell .sta-kpi-grid > div {
+  min-height: 62px !important;
+  padding: 9px 10px !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  border-radius: 12px !important;
+  background: rgba(15, 23, 42, 0.76) !important;
+  display: grid !important;
+  gap: 4px !important;
+  overflow: hidden !important;
+}
+
+.google-os-shell .sta-kpi-grid span {
+  color: #94a3b8 !important;
+  font-size: 7px !important;
+  font-weight: 950 !important;
+  letter-spacing: .09em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .sta-kpi-grid strong {
+  color: #f8fafc !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.google-os-shell .sta-kpi-grid small {
+  color: #cbd5e1 !important;
+  font-size: 8px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.google-os-shell .sta-rules-grid,
+.google-os-shell .sta-filter-grid {
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  border-radius: 14px !important;
+  background: rgba(15, 23, 42, 0.76) !important;
+  padding: 12px !important;
+  display: grid !important;
+  gap: 10px !important;
+  align-items: end !important;
+}
+
+.google-os-shell .sta-rules-grid {
+  grid-template-columns: minmax(240px, 1.4fr) repeat(5, minmax(120px, .7fr)) !important;
+}
+
+.google-os-shell .sta-filter-grid {
+  grid-template-columns: 220px 220px minmax(320px, 1fr) !important;
+}
+
+.google-os-shell .sta-rules-grid label,
+.google-os-shell .sta-filter-grid label {
+  display: grid !important;
+  gap: 5px !important;
+  color: #94a3b8 !important;
+  font-size: 7px !important;
+  font-weight: 950 !important;
+  letter-spacing: .09em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .sta-rules-grid strong {
+  color: #f8fafc !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+.google-os-shell .sta-rules-grid input,
+.google-os-shell .sta-filter-grid input,
+.google-os-shell .sta-filter-grid select {
+  height: 34px !important;
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  border-radius: 9px !important;
+  background: rgba(2, 6, 23, 0.62) !important;
+  color: #f8fafc !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+}
+
+.google-os-shell .sta-table-card {
+  border: 1px solid rgba(148, 163, 184, 0.22) !important;
+  border-radius: 14px !important;
+  background: rgba(15, 23, 42, 0.76) !important;
+  overflow: hidden !important;
+}
+
+.google-os-shell .sta-section-head {
+  padding: 12px 14px !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18) !important;
+}
+
+.google-os-shell .sta-section-head h3 {
+  font-size: 16px !important;
+}
+
+.google-os-shell .sta-summary-table-wrap {
+  max-height: 520px !important;
+  overflow: auto !important;
+}
+
+.google-os-shell .sta-summary-table {
+  width: 100% !important;
+  min-width: 1280px !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+}
+
+.google-os-shell .sta-summary-table th,
+.google-os-shell .sta-summary-table td {
+  padding: 7px 8px !important;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12) !important;
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.google-os-shell .sta-summary-table th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 3 !important;
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+  font-size: 7px !important;
+  font-weight: 950 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+}
+
+.google-os-shell .sta-summary-table td {
+  color: #cbd5e1 !important;
+  font-weight: 750 !important;
+}
+
+.google-os-shell .sta-summary-table td strong {
+  color: #f8fafc !important;
+  font-weight: 900 !important;
+}
+
+.google-os-shell .sta-summary-table th:first-child,
+.google-os-shell .sta-summary-table td:first-child,
+.google-os-shell .sta-terms-table th:nth-child(2),
+.google-os-shell .sta-terms-table td:nth-child(2),
+.google-os-shell .sta-terms-table th:nth-child(3),
+.google-os-shell .sta-terms-table td:nth-child(3),
+.google-os-shell .sta-terms-table th:nth-child(4),
+.google-os-shell .sta-terms-table td:nth-child(4),
+.google-os-shell .sta-terms-table th:nth-child(5),
+.google-os-shell .sta-terms-table td:nth-child(5),
+.google-os-shell .sta-terms-table th:nth-child(15),
+.google-os-shell .sta-terms-table td:nth-child(15) {
+  text-align: left !important;
+}
+
+.google-os-shell .sta-terms-table {
+  min-width: 1680px !important;
+}
+
+.google-os-shell .sta-note {
+  padding: 10px 14px !important;
+  margin: 0 !important;
+  color: #94a3b8 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+.google-os-shell .sta-empty {
+  border: 1px dashed rgba(148, 163, 184, 0.30) !important;
+  border-radius: 16px !important;
+  background: rgba(15, 23, 42, 0.60) !important;
+  padding: 22px !important;
+}
+
+.google-os-shell .sta-empty h3 {
+  color: #f8fafc !important;
+  margin: 0 0 8px !important;
+}
+
+.google-os-shell .sta-empty p {
+  color: #cbd5e1 !important;
+  margin: 0 !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+}
+
+@media(max-width: 1600px) {
+  .google-os-shell .sta-kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .google-os-shell .sta-rules-grid,
+  .google-os-shell .sta-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media(max-width: 900px) {
+  .google-os-shell .sta-kpi-grid,
+  .google-os-shell .sta-rules-grid,
+  .google-os-shell .sta-filter-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .google-os-shell .sta-hero {
+    flex-direction: column !important;
+  }
+}

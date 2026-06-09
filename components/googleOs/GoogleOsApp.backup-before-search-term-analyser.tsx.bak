@@ -9,7 +9,6 @@ import { CampaignsTab } from "@/components/googleOs/tabs/CampaignsTab";
 import { CampaignTypeTab } from "@/components/googleOs/tabs/CampaignTypeTab";
 import { MonthlySummaryTab } from "@/components/googleOs/tabs/MonthlySummaryTab";
 import { SearchTermWasterTab } from "@/components/googleOs/tabs/SearchTermWasterTab";
-import { SearchTermAnalyserTab } from "@/components/googleOs/tabs/SearchTermAnalyserTab";
 import { AiOperatorReportTab } from "@/components/googleOs/tabs/AiOperatorReportTab";
 import { SettingsTab } from "@/components/googleOs/tabs/SettingsTab";
 
@@ -20,7 +19,6 @@ type GoogleOsTab =
   | "demand_gen"
   | "video"
   | "search_term_waster"
-  | "search_term_analyser"
   | "monthly_summary"
   | "operator_report"
   | "settings";
@@ -32,7 +30,6 @@ const TABS: { key: GoogleOsTab; label: string }[] = [
   { key: "demand_gen", label: "Demand Gen" },
   { key: "video", label: "Video" },
   { key: "search_term_waster", label: "Search Term Waster" },
-  { key: "search_term_analyser", label: "Search Term Analyser" },
   { key: "monthly_summary", label: "Monthly Summary" },
   { key: "operator_report", label: "Operator Report" },
   { key: "settings", label: "Settings" },
@@ -323,7 +320,6 @@ export function GoogleOsApp() {
       {model && activeTab === "demand_gen" ? <CampaignTypeTab model={model} type="Demand Gen" /> : null}
       {model && activeTab === "video" ? <CampaignTypeTab model={model} type="Video" /> : null}
       {model && activeTab === "search_term_waster" ? <SearchTermWasterTab model={model} /> : null}
-      {model && activeTab === "search_term_analyser" ? <SearchTermAnalyserTab model={model} /> : null}
       {model && activeTab === "monthly_summary" ? <MonthlySummaryTab model={model} /> : null}
       {model && activeTab === "operator_report" ? <AiOperatorReportTab model={model} /> : null}
       {model && activeTab === "settings" ? <SettingsTab /> : null}
